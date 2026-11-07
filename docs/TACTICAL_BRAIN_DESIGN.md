@@ -1,4 +1,4 @@
-# Diseño del cerebro táctico (PROPUESTA, pendiente de aprobación)
+# Diseño del cerebro táctico (APROBADO el 2026-11-07)
 
 > **Decisiones confirmadas por la jugadora (2026-11-07):**
 > - **Pesos:** se calibran con escenarios que ella aprueba (decisión 71).
@@ -7,8 +7,12 @@
 > - **Aliados:** los monstruos de un mismo bando **comparten todo**, conocimiento e intenciones
 >   (mente colectiva del bando; decisión 74). Esto sustituye la propuesta del §3 ("no comparten
 >   mente") y del §7.
-> - **Suposición inicial** de CA y PG no observados: un valor típico configurable que fija ella
->   (por ejemplo, por nivel de los personajes) y que se corrige con lo observado (decisión 73).
+> - **Suposición inicial** de CA y PG no observados: según el **nivel del grupo** (definido en el
+>   encuentro), con una tabla por nivel que se propondrá para su aprobación; se corrige con lo
+>   observado (decisión 73).
+> - **Arquitectura** del §1 aprobada (`combat-controller`, percepción con visibilidad del motor,
+>   simulación sobre el estado creído). **Factores:** la lista de la especificación sustituye a los
+>   4 del brief. **Empates:** desempate determinista; variación con semilla, más adelante.
 
 Desarrolla `TACTICAL_BRAIN_SPEC.md`. **No hay código todavía.** Etiquetas: DECISIÓN CONFIRMADA
 (de la especificación de la jugadora), PROPUESTA (mía) y PENDIENTE.

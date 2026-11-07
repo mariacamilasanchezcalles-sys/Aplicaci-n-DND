@@ -2,7 +2,7 @@
 
 Aplicación de simulación de combate para Dungeons & Dragons donde los monstruos deciden de forma **algorítmica** (sin IA generativa). Objetivo: app Android instalable (APK) con Capacitor, sin conexión a internet, en TypeScript. Desarrollo en GitHub Codespaces.
 
-Especificación vigente: `docs/PROJECT_SPEC.md` (amplía el brief original `docs/PROJECT_BRIEF.md`). Estado actual: `docs/STATUS.md`. Fichas declarativas: `docs/SHEET_ARCHITECTURE.md`. Cerebro táctico: `docs/TACTICAL_BRAIN_SPEC.md` (especificación de la jugadora) y `docs/TACTICAL_BRAIN_DESIGN.md` (propuesta pendiente de aprobación). Reglas caseras y opcionales: `docs/HOUSE_RULES.md` (la *Guía del DM* que tiene la jugadora es de **2014**: solo sirve como origen de reglas caseras, nunca como fuente de reglas oficiales; no se copia al repositorio).
+Especificación vigente: `docs/PROJECT_SPEC.md` (amplía el brief original `docs/PROJECT_BRIEF.md`). Estado actual: `docs/STATUS.md`. Fichas declarativas: `docs/SHEET_ARCHITECTURE.md`. Cerebro táctico: `docs/TACTICAL_BRAIN_SPEC.md` (especificación de la jugadora) y `docs/TACTICAL_BRAIN_DESIGN.md` (diseño aprobado el 2026-11-07; se implementa por etapas). Reglas caseras y opcionales: `docs/HOUSE_RULES.md` (la *Guía del DM* que tiene la jugadora es de **2014**: solo sirve como origen de reglas caseras, nunca como fuente de reglas oficiales; no se copia al repositorio).
 
 ## Cómo trabajar aquí (obligatorio)
 - **Idioma:** español para documentación y comunicación; identificadores de código en inglés, comentarios en español.
@@ -51,7 +51,7 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 ## Decisiones de diseño ya tomadas
 **Del brief**
 - Legalidad = filtro obligatorio antes del cerebro, no una puntuación. El motor de reglas decide qué es legal; el cerebro solo evalúa acciones legales.
-- Cuatro factores tácticos: prioridad de personalidad, conveniencia del objetivo, eficacia de la acción y riesgo. La posición y sus consecuencias van dentro de eficacia y riesgo. Rangos y pesos: pendientes.
+- ~~Cuatro factores tácticos~~ → sustituidos (2026-11-07) por los factores de `docs/TACTICAL_BRAIN_SPEC.md` (daño esperado, impacto, riesgo, posicionamiento, supervivencia, control, cooperación, recursos, consecuencias futuras), medidos en unidades naturales. Pesos: calibración por escenarios aprobados por la jugadora; nunca inventados.
 - La personalidad modifica prioridades, nunca permite violar las reglas.
 - Registro simplificado de personajes jugadores (sin hoja completa).
 - Se modelan por separado acción principal, acción adicional, movimiento y ataques concretos. Un ataque concreto no es una acción independiente; el movimiento no es Correr (Dash).
@@ -59,6 +59,7 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 **Tomadas con la jugadora**
 - **Fichas y ejecución (2026-11-07):** personalidad y dificultad se asignan en el encuentro; turno planeado completo y ejecutado operación por operación con reevaluación y revalidación; acciones estándar y ataque de oportunidad como capacidades integradas; costes una vez al iniciar (sin devolución), `capability` gasta recursos pero no activación; se puede renunciar a pasos restantes. Guardado local con Firebase opcional.
 - **Reglas caseras de la guía DM 2014 (2026-11-07):** la mesa usa Flanquear, Moral, Daño masivo, Marcar (implementadas como interruptores de `tableRules`) y Encaramarse a una criatura más grande (sin implementar). El motor las lee; el cerebro nunca las cambia. Ver `docs/HOUSE_RULES.md`.
+- **Cerebro táctico (2026-11-07):** solo información percibida, recordada o estimada (CA y PG se estiman; supuesto inicial por nivel del grupo); los monstruos de un bando comparten conocimiento e intenciones; todos aprenden de lo que perciben (INT/SAB más adelante); desempate determinista; dificultad = calidad de búsqueda, nunca estadísticas ni información.
 - **Bandos (2026-11-07):** por defecto monstruos contra personajes jugadores, cambiable por criatura; los ataques de oportunidad solo se ofrecen a enemigos.
 - Coordenadas desde 0. Casillas de 5 pies. Mapa de **15 columnas x 21 filas**; el área **visible** en pantalla es de 5 x 9 (requisito de interfaz, no del núcleo).
 - **Salvaciones de personajes jugadores** (2026-11-07): las tira el jugador con dados físicos y la app anota el total o el resultado. **Áreas:** regla casera de la guía 2014 (origen en una intersección; casilla afectada si queda cubierta al menos a la mitad), para todas las formas.
