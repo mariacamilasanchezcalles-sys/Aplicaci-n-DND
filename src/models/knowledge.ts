@@ -12,6 +12,8 @@ import type { GridPosition } from "./position";
 export interface CreatureMemory {
   readonly creatureId: CreatureId;
   readonly side: SideId;
+  /** Monstruo o personaje jugador (se distingue a simple vista: PROPUESTA). */
+  readonly kind: "monster" | "playerCharacter";
   readonly size: CreatureSize;
   /** Última posición vista y asalto en que se vio (null si nunca). */
   readonly lastSeenPosition: GridPosition | null;

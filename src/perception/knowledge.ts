@@ -48,6 +48,7 @@ export interface KnownOther {
   readonly relation: "enemy";
   readonly creatureId: CreatureId;
   readonly side: SideId;
+  readonly kind: "monster" | "playerCharacter";
   readonly size: CreatureSize;
   /** ¿La percibe ahora mismo algún miembro del bando? */
   readonly visibleNow: boolean;
@@ -105,6 +106,7 @@ export function buildKnowledgeView(
       relation: "enemy",
       creatureId: id,
       side: m.side,
+      kind: m.kind,
       size: m.size,
       visibleNow,
       position: visibleNow ? record.state.position : m.lastSeenPosition,

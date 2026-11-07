@@ -30,10 +30,11 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 | `models` | nada | Tipos de datos (ids, acciones, criaturas, encuentro). Sin reglas. |
 | `rules` | models | Motor de reglas: colocación, ocupación por tamaño, distancia, movimiento, economía de acciones, dados, resolución de ataques, daño y **ejecutor de turno paso a paso** (`turnExecution.ts`). |
 | `perception` | models, rules | Memoria compartida por bando (`sideKnowledge`) y `KnowledgeView`: lo percibido, recordado y estimado (cotas de CA por sus propias tiradas, PG máximos por Maltrecho). Nunca da CA ni PG reales de enemigos. |
-| `tactical-brain` | models, perception | Contrato de entrada/salida y punto de integración vacío. **Sin algoritmo.** |
+| `tactical-brain` | models, perception, rules (**solo tipos**) | Contrato de entrada/salida y del puerto de simulación (`SimulationPort`). **Sin algoritmo todavía.** |
 | `persistence` | models | Interfaz de guardado/carga, JSON, almacén en memoria. |
 | `ui-bridge` | models, rules, persistence, scenarios | Fachada para que una interfaz hable con el núcleo (vistas, validación de turno, biblioteca de encuentros). |
 | `scenarios` | models | Datos de prueba provisionales (Goblin, Cata, Caín). |
+| `combat-controller` | models, rules, perception, tactical-brain | Orquesta los turnos de los monstruos. Hoy: puerto de simulación sobre el estado creído (`createSimulationPort`, dados esperados). |
 | `sheets` | models | Fichas declarativas: esquema, validación, carga y puente temporal al modelo del motor. Los tipos de ficha están en `models/sheet.ts`. |
 
 `tests/architecture.test.ts` hace cumplir esas dependencias. Detalle en `docs/ARCHITECTURE.md`.

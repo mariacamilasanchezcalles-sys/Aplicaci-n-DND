@@ -7,7 +7,8 @@ Dependencias permitidas (verificadas por `tests/architecture.test.ts`):
 | `models` | nada | Tipos de datos (ids, acciones, criaturas, encuentro). Sin reglas. |
 | `rules` | models | Motor de reglas (incluye el ejecutor de turno paso a paso `turnExecution.ts`, las comprobaciones compartidas `turnSteps.ts`, los recursos y la Recarga `resources.ts`, las defensas contra el daño `damage.ts`, áreas, efectos, condiciones, 0 PG, iniciativa y las reglas caseras `houseRules.ts`): registro de encuentros/criaturas, ocupación por tamaño, distancia y movimiento (diagonal alternada), economía de acciones del turno, dados inyectables, resolución de ataques y daño. La generación de acciones legales sigue pendiente (ver `RULES_VERIFICATION.md`). |
 | `perception` | models, rules | Memoria compartida por bando y `KnowledgeView` (percibido, recordado, estimado). Usa la visibilidad del motor. |
-| `tactical-brain` | models, perception | Contrato de entrada/salida y punto de integración vacío. |
+| `tactical-brain` | models, perception, rules (solo tipos) | Contrato de decisión y del puerto de simulación. Sin algoritmo todavía. |
+| `combat-controller` | models, rules, perception, tactical-brain | Puerto de simulación sobre el estado creído; más adelante, el bucle de turnos de los monstruos. |
 | `persistence` | models | Interfaz guardar/cargar + serialización JSON + almacén en memoria. |
 | `ui-bridge` | models, rules, persistence, scenarios | Fachada para la interfaz: vistas de mapa y menú de turno, validación de turno, escenario provisional y biblioteca de encuentros sobre `EncounterStore`. |
 | `scenarios` | models | Datos de prueba provisionales (Goblin, Cata, Caín). |

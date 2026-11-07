@@ -33,6 +33,7 @@ function emptyMemory(target: CombatantRecord): CreatureMemory {
   return {
     creatureId: target.definition.id,
     side: target.side,
+    kind: target.definition.kind,
     size: target.definition.size,
     lastSeenPosition: null,
     lastSeenRound: null,

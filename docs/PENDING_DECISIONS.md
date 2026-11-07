@@ -121,3 +121,10 @@
 77. **Condiciones visibles** (PROPUESTA): todas las condiciones de una criatura que se ve, salvo Invisible; el Cansancio, como presente o ausente.
 78. **Qué se aprende de un ataque ajeno** (PROPUESTA): de los ataques de otro bando solo se aprende el ataque usado y el daño (no el total de la tirada). Tampoco se aprende aún el bonificador de salvación de los personajes.
 79. **Percepción solo por la vista**: oído, sentidos especiales y luz quedan para cuando existan en el motor (decisión 52).
+
+## Etapa 2 del cerebro: candidatos y simulación (2026-11-07)
+80. **Estimación puntual** (PROPUESTA): con las dos cotas, el punto medio; con una sola, el supuesto inicial dentro de la cota (o la cota); sin cotas, el supuesto. Para las probabilidades se promedian todas las CA del intervalo.
+81. **Dados esperados** (PROPUESTA): para avanzar un estado creído se usa la media del dado redondeada al par (d20 → 10, d6 → 4…). Las probabilidades se calculan aparte, de forma exacta.
+82. **Lo que el estado creído no sabe de un enemigo**: Velocidad, ataques, defensas y recursos. Hoy aparecen vacíos; habrá que estimarlos con lo observado para prever su respuesta (etapa 3).
+83. **Ajuste técnico**: `tactical-brain` puede importar **solo tipos** de `rules` (lo comprueba `tests/architecture.test.ts`), para nombrar órdenes y opciones sin poder ejecutar reglas.
+84. **Monstruo o personaje se distingue a simple vista** (PROPUESTA): la memoria guarda si una criatura es monstruo o personaje jugador.

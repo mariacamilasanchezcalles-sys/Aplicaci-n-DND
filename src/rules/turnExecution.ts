@@ -673,7 +673,7 @@ function concreteOptions(
 }
 
 /** Criaturas al alcance de un efecto con objetivos elegidos (sin el actor), por id. */
-function creatureCandidates(encounter: Encounter, actor: CombatantRecord, operation: EffectOperation): CreatureId[] {
+export function creatureCandidates(encounter: Encounter, actor: CombatantRecord, operation: EffectOperation): CreatureId[] {
   if (operation.targeting.kind !== "creatures") return [];
   const range = operation.targeting.rangeFeet;
   return (Object.keys(encounter.combatants).sort() as CreatureId[]).filter((id) => {
@@ -739,6 +739,16 @@ function effectAffected(
   return { ok: true, affected, playerSavesNeeded };
 }
 
+/** La operación de efecto de una opción de la capacidad en curso (null si no es de efecto o caducó). */
+export function effectOperationOf(encounter: Encounter, turn: TurnState, key: string): EffectOperation | null {
+  const actor = encounter.combatants[turn.actorId];
+  if (!actor || turn.execution === null) return null;
+  const [serialText, indexText] = key.split(":");
+  if (Number(serialText) !== turn.serial) return null;
+  const option = concreteOptions(encounter, actor, turn.execution)[Number(indexText)];
+  return option?.choice.kind === "effect" ? option.choice.operation : null;
+}
+
 /**
  * Vista previa de una opción de efecto: a quién afectaría y a qué jugadores
  * hay que pedir la salvación. No tira dados ni cambia nada.
@@ -791,7 +801,7 @@ function activationFree(turn: TurnState, activation: Capability["activation"]): 
   return false;
 }
 
-function canMoveNow(turn: TurnState, actor: CombatantRecord): boolean {
+export function canMoveNow(turn: TurnState, actor: CombatantRecord): boolean {
   if (turn.ended || actor.state.lifeState !== "alive" || effectiveSpeed(actor) === 0) return false;
   // REGLA OFICIAL VERIFICADA ("Moving between Attacks"): solo entre los
   // ataques de la acción de Atacar. Con otras capacidades en curso no se mueve
@@ -805,7 +815,12 @@ function canMoveNow(turn: TurnState, actor: CombatantRecord): boolean {
  * origen de su miedo. Se comprueba casilla a casilla contra cada origen que
  * puede ver (PROPUESTA: "ver" = "en línea de visión" mientras no haya obstáculos).
  */
-function approachesFearSource(encounter: Encounter, actor: CombatantRecord, path: readonly GridPosition[]): boolean {
+export function approachesFearSource(
+  encounter: Encounter,
+  actor: CombatantRecord,
+  path: readonly GridPosition[],
+  from: GridPosition = actor.state.position,
+): boolean {
   const rule = encounter.tableRules.diagonal;
   // Regla casera Moral: quien huye no se acerca a ningún enemigo que vea.
   const fleeingFrom = actor.state.morale.fleeing
@@ -818,7 +833,7 @@ function approachesFearSource(encounter: Encounter, actor: CombatantRecord, path
     if (!source || !canSee(actor, source)) continue;
     const distanceFrom = (position: GridPosition): number =>
       footprintDistanceSquares(position, actor.definition.size, source.state.position, source.definition.size, rule);
-    let previous = distanceFrom(actor.state.position);
+    let previous = distanceFrom(from);
     for (const square of path) {
       const current = distanceFrom(square);
       if (current < previous) return true;
