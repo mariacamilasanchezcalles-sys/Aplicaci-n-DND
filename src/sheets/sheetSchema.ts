@@ -322,6 +322,7 @@ export const creatureSheetSchema: Schema<CreatureSheet> = obj(
   },
   {
     creatureType: oneOf(CREATURE_TYPES),
+    initiativeBonus: bonus,
     abilities: record(ability, int(1, 30)),
     savingThrows: record(ability, bonus),
     skills: record(oneOf(SKILLS), bonus),

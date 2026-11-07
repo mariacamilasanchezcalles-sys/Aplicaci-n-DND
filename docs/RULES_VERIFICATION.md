@@ -86,6 +86,20 @@ Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PD
 | **Muerte de monstruos** | Un monstruo muere en el instante en que llega a 0 PG, aunque el DM puede tratarlo como a un personaje | SRD 5.2.1, "Instant Death" | Sin implementar |
 | **Notación de ataques** | "Hit:", "Miss:" y "Hit or Miss:"; un ataque tiene un solo objetivo salvo que se diga otra cosa. "Half damage only": la mitad del daño, ignorando el resto del efecto | SRD 5.2.1, Monsters | `onHit`, `onMiss`, `onHitOrMiss`; `halfDamage` |
 
+## Iniciativa, reacciones y ataques de oportunidad (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
+| Regla | Texto oficial (resumen fiel) | Dónde se aplica |
+|---|---|---|
+| **Iniciativa** | Prueba de Destreza al empezar el combate; el DM tira por los monstruos y hace **una** tirada por grupo de criaturas idénticas | `rollMonsterInitiative` (los grupos los indica quien dirige); jugadores: total anotado |
+| Bonificador | El perfil del monstruo indica "Initiative +X" (Goblin Warrior +2) | `initiativeBonus`; si falta, modificador de DES |
+| Sorpresa, Invisible, Incapacitado | Sorprendido: Desventaja; Invisible: Ventaja; Incapacitado: Desventaja | `rollMonsterInitiative` |
+| **Orden** | De mayor a menor; se mantiene en todos los asaltos; empates: el DM entre monstruos y los jugadores entre personajes (el final del párrafo sobre empates mixtos no se pudo leer en el PDF) | `startCombat` exige `tieOrder` para todo empate |
+| **Asalto** | Termina cuando todos han tenido su turno | `advanceTurn` |
+| **Reacción** | Una; no se puede tomar otra hasta el inicio de su siguiente turno; se puede tomar en el turno de otra criatura | `reactionAvailable` |
+| **Ataque de oportunidad** | Cuando una criatura **que puedes ver** sale de tu alcance con su acción, acción adicional, reacción o una de sus velocidades; usas tu reacción para un ataque cuerpo a cuerpo con arma o Ataque sin armas; ocurre **justo antes** de que salga | `walk` / `resolveReaction` (solo con su propio movimiento; Ataque sin armas: pendiente) |
+| Evitarlo | Destrabarse; teletransportarse o ser movido sin usar su movimiento, acción o reacción | `disengaged`; desplazamiento forzado aún no existe |
+| **Moverse entre criaturas (regla oficial)** | Se puede pasar por el espacio de un aliado, de una criatura Incapacitada, de una Diminuta o de una dos tamaños mayor o menor | No usada: la mesa usa su regla casera |
+| **Esquivar** | Hasta el inicio de su siguiente turno | `CombatantState.dodging` |
+
 ## Condiciones y 0 PG (verificado el 2026-11-07, Glosario 2024 y SRD 5.2.1)
 Se leyó el texto completo de las 15 condiciones y de "Dropping to 0 Hit Points".
 

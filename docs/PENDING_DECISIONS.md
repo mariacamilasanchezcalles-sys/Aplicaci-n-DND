@@ -24,9 +24,9 @@
 
 ## Reglas: sin implementar
 6. **Estado de condiciones, visibilidad y Hide** (Invisible, Oculto, ventaja/desventaja automáticas).
-7. **Ataques de oportunidad** y reacciones.
+7. ~~**Ataques de oportunidad**~~ → Implementados (con su propio movimiento). Quedan las decisiones 59 a 61.
 8. ~~**Llegar a 0 PG**~~ → Implementado con reglas verificadas (ver `RULES_VERIFICATION.md`). Queda la decisión 51.
-9. **Iniciativa y turnos** (`initiativeOrder`, `round`).
+9. ~~**Iniciativa y turnos**~~ → Implementados (ver `RULES_VERIFICATION.md`). Quedan las decisiones 57 y 58.
 10. **Acciones sin modelar:** Help, Influence, Magic, Ready, Search, Study, Utilize.
 11. **Rasgos con más ataques** (Extra Attack, Multiattack): hoy `attacksPerAttackAction`.
 
@@ -81,7 +81,7 @@
 47. **Quién está "dentro" de un área** (PROPUESTA): basta con una casilla de su espacio. Quien crea el área queda fuera salvo `includesSelf`.
 48. **Línea de 5 pies trazada por una línea de la cuadrícula**: con la regla de la mitad cubre media casilla a cada lado, así que afecta a dos filas. Es lo que dice el método; confirmar que la mesa lo juega así.
 49. **Efectos aún no aplicables**: condiciones, PG temporales, desplazamiento forzado, CD de conjuros. Una capacidad que los incluya no se ejecuta.
-50. **Ataques de personajes jugadores** con dados físicos (decisiones 28 y 36): el mismo mecanismo de "el jugador tira y la app lo anota" serviría para sus tiradas de ataque y su daño.
+50. ~~**Ataques de personajes jugadores**~~ → Implementado según la especificación §3: el jugador dice su d20 natural y su total; la app decide si impacta; el jugador anota el daño.
 
 ## Condiciones y 0 PG (etapa 2026-11-07)
 51. **Monstruos tratados como personajes a 0 PG**: el SRD permite al DM que un monstruo concreto no muera al llegar a 0 PG. ¿Lo quieres como opción por criatura?
@@ -90,3 +90,12 @@
 54. **`validateTurnPlan` no tiene en cuenta las condiciones**: valida planes completos sin estado de condiciones. El ejecutor paso a paso es la fuente de verdad. ¿Retiramos `validateTurnPlan` o lo hacemos usar las mismas comprobaciones?
 55. **Duraciones en asaltos y minutos**: necesitan la iniciativa (decisión 9). Hasta entonces, un efecto con esas duraciones no se ejecuta. "Hasta escapar" se queda hasta que se quite a mano (escapar no está modelado).
 56. **Esquivar** solo se registra en el turno: falta que dure hasta el inicio del siguiente turno de quien esquiva y que dé Desventaja a sus atacantes.
+
+## Iniciativa y reacciones (etapa 2026-11-07)
+57. **Duraciones en asaltos** (PROPUESTA): N asaltos terminan al inicio del N-ésimo turno siguiente de quien causó el efecto (o del afectado si no hay origen); 1 minuto = 10 asaltos.
+58. **Turnos de monstruos muertos** (PROPUESTA): se saltan. Los personajes a 0 PG sí tienen turno (salvaciones contra la muerte).
+59. **Reacciones de ficha** (`activation: "reaction"` con desencadenante): el sistema de reacciones pendientes ya existe, pero solo para ataques de oportunidad. Hay que conectar los desencadenantes de las fichas.
+60. **Ataque sin armas**: el ataque de oportunidad también puede hacerse con un Ataque sin armas, que aún no existe. Hoy solo reacciona quien tiene un ataque cuerpo a cuerpo registrado; los personajes sin ataques registrados no reaccionan.
+61. **Quién reacciona**: sin bandos (decisión 4), se ofrece a cualquier criatura que cumpla las condiciones, aliada o no; decidir si la toma es tarea de la persona o del cerebro. Con varias a la vez se ofrecen todas (por id) y se resuelven en el orden que se elija.
+62. **Validación del total del jugador**: la app no comprueba que el total anotado sea coherente con el d20 (el jugador suma sus modificadores, incluidas Ventaja/Desventaja y Cansancio).
+63. **Regla casera Marcar**: ya se puede implementar sobre los ataques de oportunidad. ¿La añadimos como interruptor de mesa?

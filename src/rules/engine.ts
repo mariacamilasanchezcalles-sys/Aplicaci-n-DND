@@ -71,7 +71,9 @@ export function createRulesEngine(): RulesEngine {
         tableRules: input.tableRules,
         combatants: {},
         initiativeOrder: [],
+        initiativeTotals: {},
         round: 0,
+        turnIndex: -1,
       };
     },
 
@@ -97,6 +99,8 @@ export function createRulesEngine(): RulesEngine {
               exhaustionLevel: 0,
               lifeState: "alive",
               deathSaves: { successes: 0, failures: 0 },
+              reactionAvailable: true,
+              dodging: false,
             },
           },
         },

@@ -131,6 +131,8 @@ interface CombatantBase {
   /** Bonificador total de salvación cuando difiere del modificador. */
   readonly savingThrows?: Partial<Record<AbilityId, number>>;
   readonly conditionImmunities?: readonly ConditionId[];
+  /** Bonificador de iniciativa del perfil; si falta, el modificador de Destreza. */
+  readonly initiativeBonus?: number;
 }
 
 export interface MonsterDefinition extends CombatantBase {
@@ -158,6 +160,11 @@ export interface ActiveCondition {
   /** Quién la causó (Asustado y Encantado dependen de su origen). */
   readonly sourceId: CreatureId | null;
   readonly duration: DurationSpec;
+  /**
+   * Duraciones en asaltos o minutos: inicios de turno que faltan (del origen,
+   * o del afectado si no hay origen) para que termine. PROPUESTA (decisión 57).
+   */
+  readonly turnStartsRemaining?: number;
 }
 
 /**
@@ -184,6 +191,10 @@ export interface CombatantState {
   readonly exhaustionLevel: number;
   readonly lifeState: LifeState;
   readonly deathSaves: DeathSaves;
+  /** Reacción disponible; se recupera al inicio de su turno (REGLA OFICIAL VERIFICADA). */
+  readonly reactionAvailable: boolean;
+  /** Esquivar: activo hasta el inicio de su siguiente turno (REGLA OFICIAL VERIFICADA). */
+  readonly dodging: boolean;
 }
 
 export interface CombatantRecord {

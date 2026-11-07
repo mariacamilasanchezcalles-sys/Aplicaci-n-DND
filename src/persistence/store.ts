@@ -7,8 +7,9 @@ import type { Encounter, EncounterId } from "../models";
  * v5: configuración de mesa (`tableRules`); la regla diagonal sale de `grid`.
  * v6: `tableRules.areaTemplate`; criaturas con `abilities` y `savingThrows`.
  * v7: condiciones activas, Cansancio, estado vital y salvaciones contra la muerte.
+ * v8: iniciativa (totales, turno actual), reacción disponible y Esquivar persistente.
  */
-export const SNAPSHOT_SCHEMA_VERSION = 7 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 8 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

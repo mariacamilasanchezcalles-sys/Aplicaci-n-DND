@@ -83,6 +83,16 @@ export function fearSources(record: CombatantRecord): CreatureId[] {
   return record.state.conditions.flatMap((c) => (c.condition === "frightened" && c.sourceId ? [c.sourceId] : []));
 }
 
+/**
+ * Esquivar (REGLA OFICIAL VERIFICADA, Glosario 2024): hasta el inicio de su
+ * siguiente turno, Desventaja en los ataques contra ella si ve al atacante y
+ * Ventaja en salvaciones de Destreza; lo pierde si queda Incapacitada o con
+ * Velocidad 0.
+ */
+export function dodgeActive(record: CombatantRecord): boolean {
+  return record.state.dodging && !hasCondition(record, "incapacitated") && effectiveSpeed(record) !== 0;
+}
+
 /** Encantado: no puede atacar ni dañar a quien lo encantó. */
 export function cannotHarm(attacker: CombatantRecord, targetId: CreatureId): boolean {
   return attacker.state.conditions.some((c) => c.condition === "charmed" && c.sourceId === targetId);
@@ -129,6 +139,7 @@ export function attackConditions(
     else disadvantage = true;
   }
   if (hasCondition(target, "invisible") && !canSee(attacker, target)) disadvantage = true;
+  if (dodgeActive(target) && canSee(target, attacker)) disadvantage = true;
 
   const mode: RollMode = advantage === disadvantage ? "normal" : advantage ? "advantage" : "disadvantage";
   return {
@@ -148,9 +159,11 @@ export interface SaveConditionsResult {
 /** Salvaciones afectadas por condiciones. */
 export function saveConditions(record: CombatantRecord, ability: AbilityId): SaveConditionsResult {
   const strOrDex = ability === "str" || ability === "dex";
+  const disadvantage = ability === "dex" && hasCondition(record, "restrained");
+  const advantage = ability === "dex" && dodgeActive(record);
   return {
     autoFail: strOrDex && anyOf(record, AUTO_FAIL_STR_DEX),
-    mode: ability === "dex" && hasCondition(record, "restrained") ? "disadvantage" : "normal",
+    mode: advantage === disadvantage ? "normal" : advantage ? "advantage" : "disadvantage",
     d20Penalty: 2 * record.state.exhaustionLevel,
   };
 }
@@ -206,9 +219,14 @@ export function applyCondition(
     };
   }
 
+  // Asaltos y minutos (1 minuto = 10 asaltos): se cuentan inicios de turno.
+  const turnStarts =
+    duration.kind === "rounds" ? duration.count : duration.kind === "minutes" ? duration.count * 10 : undefined;
   const add = (list: readonly ActiveCondition[], c: StoredCondition): ActiveCondition[] => [
     ...list.filter((x) => !(x.condition === c && x.sourceId === sourceId)),
-    { condition: c, sourceId, duration },
+    turnStarts === undefined
+      ? { condition: c, sourceId, duration }
+      : { condition: c, sourceId, duration, turnStartsRemaining: turnStarts },
   ];
   let conditions = add(record.state.conditions, condition);
   if (condition === "unconscious" && !isImmune(record, "prone")) {
@@ -235,8 +253,8 @@ export function removeCondition(encounter: Encounter, targetId: CreatureId, cond
 
 /**
  * Hace caducar las condiciones que duran "hasta el inicio/fin del turno" de
- * `creatureId` (en cualquier criatura del encuentro). Las duraciones en
- * asaltos y minutos necesitan la iniciativa (decisión 9) y no se aplican.
+ * `creatureId` (en cualquier criatura del encuentro) y descuenta las
+ * duraciones en asaltos y minutos.
  */
 export function expireConditionsAtTurnBoundary(
   encounter: Encounter,
@@ -246,18 +264,31 @@ export function expireConditionsAtTurnBoundary(
   let changed = false;
   const combatants: Record<string, CombatantRecord> = {};
   for (const [id, record] of Object.entries(encounter.combatants)) {
-    const kept = record.state.conditions.filter((c) => {
-      if (c.duration.kind !== "untilTurnBoundary" || c.duration.boundary !== boundary) return true;
-      const whose = c.duration.whose === "source" ? c.sourceId : (id as CreatureId);
-      return whose !== creatureId;
+    let touched = false;
+    const kept = record.state.conditions.flatMap((c): ActiveCondition[] => {
+      if (c.duration.kind === "untilTurnBoundary" && c.duration.boundary === boundary) {
+        const whose = c.duration.whose === "source" ? c.sourceId : (id as CreatureId);
+        if (whose === creatureId) {
+          touched = true;
+          return [];
+        }
+      }
+      // PROPUESTA (decisión 57): N asaltos = hasta el inicio del N-ésimo turno
+      // siguiente de quien la causó (o del afectado si no hay origen).
+      if (boundary === "start" && c.turnStartsRemaining !== undefined && (c.sourceId ?? (id as CreatureId)) === creatureId) {
+        touched = true;
+        const remaining = c.turnStartsRemaining - 1;
+        return remaining <= 0 ? [] : [{ ...c, turnStartsRemaining: remaining }];
+      }
+      return [c];
     });
-    if (kept.length !== record.state.conditions.length) changed = true;
-    combatants[id] = kept.length === record.state.conditions.length ? record : { ...record, state: { ...record.state, conditions: kept } };
+    if (touched) changed = true;
+    combatants[id] = touched ? { ...record, state: { ...record.state, conditions: kept } } : record;
   }
   return changed ? { ...encounter, combatants } : encounter;
 }
 
 /** Duraciones que el motor sabe hacer terminar (o que terminan por otra regla). */
 export function durationSupported(duration: DurationSpec): boolean {
-  return duration.kind === "untilTurnBoundary" || duration.kind === "untilEscape" || duration.kind === "indefinite";
+  return duration.kind !== "instantaneous";
 }

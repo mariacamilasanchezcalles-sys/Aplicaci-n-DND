@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 18 archivos de prueba, 251 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 20 archivos de prueba, 266 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,12 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Iniciativa, reacciones y ataques de oportunidad (2026-11-07)
+- `rules/initiative.ts`: `rollMonsterInitiative` (grupos idénticos, sorpresa, Invisible e Incapacitado), `startCombat` (totales anotados de los jugadores; empates decididos por la persona), `advanceTurn` (orden, asaltos, salta monstruos muertos; al inicio del turno: reacción, Esquivar, caducidad, Recarga y asaltos de las condiciones) y `currentCreature`.
+- Ataques de personajes jugadores con dados físicos (`resolvePlayerAttack`).
+- Ataques de oportunidad: el movimiento se detiene justo antes de salir del alcance; `resolveReaction` (tomar o dejar pasar); una reacción por asalto; Destrabarse los evita; si el que se mueve cae, el movimiento se detiene.
+- Esquivar persiste hasta el inicio del siguiente turno. Guardado v8.
 
 ## Condiciones y 0 PG (2026-11-07)
 - `rules/conditions.ts`: las 15 condiciones como efectos mecánicos (ver la tabla en `RULES_VERIFICATION.md`): aplicar y quitar con inmunidades, efectos implícitos, Velocidad efectiva, Ventaja, Desventaja y críticos al atacar, salvaciones afectadas, Encantado y Asustado, caducidad al inicio o fin de turno.

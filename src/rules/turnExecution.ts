@@ -37,7 +37,8 @@ import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
 import { applyDamageModifiers } from "./damage";
 import type { ModifiedDamage } from "./damage";
-import { resolveAttack } from "./resolution";
+import { resolveAttack, resolvePlayerAttack } from "./resolution";
+import type { PlayerAttackInput } from "./resolution";
 import { spendResources } from "./resources";
 import type { AttackResolution, RollMode } from "./resolution";
 import { advanceMovement, checkAttackTarget } from "./turnSteps";
@@ -84,18 +85,7 @@ export interface CapabilityExecution {
 export type TurnLogEntry =
   | { readonly kind: "moved"; readonly path: readonly GridPosition[]; readonly spentFeet: number }
   | { readonly kind: "capabilityBegun"; readonly source: CapabilitySource }
-  | {
-      readonly kind: "attackResolved";
-      readonly attackId: AttackId;
-      readonly targetId: CreatureId;
-      readonly resolution: Extract<AttackResolution, { resolved: true }>;
-      /** Daño por tipo tras Inmunidad, Resistencia y Vulnerabilidad del objetivo. */
-      readonly damageAfterDefenses: readonly ModifiedDamage[];
-      /** Daño restado a los PG (0 si el objetivo no tiene PG registrados). */
-      readonly damageApplied: number;
-      readonly knockedOut: boolean;
-      readonly targetLifeStateAfter: LifeState;
-    }
+  | ({ readonly kind: "attackResolved" } & AttackOutcomeLog)
   | { readonly kind: "standardActionTaken"; readonly action: ExecutableStandardAction }
   | {
       readonly kind: "capabilityFinished";
@@ -112,7 +102,28 @@ export type TurnLogEntry =
       readonly targets: readonly EffectTargetResult[];
     }
   | { readonly kind: "stoodUp"; readonly spentFeet: number }
+  | {
+      readonly kind: "opportunityAttack";
+      readonly reactorId: CreatureId;
+      readonly attack: AttackOutcomeLog;
+    }
+  | { readonly kind: "reactionDeclined"; readonly reactorId: CreatureId }
+  /** El movimiento interrumpido no pudo seguir (p. ej. quedó inconsciente o sin Velocidad). */
+  | { readonly kind: "movementStopped"; readonly remainingPath: readonly GridPosition[] }
   | { readonly kind: "turnEnded" };
+
+/** Resultado registrado de un ataque (del turno o de una reacción). */
+export interface AttackOutcomeLog {
+  readonly attackId: AttackId;
+  readonly targetId: CreatureId;
+  readonly resolution: Extract<AttackResolution, { resolved: true }>;
+  /** Daño por tipo tras Inmunidad, Resistencia y Vulnerabilidad del objetivo. */
+  readonly damageAfterDefenses: readonly ModifiedDamage[];
+  /** Daño restado a los PG (0 si el objetivo no tiene PG registrados). */
+  readonly damageApplied: number;
+  readonly knockedOut: boolean;
+  readonly targetLifeStateAfter: LifeState;
+}
 
 export interface TurnState {
   readonly actorId: CreatureId;
@@ -130,6 +141,38 @@ export interface TurnState {
   readonly execution: CapabilityExecution | null;
   readonly log: readonly TurnLogEntry[];
   readonly ended: boolean;
+  /**
+   * Reacciones que esperan decisión (ataques de oportunidad). Mientras haya
+   * alguna, el movimiento está detenido justo antes de salir del alcance y
+   * solo se acepta `resolveReaction`.
+   */
+  readonly pendingReactions: readonly ReactionOpportunity[];
+  /** Casillas del movimiento interrumpido que faltan por recorrer. */
+  readonly pendingPath: readonly GridPosition[];
+  /** Quienes ya decidieron su reacción para el primer paso de `pendingPath` (no se les vuelve a preguntar). */
+  readonly pendingStepReactorIds: readonly CreatureId[];
+}
+
+/**
+ * Oportunidad de reacción. Hoy solo el ataque de oportunidad (REGLA OFICIAL
+ * VERIFICADA): una criatura que puede ver al que se mueve, cuando este sale de
+ * su alcance con su propio movimiento; un ataque cuerpo a cuerpo justo antes
+ * de que salga. Ampliable a reacciones de ficha (decisión 59).
+ */
+export interface ReactionOpportunity {
+  readonly kind: "opportunityAttack";
+  readonly reactorId: CreatureId;
+  readonly moverId: CreatureId;
+  /** Ataques cuerpo a cuerpo del que reacciona que alcanzan al que se mueve. */
+  readonly attackIds: readonly AttackId[];
+}
+
+/** Datos de un ataque que completa quien lo hace. */
+export interface AttackInput {
+  /** Cuerpo a cuerpo: dejar inconsciente en lugar de a 0 PG. */
+  readonly knockOut?: boolean;
+  /** Obligatorio si ataca un personaje jugador (dados físicos). */
+  readonly playerRoll?: PlayerAttackInput;
 }
 
 /** Operación atómica concreta que se puede elegir ahora mismo. */
@@ -178,8 +221,15 @@ export type TurnCommand =
       readonly kind: "chooseOption";
       readonly key: string;
       readonly effectInput?: EffectInput;
-      /** Ataques cuerpo a cuerpo: dejar inconsciente en lugar de a 0 PG. */
-      readonly attackInput?: { readonly knockOut?: boolean };
+      readonly attackInput?: AttackInput;
+    }
+  /** Decidir una reacción pendiente (tomarla con un ataque o dejarla pasar). */
+  | {
+      readonly kind: "resolveReaction";
+      readonly reactorId: CreatureId;
+      readonly take: boolean;
+      readonly attackId?: AttackId;
+      readonly attackInput?: AttackInput;
     }
   | { readonly kind: "forfeitRemaining" }
   /** Levantarse de Derribado: cuesta la mitad de la Velocidad (redondeando abajo). */
@@ -225,7 +275,13 @@ export type TurnCommandError =
   | "movementTowardFearSource"
   | "notProne"
   | "cannotStandUp"
-  | "knockOutNotAllowed";
+  | "knockOutNotAllowed"
+  | "reactionsPending"
+  | "noPendingReaction"
+  | "reactionNotAvailable"
+  | "playerAttackRequired"
+  | "invalidPlayerRoll"
+  | "playerDamageRequired";
 
 export type TurnCommandResult =
   | { readonly ok: true; readonly encounter: Encounter; readonly turn: TurnState }
@@ -670,6 +726,9 @@ export function startTurn(encounter: Encounter, actorId: CreatureId): TurnState 
     execution: null,
     log: [],
     ended: false,
+    pendingReactions: [],
+    pendingPath: [],
+    pendingStepReactorIds: [],
   };
 }
 
@@ -825,22 +884,21 @@ export function applyTurnCommand(
     log: [...turn.log, ...entries],
   });
 
+  if (turn.pendingReactions.length > 0 && command.kind !== "resolveReaction") return fail("reactionsPending");
+
   switch (command.kind) {
+    case "resolveReaction":
+      return resolveReaction(encounter, turn, command, dice, next);
+
     case "move": {
       if (!canMoveNow(turn, actor)) return fail("movementNotAllowedNow");
       // Derribado: solo puede arrastrarse (cada pie cuesta 1 extra).
       const crawling = hasCondition(actor, "prone");
-      const moved = advanceMovement(encounter, actor, turn.movement, command.path, turn.budgetFeet, crawling ? 2 : 1);
-      if (!moved.ok) return fail(moved.reasonCode, moved.placementReason);
+      // Se valida el recorrido entero antes de empezar.
+      const whole = advanceMovement(encounter, actor, turn.movement, command.path, turn.budgetFeet, crawling ? 2 : 1);
+      if (!whole.ok) return fail(whole.reasonCode, whole.placementReason);
       if (approachesFearSource(encounter, actor, command.path)) return fail("movementTowardFearSource");
-      // PENDIENTE: ataques de oportunidad al salir del alcance (decisión 7).
-      return {
-        ok: true,
-        encounter: withPosition(encounter, turn.actorId, moved.progress.position),
-        turn: next({ movement: moved.progress }, [
-          { kind: "moved", path: command.path, spentFeet: moved.progress.spentFeet - turn.movement.spentFeet },
-        ]),
-      };
+      return walk(encounter, actor, turn, command.path, next);
     }
 
     case "beginCapability": {
@@ -929,7 +987,7 @@ function applyChoice(
   dice: RandomSource,
   next: (changes: Partial<TurnState>, entries: readonly TurnLogEntry[]) => TurnState,
   effectInput: EffectInput,
-  attackInput: { readonly knockOut?: boolean },
+  attackInput: AttackInput,
 ): TurnCommandResult {
   const finished = (entries: TurnLogEntry[], updated: CapabilityExecution): TurnLogEntry[] =>
     updated.agenda.length === 0
@@ -993,67 +1051,42 @@ function applyChoice(
           Object.assign(effects, { disengaged: true });
           break;
         case "dodge":
+          // Persiste en la criatura hasta el inicio de su siguiente turno.
           Object.assign(effects, { dodging: true });
           break;
         case "attack":
           break;
       }
       const entries = finished([{ kind: "standardActionTaken", action: choice.action }], updated);
+      const dodged =
+        choice.action === "dodge"
+          ? {
+              ...encounter,
+              combatants: {
+                ...encounter.combatants,
+                [actor.definition.id]: { ...actor, state: { ...actor.state, dodging: true } },
+              },
+            }
+          : encounter;
       return {
         ok: true,
-        encounter,
+        encounter: dodged,
         turn: next({ ...effects, execution: updated.agenda.length === 0 ? null : updated }, entries),
       };
     }
 
     case "attack": {
-      const check = checkAttackTarget(encounter, actor, actor.state.position, choice.attackId, choice.targetId);
-      if (!check.ok) return fail("unknownOption");
-      // REGLA OFICIAL VERIFICADA: dejar inconsciente solo con un ataque cuerpo a cuerpo.
-      if (attackInput.knockOut && check.attack.mode !== "melee") return fail("knockOutNotAllowed");
-      const rolled = attackConditions(encounter, actor, check.target, check.distanceFeet, check.beyondNormalRange);
-      const resolution = resolveAttack(
-        {
-          attack: check.attack,
-          target: check.target.definition,
-          mode: choice.rollMode,
-          d20Penalty: rolled.d20Penalty,
-          criticalOnHit: rolled.criticalOnHit,
-        },
-        dice,
-      );
-      // Sin CA registrada no se puede resolver: no se consume nada.
-      if (!resolution.resolved) return fail("targetArmorClassUnknown");
-
-      const defended = applyDamageModifiers(
-        check.target.definition,
-        resolution.damage.map((part) => ({ type: part.type, amount: part.total })),
-        { resistAll: conditionResistances(check.target) === "all" },
-      );
-      const damage = dealDamage(encounter, choice.targetId, defended.total, {
-        critical: resolution.outcome === "criticalHit",
-        knockOut: attackInput.knockOut === true,
-      });
-      const updatedEncounter = damage.encounter;
-      const damageApplied = damage.hitPointsLost;
+      const performed = performAttack(encounter, actor, choice.attackId, choice.targetId, choice.rollMode, dice, attackInput);
+      if (!performed.ok) return fail(performed.reasonCode);
+      const { resolution } = performed.log;
+      const updatedEncounter = performed.encounter;
       const updated: CapabilityExecution = {
         ...execution,
         agenda: option.rest,
         lastAttackHit: resolution.outcome !== "miss",
       };
       const entries = finished(
-        [
-          {
-            kind: "attackResolved",
-            attackId: choice.attackId,
-            targetId: choice.targetId,
-            resolution,
-            damageAfterDefenses: defended.instances,
-            damageApplied,
-            knockedOut: damage.knockedOut,
-            targetLifeStateAfter: damage.lifeStateAfter,
-          },
-        ],
+        [{ kind: "attackResolved", ...performed.log }],
         updated,
       );
       return {
@@ -1063,4 +1096,248 @@ function applyChoice(
       };
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Ataques (del turno y de reacciones) y movimiento con ataques de oportunidad
+// ---------------------------------------------------------------------------
+
+type NextFn = (changes: Partial<TurnState>, entries: readonly TurnLogEntry[]) => TurnState;
+
+/**
+ * Un ataque concreto: valida alcance y objetivo, calcula Ventaja/Desventaja y
+ * críticos por condiciones, tira (monstruos) o usa la tirada anotada
+ * (personajes jugadores), aplica defensas y reglas de 0 PG.
+ */
+function performAttack(
+  encounter: Encounter,
+  attacker: CombatantRecord,
+  attackId: AttackId,
+  targetId: CreatureId,
+  rollMode: RollMode,
+  dice: RandomSource,
+  input: AttackInput,
+): { ok: true; encounter: Encounter; log: AttackOutcomeLog } | { ok: false; reasonCode: TurnCommandError } {
+  const check = checkAttackTarget(encounter, attacker, attacker.state.position, attackId, targetId);
+  if (!check.ok) return { ok: false, reasonCode: "unknownOption" };
+  // REGLA OFICIAL VERIFICADA: dejar inconsciente solo con un ataque cuerpo a cuerpo.
+  if (input.knockOut && check.attack.mode !== "melee") return { ok: false, reasonCode: "knockOutNotAllowed" };
+  const rolled = attackConditions(encounter, attacker, check.target, check.distanceFeet, check.beyondNormalRange);
+
+  let resolution: AttackResolution;
+  if (attacker.definition.kind === "playerCharacter") {
+    if (!input.playerRoll) return { ok: false, reasonCode: "playerAttackRequired" };
+    const player = resolvePlayerAttack(
+      { target: check.target.definition, mode: rollMode, criticalOnHit: rolled.criticalOnHit },
+      input.playerRoll,
+    );
+    if (!player.resolved) {
+      return { ok: false, reasonCode: player.reason === "targetArmorClassUnknown" ? "targetArmorClassUnknown" : player.reason };
+    }
+    resolution = player;
+  } else {
+    resolution = resolveAttack(
+      {
+        attack: check.attack,
+        target: check.target.definition,
+        mode: rollMode,
+        d20Penalty: rolled.d20Penalty,
+        criticalOnHit: rolled.criticalOnHit,
+      },
+      dice,
+    );
+  }
+  // Sin CA registrada no se puede resolver: no se consume nada.
+  if (!resolution.resolved) return { ok: false, reasonCode: "targetArmorClassUnknown" };
+
+  const defended = applyDamageModifiers(
+    check.target.definition,
+    resolution.damage.map((part) => ({ type: part.type, amount: part.total })),
+    { resistAll: conditionResistances(check.target) === "all" },
+  );
+  const damage = dealDamage(encounter, targetId, defended.total, {
+    critical: resolution.outcome === "criticalHit",
+    knockOut: input.knockOut === true,
+  });
+  return {
+    ok: true,
+    encounter: damage.encounter,
+    log: {
+      attackId,
+      targetId,
+      resolution,
+      damageAfterDefenses: defended.instances,
+      damageApplied: damage.hitPointsLost,
+      knockedOut: damage.knockedOut,
+      targetLifeStateAfter: damage.lifeStateAfter,
+    },
+  };
+}
+
+/** Alcance cuerpo a cuerpo de una criatura (el mayor de sus ataques cuerpo a cuerpo). */
+function meleeAttacksReaching(encounter: Encounter, reactor: CombatantRecord, mover: CombatantRecord, at: GridPosition): AttackId[] {
+  const distance =
+    footprintDistanceSquares(
+      reactor.state.position,
+      reactor.definition.size,
+      at,
+      mover.definition.size,
+      encounter.tableRules.diagonal,
+    ) * encounter.grid.feetPerSquare;
+  return reactor.definition.attacks.filter((a) => a.mode === "melee" && distance <= a.rangeFeet.normal).map((a) => a.id);
+}
+
+/**
+ * Quién puede hacer un ataque de oportunidad si `mover` pasa de `from` a `to`
+ * con su propio movimiento (REGLA OFICIAL VERIFICADA): lo ve, tiene la
+ * reacción, puede actuar, y `mover` sale de su alcance. Destrabarse lo evita.
+ * PENDIENTE: Ataque sin armas (todas las criaturas) y reacciones de ficha.
+ */
+function opportunityReactors(
+  encounter: Encounter,
+  mover: CombatantRecord,
+  from: GridPosition,
+  to: GridPosition,
+  turn: TurnState,
+): ReactionOpportunity[] {
+  if (turn.disengaged) return [];
+  return (Object.keys(encounter.combatants).sort() as CreatureId[]).flatMap((id) => {
+    const reactor = encounter.combatants[id];
+    if (!reactor || id === mover.definition.id) return [];
+    if (!reactor.state.reactionAvailable || cannotAct(reactor) || !canSee(reactor, mover)) return [];
+    if (cannotHarm(reactor, mover.definition.id)) return [];
+    const before = meleeAttacksReaching(encounter, reactor, mover, from);
+    if (before.length === 0) return [];
+    const reachAfter = meleeAttacksReaching(encounter, reactor, mover, to);
+    // "Leaves your reach": sale del alcance (del mayor de sus ataques cuerpo a cuerpo).
+    if (reachAfter.length > 0) return [];
+    return [{ kind: "opportunityAttack" as const, reactorId: id, moverId: mover.definition.id, attackIds: before }];
+  });
+}
+
+/**
+ * Recorre `path` casilla a casilla. Si un paso provoca ataques de
+ * oportunidad, el movimiento se detiene ANTES de ese paso y quedan pendientes.
+ */
+function walk(
+  encounter: Encounter,
+  actor: CombatantRecord,
+  turn: TurnState,
+  path: readonly GridPosition[],
+  next: NextFn,
+  exemptFirstStep: readonly CreatureId[] = [],
+): TurnCommandResult {
+  const crawling = hasCondition(actor, "prone");
+  let position = actor.state.position;
+  for (let i = 0; i < path.length; i++) {
+    const square = path[i]!;
+    const reactors = opportunityReactors(encounter, actor, position, square, turn).filter(
+      (r) => i > 0 || !exemptFirstStep.includes(r.reactorId),
+    );
+    if (reactors.length > 0) {
+      const done = path.slice(0, i);
+      let progress = turn.movement;
+      if (done.length > 0) {
+        const moved = advanceMovement(encounter, actor, turn.movement, done, turn.budgetFeet, crawling ? 2 : 1);
+        if (!moved.ok) return fail(moved.reasonCode, moved.placementReason);
+        progress = moved.progress;
+      }
+      return {
+        ok: true,
+        encounter: withPosition(encounter, turn.actorId, progress.position),
+        turn: next(
+          {
+            movement: progress,
+            pendingReactions: reactors,
+            pendingPath: path.slice(i),
+            pendingStepReactorIds: [...(i === 0 ? exemptFirstStep : []), ...reactors.map((r) => r.reactorId)],
+          },
+          done.length > 0 ? [{ kind: "moved", path: done, spentFeet: progress.spentFeet - turn.movement.spentFeet }] : [],
+        ),
+      };
+    }
+    position = square;
+  }
+  const moved = advanceMovement(encounter, actor, turn.movement, path, turn.budgetFeet, crawling ? 2 : 1);
+  if (!moved.ok) return fail(moved.reasonCode, moved.placementReason);
+  return {
+    ok: true,
+    encounter: withPosition(encounter, turn.actorId, moved.progress.position),
+    turn: next({ movement: moved.progress, pendingPath: [], pendingStepReactorIds: [] }, [
+      { kind: "moved", path, spentFeet: moved.progress.spentFeet - turn.movement.spentFeet },
+    ]),
+  };
+}
+
+/** Decide una reacción pendiente y, si no quedan, sigue el movimiento. */
+function resolveReaction(
+  encounter: Encounter,
+  turn: TurnState,
+  command: Extract<TurnCommand, { kind: "resolveReaction" }>,
+  dice: RandomSource,
+  next: NextFn,
+): TurnCommandResult {
+  const pending = turn.pendingReactions.find((r) => r.reactorId === command.reactorId);
+  if (!pending) return fail("noPendingReaction");
+  let updated = encounter;
+  const entries: TurnLogEntry[] = [];
+  if (command.take) {
+    const reactor = encounter.combatants[pending.reactorId];
+    if (!reactor || !reactor.state.reactionAvailable || cannotAct(reactor)) return fail("reactionNotAvailable");
+    const attackId = command.attackId ?? pending.attackIds[0];
+    if (attackId === undefined || !pending.attackIds.includes(attackId)) return fail("unknownOption");
+    const mover = encounter.combatants[pending.moverId];
+    if (!mover) return fail("unknownActor");
+    const check = checkAttackTarget(encounter, reactor, reactor.state.position, attackId, pending.moverId);
+    if (!check.ok) return fail("unknownOption");
+    const mode = attackConditions(encounter, reactor, mover, check.distanceFeet, check.beyondNormalRange).mode;
+    const performed = performAttack(encounter, reactor, attackId, pending.moverId, mode, dice, command.attackInput ?? {});
+    if (!performed.ok) return fail(performed.reasonCode);
+    const after = performed.encounter.combatants[pending.reactorId]!;
+    updated = {
+      ...performed.encounter,
+      combatants: {
+        ...performed.encounter.combatants,
+        [pending.reactorId]: { ...after, state: { ...after.state, reactionAvailable: false } },
+      },
+    };
+    entries.push({ kind: "opportunityAttack", reactorId: pending.reactorId, attack: performed.log });
+  } else {
+    entries.push({ kind: "reactionDeclined", reactorId: pending.reactorId });
+  }
+
+  const remaining = turn.pendingReactions.filter((r) => r !== pending);
+  if (remaining.length > 0) return { ok: true, encounter: updated, turn: next({ pendingReactions: remaining }, entries) };
+
+  // Sin reacciones pendientes: se revalida y se sigue el movimiento si se puede.
+  const intermediate = next({ pendingReactions: [] }, entries);
+  const mover = updated.combatants[turn.actorId];
+  const path = turn.pendingPath;
+  if (!mover || path.length === 0) {
+    return { ok: true, encounter: updated, turn: { ...intermediate, pendingPath: [], pendingStepReactorIds: [] } };
+  }
+  const crawling = hasCondition(mover, "prone");
+  const valid =
+    canMoveNow(intermediate, mover) &&
+    advanceMovement(updated, mover, intermediate.movement, path, intermediate.budgetFeet, crawling ? 2 : 1).ok &&
+    !approachesFearSource(updated, mover, path);
+  if (!valid) {
+    return {
+      ok: true,
+      encounter: updated,
+      turn: {
+        ...intermediate,
+        pendingPath: [],
+        pendingStepReactorIds: [],
+        log: [...intermediate.log, { kind: "movementStopped", remainingPath: path }],
+      },
+    };
+  }
+  const nextAfter: NextFn = (changes, more) => ({
+    ...intermediate,
+    ...changes,
+    serial: intermediate.serial + 1,
+    log: [...intermediate.log, ...more],
+  });
+  return walk(updated, mover, intermediate, path, nextAfter, intermediate.pendingStepReactorIds);
 }

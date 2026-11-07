@@ -169,7 +169,12 @@ export function resolveEffect(
       } else {
         const bonus = saveBonusOf(record.definition, save.ability) ?? 0;
         const first = rollDie(20, dice);
-        const d20 = adjust.mode === "disadvantage" ? Math.min(first, rollDie(20, dice)) : first;
+        const d20 =
+          adjust.mode === "disadvantage"
+            ? Math.min(first, rollDie(20, dice))
+            : adjust.mode === "advantage"
+              ? Math.max(first, rollDie(20, dice))
+              : first;
         const total = d20 + bonus - adjust.d20Penalty;
         saves.set(id, { source: "virtual", d20, bonus, penalty: adjust.d20Penalty, total, dc, success: total >= dc });
       }

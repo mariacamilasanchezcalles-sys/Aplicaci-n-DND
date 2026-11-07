@@ -366,6 +366,8 @@ export interface CreatureSheet {
   readonly size: CreatureSize;
   readonly creatureType?: CreatureTypeId;
   readonly armorClass: number;
+  /** Bonificador de iniciativa del perfil (p. ej. "Initiative +2"). */
+  readonly initiativeBonus?: number;
   readonly hitPoints: HitPointsSpec;
   readonly speed: SpeedSpec;
   readonly abilities?: Partial<Record<AbilityId, number>>;

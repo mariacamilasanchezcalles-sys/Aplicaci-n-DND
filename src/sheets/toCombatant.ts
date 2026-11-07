@@ -152,6 +152,7 @@ export function combatantFromSheet(
       ...(sheet.abilities ? { abilities: sheet.abilities } : {}),
       ...(sheet.savingThrows ? { savingThrows: sheet.savingThrows } : {}),
       ...(sheet.conditionImmunities?.length ? { conditionImmunities: sheet.conditionImmunities } : {}),
+      ...(sheet.initiativeBonus !== undefined ? { initiativeBonus: sheet.initiativeBonus } : {}),
     },
     gaps,
   };

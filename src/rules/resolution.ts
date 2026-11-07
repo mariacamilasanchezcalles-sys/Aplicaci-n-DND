@@ -147,3 +147,63 @@ export function applyDamage(encounter: Encounter, targetId: CreatureId, amount: 
     },
   };
 }
+
+/**
+ * Tirada de ataque de un personaje jugador con dados físicos (DECISIÓN DEL
+ * PROYECTO, especificación §3): el jugador dice su d20 natural y su total; la
+ * app decide si impacta; el jugador anota el daño (ya con los dados de crítico
+ * si lo hubo).
+ */
+export interface PlayerAttackInput {
+  /** El d20 que se usó (tras elegir con Ventaja o Desventaja). */
+  readonly natural: number;
+  /** Total de la tirada de ataque con todos sus modificadores. */
+  readonly total: number;
+  /** Daño anotado por el jugador; obligatorio si impacta. */
+  readonly damage?: readonly { readonly type: DamageType; readonly amount: number }[];
+}
+
+export type PlayerAttackResolution =
+  | AttackResolution
+  | { readonly resolved: false; readonly reason: "invalidPlayerRoll" | "playerDamageRequired" };
+
+/**
+ * Mismas reglas que `resolveAttack` (20 natural impacta y es crítico; 1
+ * natural falla; si no, impacta con total >= CA), sin tirar dados.
+ */
+export function resolvePlayerAttack(
+  input: { readonly target: CombatantDefinition; readonly mode: RollMode; readonly criticalOnHit?: boolean },
+  roll: PlayerAttackInput,
+): PlayerAttackResolution {
+  const targetArmorClass = input.target.stats.armorClass;
+  if (targetArmorClass === undefined) return { resolved: false, reason: "targetArmorClassUnknown" };
+  if (!Number.isInteger(roll.natural) || roll.natural < 1 || roll.natural > 20 || !Number.isInteger(roll.total)) {
+    return { resolved: false, reason: "invalidPlayerRoll" };
+  }
+  const outcome: AttackOutcome =
+    roll.natural === 20
+      ? "criticalHit"
+      : roll.natural === 1
+        ? "miss"
+        : roll.total >= targetArmorClass
+          ? input.criticalOnHit
+            ? "criticalHit"
+            : "hit"
+          : "miss";
+  if (outcome !== "miss" && roll.damage === undefined) return { resolved: false, reason: "playerDamageRequired" };
+  const damage: DamageRollResult[] =
+    outcome === "miss"
+      ? []
+      : (roll.damage ?? []).map((part) => ({ type: part.type, dice: [], modifier: part.amount, total: Math.max(0, Math.floor(part.amount)) }));
+  return {
+    resolved: true,
+    mode: input.mode,
+    d20Rolls: [roll.natural],
+    naturalRoll: roll.natural,
+    attackTotal: roll.total,
+    targetArmorClass,
+    outcome,
+    damage,
+    totalDamage: damage.reduce((sum, part) => sum + part.total, 0),
+  };
+}

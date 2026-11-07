@@ -9,6 +9,7 @@
   "size": "small",
   "creatureType": "fey",
   "armorClass": 15,
+  "initiativeBonus": 2,
   "hitPoints": {
     "average": 10,
     "formula": {

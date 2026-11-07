@@ -52,7 +52,12 @@ export interface Encounter {
   readonly occupancyPolicy: OccupancyPolicy;
   readonly tableRules: TableRules;
   readonly combatants: Readonly<Record<string, CombatantRecord>>;
-  /** PENDIENTE: reglas de iniciativa. Vacío hasta que se diseñen. */
+  /** Orden de iniciativa (de mayor a menor, empates ya decididos). Vacío fuera de combate. */
   readonly initiativeOrder: readonly CreatureId[];
+  /** Total de iniciativa de cada criatura (por id). */
+  readonly initiativeTotals: Readonly<Record<string, number>>;
+  /** Asalto actual (desde 1); 0 fuera de combate. */
   readonly round: number;
+  /** Posición en `initiativeOrder` de quien tiene el turno; -1 fuera de combate. */
+  readonly turnIndex: number;
 }
