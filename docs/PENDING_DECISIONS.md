@@ -25,7 +25,7 @@
 ## Reglas: sin implementar
 6. **Estado de condiciones, visibilidad y Hide** (Invisible, Oculto, ventaja/desventaja automáticas).
 7. **Ataques de oportunidad** y reacciones.
-8. **Llegar a 0 PG** (muerte, salvaciones de muerte, estabilidad).
+8. ~~**Llegar a 0 PG**~~ → Implementado con reglas verificadas (ver `RULES_VERIFICATION.md`). Queda la decisión 51.
 9. **Iniciativa y turnos** (`initiativeOrder`, `round`).
 10. **Acciones sin modelar:** Help, Influence, Magic, Ready, Search, Study, Utilize.
 11. **Rasgos con más ataques** (Extra Attack, Multiattack): hoy `attacksPerAttackAction`.
@@ -82,3 +82,11 @@
 48. **Línea de 5 pies trazada por una línea de la cuadrícula**: con la regla de la mitad cubre media casilla a cada lado, así que afecta a dos filas. Es lo que dice el método; confirmar que la mesa lo juega así.
 49. **Efectos aún no aplicables**: condiciones, PG temporales, desplazamiento forzado, CD de conjuros. Una capacidad que los incluya no se ejecuta.
 50. **Ataques de personajes jugadores** con dados físicos (decisiones 28 y 36): el mismo mecanismo de "el jugador tira y la app lo anota" serviría para sus tiradas de ataque y su daño.
+
+## Condiciones y 0 PG (etapa 2026-11-07)
+51. **Monstruos tratados como personajes a 0 PG**: el SRD permite al DM que un monstruo concreto no muera al llegar a 0 PG. ¿Lo quieres como opción por criatura?
+52. **"Ver" sin percepción**: hoy una criatura ve a otra salvo que esté Cegada o la otra sea Invisible. Faltan luz, cobertura, obstáculos y sentidos (visión ciega, visión verdadera…), que dependen de la percepción (decisión 14).
+53. **Objetivos muertos** (PROPUESTA): no se ofrecen como objetivo de ataques ni de efectos. Los cuerpos siguen ocupando su espacio.
+54. **`validateTurnPlan` no tiene en cuenta las condiciones**: valida planes completos sin estado de condiciones. El ejecutor paso a paso es la fuente de verdad. ¿Retiramos `validateTurnPlan` o lo hacemos usar las mismas comprobaciones?
+55. **Duraciones en asaltos y minutos**: necesitan la iniciativa (decisión 9). Hasta entonces, un efecto con esas duraciones no se ejecuta. "Hasta escapar" se queda hasta que se quite a mano (escapar no está modelado).
+56. **Esquivar** solo se registra en el turno: falta que dure hasta el inicio del siguiente turno de quien esquiva y que dé Desventaja a sus atacantes.

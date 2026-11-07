@@ -48,6 +48,10 @@ export interface ResolveAttackInput {
   readonly attack: AttackDefinition;
   readonly target: CombatantDefinition;
   readonly mode: RollMode;
+  /** Se resta a la tirada (Cansancio: 2 por nivel, REGLA OFICIAL VERIFICADA). */
+  readonly d20Penalty?: number;
+  /** Un impacto es crítico (Paralizado o Inconsciente a 5 pies, REGLA OFICIAL VERIFICADA). */
+  readonly criticalOnHit?: boolean;
 }
 
 /**
@@ -57,7 +61,7 @@ export interface ResolveAttackInput {
  * Reglas (Basic Rules 2024): un 20 natural impacta siempre y es crítico; un 1
  * natural falla siempre; en crítico se tiran dos veces todos los dados de
  * daño y se suman los modificadores una vez. El impacto se decide con
- * "total >= CA" (PENDIENTE: confirmar el texto exacto en la fuente).
+ * "total >= CA" (VERIFICADO: SRD 5.2.1, "D20 Tests", iguala o supera).
  *
  * Orden de consumo de dados (para pruebas reproducibles): primero el/los d20
  * (2 con ventaja o desventaja), luego, solo si impacta, los dados de cada
@@ -76,7 +80,7 @@ export function resolveAttack(input: ResolveAttackInput, source: RandomSource): 
 
   const naturalRoll =
     input.mode === "disadvantage" ? Math.min(...d20Rolls) : Math.max(...d20Rolls);
-  const attackTotal = naturalRoll + input.attack.toHitBonus;
+  const attackTotal = naturalRoll + input.attack.toHitBonus - (input.d20Penalty ?? 0);
 
   const outcome: AttackOutcome =
     naturalRoll === 20
@@ -84,7 +88,9 @@ export function resolveAttack(input: ResolveAttackInput, source: RandomSource): 
       : naturalRoll === 1
         ? "miss"
         : attackTotal >= targetArmorClass
-          ? "hit"
+          ? input.criticalOnHit
+            ? "criticalHit"
+            : "hit"
           : "miss";
 
   const damage: DamageRollResult[] = [];

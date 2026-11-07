@@ -86,6 +86,34 @@ Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PD
 | **Muerte de monstruos** | Un monstruo muere en el instante en que llega a 0 PG, aunque el DM puede tratarlo como a un personaje | SRD 5.2.1, "Instant Death" | Sin implementar |
 | **Notación de ataques** | "Hit:", "Miss:" y "Hit or Miss:"; un ataque tiene un solo objetivo salvo que se diga otra cosa. "Half damage only": la mitad del daño, ignorando el resto del efecto | SRD 5.2.1, Monsters | `onHit`, `onMiss`, `onHitOrMiss`; `halfDamage` |
 
+## Condiciones y 0 PG (verificado el 2026-11-07, Glosario 2024 y SRD 5.2.1)
+Se leyó el texto completo de las 15 condiciones y de "Dropping to 0 Hit Points".
+
+| Regla | Efecto implementado | Pendiente |
+|---|---|---|
+| No se acumulan (salvo Cansancio) | Una instancia por origen solo para la duración; `hasCondition` es sí/no | — |
+| **Cegado** | Desventaja al atacar; Ventaja contra ella; no ve | Pruebas que requieren vista |
+| **Encantado** | No puede atacar al que la encantó ni afectarlo con efectos dañinos de objetivo elegido | Ventaja social; áreas que lo incluyen |
+| **Ensordecido** | (sin efecto en combate modelado) | Pruebas de oído |
+| **Cansancio** | Acumulativo; −2 × nivel a pruebas d20 (ataques y salvaciones); −5 pies × nivel de Velocidad; muere con 6 | Descanso largo |
+| **Asustado** | Desventaja al atacar si ve el origen; no puede acercarse a él (casilla a casilla) | Pruebas de característica; línea de visión real |
+| **Agarrado** | Velocidad 0; Desventaja contra quien no lo agarra | Arrastrar (coste extra), escapar |
+| **Incapacitado** | Sin acciones, acciones adicionales ni reacciones; **puede moverse** | Concentración, sorpresa |
+| **Invisible** | Ventaja al atacar y Desventaja contra ella si no la ven | Sorpresa, "Concealed" |
+| **Paralizado** | Incapacitado, Velocidad 0, falla FUE/DES, Ventaja contra ella, crítico a 5 pies | — |
+| **Petrificado** | Incapacitado, Velocidad 0, falla FUE/DES, Ventaja contra ella, Resistencia a todo, inmune a Envenenado | Peso, envejecimiento |
+| **Envenenado** | Desventaja al atacar | Pruebas de característica |
+| **Derribado** | Solo arrastrarse (coste doble) o levantarse (mitad de la Velocidad; no con Velocidad 0); Desventaja al atacar; contra ella Ventaja a 5 pies, Desventaja más lejos | — |
+| **Apresado** | Velocidad 0; Desventaja al atacar; Ventaja contra ella; Desventaja en salvaciones de DES | — |
+| **Aturdido** | Incapacitado, falla FUE/DES, Ventaja contra ella | — |
+| **Inconsciente** | Incapacitado y Derribado (sigue Derribado al terminar), Velocidad 0, falla FUE/DES, Ventaja contra ella, crítico a 5 pies | Soltar lo que lleva |
+| **Monstruo a 0 PG** | Muere | El DM puede tratarlo como personaje (decisión 51) |
+| **Personaje a 0 PG** | Inconsciente y salvaciones contra la muerte; daño masivo (sobrante ≥ máximo) mata | — |
+| **Salvación contra la muerte** | d20 ≥ 10 éxito; 1 = dos fallos; 20 = recupera 1 PG; 3 éxitos Estable, 3 fallos muere; se reinicia al recuperar PG o quedar Estable | La tira el jugador: `recordDeathSave` |
+| **Daño a 0 PG** | Un fallo (dos si es crítico); si iguala o supera el máximo, muere; un Estable vuelve a hacer salvaciones | — |
+| **Dejar inconsciente** | Ataque cuerpo a cuerpo que lo dejaría a 0: queda a 1 PG e Inconsciente hasta recuperar PG | Descanso corto, primeros auxilios |
+| **Curación** | No supera el máximo; desde 0 PG vuelve en sí | — |
+
 ## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
 | Regla | Texto oficial (resumen fiel) | Dónde se aplica |
 |---|---|---|

@@ -175,6 +175,7 @@ const durationSchema: Schema<DurationSpec> = tagged("kind", {
   minutes: obj({ count: int(1, 1440) }),
   untilTurnBoundary: obj({ boundary: oneOf(["start", "end"]), whose: oneOf(["source", "target"]) }),
   untilEscape: obj({ escapeDc: int(1, 40) }),
+  indefinite: obj({}),
 });
 
 export const effectSchema: Schema<EffectSpec> = tagged("kind", {

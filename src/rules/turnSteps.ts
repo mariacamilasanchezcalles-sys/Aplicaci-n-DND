@@ -46,6 +46,8 @@ export function advanceMovement(
   progress: MovementProgress,
   path: readonly GridPosition[],
   budgetFeet: number | null,
+  /** Multiplicador de coste: 2 al arrastrarse (Derribado, REGLA OFICIAL VERIFICADA "Crawling"). */
+  costMultiplier = 1,
 ): MovementCheck {
   if (path.length === 0) return { ok: false, reasonCode: "emptyPath" };
   const { feetPerSquare } = encounter.grid;
@@ -71,7 +73,7 @@ export function advanceMovement(
     from = square;
   }
 
-  const spentFeet = progress.spentFeet + squares * feetPerSquare;
+  const spentFeet = progress.spentFeet + squares * feetPerSquare * costMultiplier;
   if (budgetFeet !== null && spentFeet > budgetFeet) {
     return { ok: false, reasonCode: "movementExceedsSpeed" };
   }

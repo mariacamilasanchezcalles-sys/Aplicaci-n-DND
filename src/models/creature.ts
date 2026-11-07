@@ -1,7 +1,7 @@
 import type { AttackId, BonusActionId, CreatureId, ResourceId, TraitId } from "./ids";
 import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
-import type { AbilityId, Capability, ResourceDefinition } from "./sheet";
+import type { AbilityId, Capability, ConditionId, DurationSpec, ResourceDefinition } from "./sheet";
 
 /** PENDIENTE: catálogo de personalidades. Por ahora solo existe la de prueba. */
 export type PersonalityId = "pragmatic";
@@ -130,6 +130,7 @@ interface CombatantBase {
   readonly abilities?: Partial<Record<AbilityId, number>>;
   /** Bonificador total de salvación cuando difiere del modificador. */
   readonly savingThrows?: Partial<Record<AbilityId, number>>;
+  readonly conditionImmunities?: readonly ConditionId[];
 }
 
 export interface MonsterDefinition extends CombatantBase {
@@ -146,11 +147,43 @@ export interface PlayerCharacterDefinition extends CombatantBase {
 
 export type CombatantDefinition = MonsterDefinition | PlayerCharacterDefinition;
 
+/**
+ * Condición activa sobre una criatura. REGLA OFICIAL VERIFICADA (Glosario
+ * 2024): una condición no se acumula consigo misma; se guarda una instancia
+ * por origen solo para saber cuándo termina cada una. Cansancio no va aquí:
+ * es acumulativo (`exhaustionLevel`).
+ */
+export interface ActiveCondition {
+  readonly condition: Exclude<ConditionId, "exhaustion">;
+  /** Quién la causó (Asustado y Encantado dependen de su origen). */
+  readonly sourceId: CreatureId | null;
+  readonly duration: DurationSpec;
+}
+
+/**
+ * Estado vital (REGLA OFICIAL VERIFICADA, SRD 5.2.1, "Dropping to 0 Hit Points"):
+ * - alive: más de 0 PG (o PG no registrados).
+ * - dying: 0 PG, Inconsciente y haciendo salvaciones contra la muerte.
+ * - stable: 0 PG, Inconsciente, sin salvaciones contra la muerte.
+ * - dead: muerta.
+ */
+export type LifeState = "alive" | "dying" | "stable" | "dead";
+
+export interface DeathSaves {
+  readonly successes: number;
+  readonly failures: number;
+}
+
 /** Estado mutable del combate de una criatura (separado de su definición). */
 export interface CombatantState {
   readonly position: GridPosition;
   readonly currentHitPoints: number | null;
   readonly resources: readonly ResourcePool[];
+  readonly conditions: readonly ActiveCondition[];
+  /** Nivel de Cansancio (0 a 6; con 6 la criatura muere). */
+  readonly exhaustionLevel: number;
+  readonly lifeState: LifeState;
+  readonly deathSaves: DeathSaves;
 }
 
 export interface CombatantRecord {

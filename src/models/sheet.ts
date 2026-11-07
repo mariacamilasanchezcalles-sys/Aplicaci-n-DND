@@ -172,7 +172,9 @@ export type DurationSpec =
       readonly whose: "source" | "target";
     }
   /** Hasta que la criatura escape (p. ej. Agarrado con CD de escape). */
-  | { readonly kind: "untilEscape"; readonly escapeDc: number };
+  | { readonly kind: "untilEscape"; readonly escapeDc: number }
+  /** Hasta que otra regla o efecto la termine (p. ej. Inconsciente al llegar a 0 PG). */
+  | { readonly kind: "indefinite" };
 
 export interface SavingThrowSpec {
   readonly ability: AbilityId;

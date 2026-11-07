@@ -22,8 +22,7 @@ export type AdapterGapReason =
   /** Ataque con efectos distintos del daño o efectos al fallar: se omite de la criatura. */
   | "attackEffectNotSupported"
   | "spellcastingNotSupported"
-  | "traitEffectNotSupported"
-  | "conditionImmunitiesNotSupported";
+  | "traitEffectNotSupported";
 
 export interface AdapterGap {
   readonly path: string;
@@ -129,9 +128,6 @@ export function combatantFromSheet(
   (sheet.traits ?? []).forEach((trait, index) => {
     if (trait.effects.length > 0) gaps.push({ path: `traits[${index}]`, reason: "traitEffectNotSupported" });
   });
-  if ((sheet.conditionImmunities ?? []).length > 0) {
-    gaps.push({ path: "conditionImmunities", reason: "conditionImmunitiesNotSupported" });
-  }
 
   return {
     definition: {
@@ -155,6 +151,7 @@ export function combatantFromSheet(
       ...(sheet.damageVulnerabilities?.length ? { damageVulnerabilities: sheet.damageVulnerabilities } : {}),
       ...(sheet.abilities ? { abilities: sheet.abilities } : {}),
       ...(sheet.savingThrows ? { savingThrows: sheet.savingThrows } : {}),
+      ...(sheet.conditionImmunities?.length ? { conditionImmunities: sheet.conditionImmunities } : {}),
     },
     gaps,
   };

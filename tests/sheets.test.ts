@@ -224,8 +224,8 @@ describe("fichas: puente con el modelo actual del motor", () => {
     expect(gaps.map((g) => `${g.path}:${g.reason}`)).toEqual([
       "attacks[1]:attackEffectNotSupported",
       "traits[0]:traitEffectNotSupported",
-      "conditionImmunities:conditionImmunitiesNotSupported",
     ]);
+    expect(definition.conditionImmunities).toEqual(["frightened"]);
     // Recursos y defensas contra el daño pasan a la criatura.
     expect(definition.resources?.map((r) => r.id)).toEqual(["fire-breath"]);
     expect(definition.damageResistances).toEqual(["cold"]);

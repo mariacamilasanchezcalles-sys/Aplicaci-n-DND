@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 16 archivos de prueba, 218 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 18 archivos de prueba, 251 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,11 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Condiciones y 0 PG (2026-11-07)
+- `rules/conditions.ts`: las 15 condiciones como efectos mecánicos (ver la tabla en `RULES_VERIFICATION.md`): aplicar y quitar con inmunidades, efectos implícitos, Velocidad efectiva, Ventaja, Desventaja y críticos al atacar, salvaciones afectadas, Encantado y Asustado, caducidad al inicio o fin de turno.
+- `rules/vitality.ts`: muerte de monstruos a 0 PG, personajes moribundos y salvaciones contra la muerte (anotadas), daño masivo, daño a 0 PG, Estable, curación y dejar inconsciente.
+- Ejecutor: Incapacitado no actúa, Velocidad 0, arrastrarse y `standUp`, Asustado no se acerca, efectos que aplican o quitan condiciones, y `beginCreatureTurn` (caducidad y Recarga al inicio del turno). Guardado v7.
 
 ## Efectos con salvación y áreas (2026-11-07)
 - `rules/areas.ts`: las seis formas oficiales sobre la cuadrícula con la regla casera de la mitad de la casilla; validación de origen, dirección y alcance.

@@ -38,7 +38,7 @@ export interface ModifiedDamageResult {
 export function applyDamageModifiers(
   defender: CombatantDefinition,
   parts: readonly DamageInstance[],
-  options: { readonly halve?: boolean } = {},
+  options: { readonly halve?: boolean; readonly resistAll?: boolean } = {},
 ): ModifiedDamageResult {
   const byType = new Map<DamageType, number>();
   for (const part of parts) {
@@ -59,7 +59,7 @@ export function applyDamageModifiers(
 
   const instances: ModifiedDamage[] = [...byType.entries()].map(([type, raw]) => {
     if (immune.has(type)) return { type, raw, final: 0, defense: "immune" };
-    const isResistant = resistant.has(type);
+    const isResistant = options.resistAll === true || resistant.has(type);
     const isVulnerable = vulnerable.has(type);
     let final = raw;
     if (isResistant) final = Math.floor(final / 2);

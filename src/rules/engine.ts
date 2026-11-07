@@ -93,6 +93,10 @@ export function createRulesEngine(): RulesEngine {
               currentHitPoints: definition.stats.maxHitPoints ?? null,
               // Los usos limitados empiezan completos.
               resources: (definition.resources ?? []).map((r) => ({ id: asResourceId(r.id), current: r.max, max: r.max })),
+              conditions: [],
+              exhaustionLevel: 0,
+              lifeState: "alive",
+              deathSaves: { successes: 0, failures: 0 },
             },
           },
         },

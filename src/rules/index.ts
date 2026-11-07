@@ -12,3 +12,5 @@ export * from "./damage";
 export * from "./resources";
 export * from "./areas";
 export * from "./effects";
+export * from "./conditions";
+export * from "./vitality";

@@ -6,6 +6,7 @@ import type {
   CreatureId,
   Encounter,
   GridPosition,
+  LifeState,
   Operation,
   SheetPredicate,
   StandardActionType,
@@ -15,12 +16,28 @@ import { areaSquares, creaturesInSquares } from "./areas";
 import type { AreaPlacement, AreaPlacementError } from "./areas";
 import { footprintDistanceSquares } from "./distance";
 import { effectSupported, resolveEffect } from "./effects";
+import {
+  attackConditions,
+  canSee,
+  cannotAct,
+  cannotHarm,
+  conditionResistances,
+  effectiveSpeed,
+  expireConditionsAtTurnBoundary,
+  fearSources,
+  hasCondition,
+  removeCondition,
+  speedCannotIncrease,
+} from "./conditions";
+import { rollRechargesAtTurnStart } from "./resources";
+import type { RechargeRoll } from "./resources";
+import { dealDamage } from "./vitality";
 import type { EffectOperation, EffectTargetResult, PlayerSaveInput, RolledAmount } from "./effects";
 import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
 import { applyDamageModifiers } from "./damage";
 import type { ModifiedDamage } from "./damage";
-import { applyDamage, combineRollModes, resolveAttack } from "./resolution";
+import { resolveAttack } from "./resolution";
 import { spendResources } from "./resources";
 import type { AttackResolution, RollMode } from "./resolution";
 import { advanceMovement, checkAttackTarget } from "./turnSteps";
@@ -76,6 +93,8 @@ export type TurnLogEntry =
       readonly damageAfterDefenses: readonly ModifiedDamage[];
       /** Daño restado a los PG (0 si el objetivo no tiene PG registrados). */
       readonly damageApplied: number;
+      readonly knockedOut: boolean;
+      readonly targetLifeStateAfter: LifeState;
     }
   | { readonly kind: "standardActionTaken"; readonly action: ExecutableStandardAction }
   | {
@@ -92,6 +111,7 @@ export type TurnLogEntry =
       readonly rolls: readonly RolledAmount[];
       readonly targets: readonly EffectTargetResult[];
     }
+  | { readonly kind: "stoodUp"; readonly spentFeet: number }
   | { readonly kind: "turnEnded" };
 
 export interface TurnState {
@@ -154,8 +174,16 @@ export interface TurnOptions {
 export type TurnCommand =
   | { readonly kind: "move"; readonly path: readonly GridPosition[] }
   | { readonly kind: "beginCapability"; readonly source: CapabilitySource }
-  | { readonly kind: "chooseOption"; readonly key: string; readonly effectInput?: EffectInput }
+  | {
+      readonly kind: "chooseOption";
+      readonly key: string;
+      readonly effectInput?: EffectInput;
+      /** Ataques cuerpo a cuerpo: dejar inconsciente en lugar de a 0 PG. */
+      readonly attackInput?: { readonly knockOut?: boolean };
+    }
   | { readonly kind: "forfeitRemaining" }
+  /** Levantarse de Derribado: cuesta la mitad de la Velocidad (redondeando abajo). */
+  | { readonly kind: "standUp" }
   | { readonly kind: "endTurn" };
 
 /** Datos que completa quien elige una opción de efecto. */
@@ -190,7 +218,14 @@ export type TurnCommandError =
   | "invalidEffectTargets"
   | "invalidAreaPlacement"
   | "saveBonusUnknown"
-  | "playerSavesRequired";
+  | "playerSavesRequired"
+  /** Incapacitada, a 0 PG o muerta: no puede usar acciones ni acciones adicionales. */
+  | "cannotAct"
+  /** Asustada: no puede acercarse voluntariamente al origen de su miedo. */
+  | "movementTowardFearSource"
+  | "notProne"
+  | "cannotStandUp"
+  | "knockOutNotAllowed";
 
 export type TurnCommandResult =
   | { readonly ok: true; readonly encounter: Encounter; readonly turn: TurnState }
@@ -501,12 +536,17 @@ function concreteOptions(
       for (const targetId of targets) {
         const check = checkAttackTarget(encounter, actor, actor.state.position, atom.attackRef, targetId);
         if (!check.ok) continue;
+        // PROPUESTA: no se ofrecen criaturas muertas como objetivo.
+        if (check.target.state.lifeState === "dead") continue;
+        // Encantado: no puede atacar a quien lo encantó (verificado).
+        if (cannotHarm(actor, targetId)) continue;
+        const rolled = attackConditions(encounter, actor, check.target, check.distanceFeet, check.beyondNormalRange);
         push({
           choice: {
             kind: "attack",
             attackId: check.attack.id,
             targetId,
-            rollMode: combineRollModes(false, check.beyondNormalRange),
+            rollMode: rolled.mode,
           },
           rest,
         });
@@ -530,7 +570,8 @@ function creatureCandidates(encounter: Encounter, actor: CombatantRecord, operat
   const range = operation.targeting.rangeFeet;
   return (Object.keys(encounter.combatants).sort() as CreatureId[]).filter((id) => {
     const target = encounter.combatants[id];
-    if (!target || id === actor.definition.id) return false;
+    if (!target || id === actor.definition.id || target.state.lifeState === "dead") return false;
+    if (cannotHarm(actor, id)) return false;
     const distance =
       footprintDistanceSquares(
         actor.state.position,
@@ -578,7 +619,9 @@ function effectAffected(
     case "area": {
       const area = areaSquares(encounter, actor, targeting, input.placement ?? {});
       if (!area.ok) return { ok: false, reasonCode: "invalidAreaPlacement", areaReason: area.reason };
-      affected = creaturesInSquares(encounter, area.squares, targeting.includesSelf ? null : actor.definition.id);
+      affected = creaturesInSquares(encounter, area.squares, targeting.includesSelf ? null : actor.definition.id).filter(
+        (id) => encounter.combatants[id]?.state.lifeState !== "dead",
+      );
       break;
     }
   }
@@ -619,7 +662,7 @@ export function startTurn(encounter: Encounter, actorId: CreatureId): TurnState 
     actorId,
     serial: 0,
     movement: { position: actor.state.position, diagonalCount: 0, spentFeet: 0 },
-    budgetFeet: actor.definition.stats.speedFeet ?? null,
+    budgetFeet: effectiveSpeed(actor),
     actionUsed: false,
     bonusActionUsed: false,
     disengaged: false,
@@ -636,13 +679,52 @@ function activationFree(turn: TurnState, activation: Capability["activation"]): 
   return false;
 }
 
-function canMoveNow(turn: TurnState): boolean {
-  if (turn.ended) return false;
+function canMoveNow(turn: TurnState, actor: CombatantRecord): boolean {
+  if (turn.ended || actor.state.lifeState !== "alive" || effectiveSpeed(actor) === 0) return false;
   // REGLA OFICIAL VERIFICADA ("Moving between Attacks"): solo entre los
   // ataques de la acción de Atacar. Con otras capacidades en curso no se mueve
   // (PENDIENTE DE VALIDAR si alguna otra regla lo permite).
   if (turn.execution !== null && turn.execution.takenAs !== "attack") return false;
   return turn.budgetFeet === null || turn.movement.spentFeet < turn.budgetFeet;
+}
+
+/**
+ * Asustado (REGLA OFICIAL VERIFICADA): no puede acercarse voluntariamente al
+ * origen de su miedo. Se comprueba casilla a casilla contra cada origen que
+ * puede ver (PROPUESTA: "ver" = "en línea de visión" mientras no haya obstáculos).
+ */
+function approachesFearSource(encounter: Encounter, actor: CombatantRecord, path: readonly GridPosition[]): boolean {
+  const rule = encounter.tableRules.diagonal;
+  for (const sourceId of fearSources(actor)) {
+    const source = encounter.combatants[sourceId];
+    if (!source || !canSee(actor, source)) continue;
+    const distanceFrom = (position: GridPosition): number =>
+      footprintDistanceSquares(position, actor.definition.size, source.state.position, source.definition.size, rule);
+    let previous = distanceFrom(actor.state.position);
+    for (const square of path) {
+      const current = distanceFrom(square);
+      if (current < previous) return true;
+      previous = current;
+    }
+  }
+  return false;
+}
+
+/**
+ * Empieza el turno de una criatura con lo que ocurre "al inicio de su turno":
+ * caducan las condiciones que duran hasta el inicio de su turno y se tiran
+ * sus Recargas. (Las salvaciones contra la muerte las tira el jugador:
+ * `recordDeathSave`.) Hasta que exista la iniciativa (decisión 9), quien
+ * dirige el combate llama a esta función.
+ */
+export function beginCreatureTurn(
+  encounter: Encounter,
+  actorId: CreatureId,
+  dice: RandomSource,
+): { readonly encounter: Encounter; readonly turn: TurnState; readonly rechargeRolls: readonly RechargeRoll[] } {
+  const expired = expireConditionsAtTurnBoundary(encounter, actorId, "start");
+  const recharged = rollRechargesAtTurnStart(expired, actorId, dice);
+  return { encounter: recharged.encounter, turn: startTurn(recharged.encounter, actorId), rechargeRolls: recharged.rolls };
 }
 
 /** Comprueba si una capacidad se puede iniciar ahora y con qué opciones. */
@@ -656,6 +738,8 @@ function tryBegin(
   | { ok: false; reasonCode: TurnCommandError } {
   const resolved = resolveCapability(actor.definition, source);
   if (!resolved) return { ok: false, reasonCode: "capabilityUnavailable" };
+  // REGLA OFICIAL VERIFICADA (Incapacitado): sin acciones, adicionales ni reacciones.
+  if (cannotAct(actor)) return { ok: false, reasonCode: "cannotAct" };
   if (capabilitySupport(actor.definition, source).length > 0) {
     return { ok: false, reasonCode: "capabilityNotSupported" };
   }
@@ -688,7 +772,7 @@ export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptio
   }
   if (turn.execution !== null) {
     return {
-      canMove: canMoveNow(turn),
+      canMove: canMoveNow(turn, actor),
       capabilities: [],
       executionOptions: concreteOptions(encounter, actor, turn.execution).map((option, index) => ({
         key: `${turn.serial}:${index}`,
@@ -699,7 +783,7 @@ export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptio
     };
   }
   return {
-    canMove: canMoveNow(turn),
+    canMove: canMoveNow(turn, actor),
     capabilities: capabilitySourcesOf(actor.definition).filter((source) => tryBegin(encounter, actor, turn, source).ok),
     executionOptions: [],
     canForfeit: false,
@@ -743,9 +827,12 @@ export function applyTurnCommand(
 
   switch (command.kind) {
     case "move": {
-      if (!canMoveNow(turn)) return fail("movementNotAllowedNow");
-      const moved = advanceMovement(encounter, actor, turn.movement, command.path, turn.budgetFeet);
+      if (!canMoveNow(turn, actor)) return fail("movementNotAllowedNow");
+      // Derribado: solo puede arrastrarse (cada pie cuesta 1 extra).
+      const crawling = hasCondition(actor, "prone");
+      const moved = advanceMovement(encounter, actor, turn.movement, command.path, turn.budgetFeet, crawling ? 2 : 1);
       if (!moved.ok) return fail(moved.reasonCode, moved.placementReason);
+      if (approachesFearSource(encounter, actor, command.path)) return fail("movementTowardFearSource");
       // PENDIENTE: ataques de oportunidad al salir del alcance (decisión 7).
       return {
         ok: true,
@@ -797,7 +884,24 @@ export function applyTurnCommand(
       // Revalidación: las opciones se recalculan con el estado actual.
       const option = concreteOptions(encounter, actor, execution)[Number(indexText)];
       if (!option) return fail("unknownOption");
-      return applyChoice(encounter, actor, turn, execution, option, dice, next, command.effectInput ?? {});
+      return applyChoice(encounter, actor, turn, execution, option, dice, next, command.effectInput ?? {}, command.attackInput ?? {});
+    }
+
+    case "standUp": {
+      if (!hasCondition(actor, "prone")) return fail("notProne");
+      if (!canMoveNow(turn, actor)) return fail("cannotStandUp");
+      // REGLA OFICIAL VERIFICADA (Derribado): cuesta la mitad de la Velocidad
+      // (redondeando abajo); con Velocidad 0 no puede levantarse.
+      const speed = effectiveSpeed(actor);
+      const cost = speed === null ? 0 : Math.floor(speed / 2);
+      if (turn.budgetFeet !== null && turn.movement.spentFeet + cost > turn.budgetFeet) return fail("cannotStandUp");
+      return {
+        ok: true,
+        encounter: removeCondition(encounter, turn.actorId, "prone"),
+        turn: next({ movement: { ...turn.movement, spentFeet: turn.movement.spentFeet + cost } }, [
+          { kind: "stoodUp", spentFeet: cost },
+        ]),
+      };
     }
 
     case "endTurn": {
@@ -807,7 +911,11 @@ export function applyTurnCommand(
         ignoreCreatureId: turn.actorId,
       });
       if (!placement.valid) return fail("invalidSquare", placement.reason);
-      return { ok: true, encounter, turn: next({ ended: true }, [{ kind: "turnEnded" }]) };
+      return {
+        ok: true,
+        encounter: expireConditionsAtTurnBoundary(encounter, turn.actorId, "end"),
+        turn: next({ ended: true }, [{ kind: "turnEnded" }]),
+      };
     }
   }
 }
@@ -821,6 +929,7 @@ function applyChoice(
   dice: RandomSource,
   next: (changes: Partial<TurnState>, entries: readonly TurnLogEntry[]) => TurnState,
   effectInput: EffectInput,
+  attackInput: { readonly knockOut?: boolean },
 ): TurnCommandResult {
   const finished = (entries: TurnLogEntry[], updated: CapabilityExecution): TurnLogEntry[] =>
     updated.agenda.length === 0
@@ -845,7 +954,14 @@ function applyChoice(
           ? fail(targets.reasonCode)
           : { ok: false, reasonCode: targets.reasonCode, areaReason: targets.areaReason };
       }
-      const resolution = resolveEffect(encounter, choice.operation, targets.affected, dice, effectInput.playerSaves);
+      const resolution = resolveEffect(
+        encounter,
+        choice.operation,
+        targets.affected,
+        dice,
+        effectInput.playerSaves,
+        actor.definition.id,
+      );
       // Si faltan datos o tiradas de jugadores, no se consume nada.
       if (!resolution.ok) return { ok: false, reasonCode: resolution.reason, creatureIds: resolution.creatureIds };
       const updated: CapabilityExecution = { ...execution, agenda: option.rest };
@@ -866,8 +982,9 @@ function applyChoice(
       switch (choice.action) {
         case "dash": {
           // REGLA OFICIAL VERIFICADA (Glosario 2024, "Dash"): movimiento extra igual a la Velocidad.
-          const speed = actor.definition.stats.speedFeet;
-          if (turn.budgetFeet !== null && speed !== undefined) {
+          // "Speed after applying any modifiers"; con Velocidad 0 que no puede aumentar no suma.
+          const speed = speedCannotIncrease(actor) ? 0 : effectiveSpeed(actor);
+          if (turn.budgetFeet !== null && speed !== null) {
             Object.assign(effects, { budgetFeet: turn.budgetFeet + speed });
           }
           break;
@@ -892,8 +1009,17 @@ function applyChoice(
     case "attack": {
       const check = checkAttackTarget(encounter, actor, actor.state.position, choice.attackId, choice.targetId);
       if (!check.ok) return fail("unknownOption");
+      // REGLA OFICIAL VERIFICADA: dejar inconsciente solo con un ataque cuerpo a cuerpo.
+      if (attackInput.knockOut && check.attack.mode !== "melee") return fail("knockOutNotAllowed");
+      const rolled = attackConditions(encounter, actor, check.target, check.distanceFeet, check.beyondNormalRange);
       const resolution = resolveAttack(
-        { attack: check.attack, target: check.target.definition, mode: choice.rollMode },
+        {
+          attack: check.attack,
+          target: check.target.definition,
+          mode: choice.rollMode,
+          d20Penalty: rolled.d20Penalty,
+          criticalOnHit: rolled.criticalOnHit,
+        },
         dice,
       );
       // Sin CA registrada no se puede resolver: no se consume nada.
@@ -902,14 +1028,14 @@ function applyChoice(
       const defended = applyDamageModifiers(
         check.target.definition,
         resolution.damage.map((part) => ({ type: part.type, amount: part.total })),
+        { resistAll: conditionResistances(check.target) === "all" },
       );
-      let updatedEncounter = encounter;
-      let damageApplied = 0;
-      if (defended.total > 0 && check.target.state.currentHitPoints !== null) {
-        damageApplied = Math.min(defended.total, check.target.state.currentHitPoints);
-        // PENDIENTE: consecuencias de llegar a 0 PG (decisión 8).
-        updatedEncounter = applyDamage(encounter, choice.targetId, defended.total);
-      }
+      const damage = dealDamage(encounter, choice.targetId, defended.total, {
+        critical: resolution.outcome === "criticalHit",
+        knockOut: attackInput.knockOut === true,
+      });
+      const updatedEncounter = damage.encounter;
+      const damageApplied = damage.hitPointsLost;
       const updated: CapabilityExecution = {
         ...execution,
         agenda: option.rest,
@@ -924,6 +1050,8 @@ function applyChoice(
             resolution,
             damageAfterDefenses: defended.instances,
             damageApplied,
+            knockedOut: damage.knockedOut,
+            targetLifeStateAfter: damage.lifeStateAfter,
           },
         ],
         updated,

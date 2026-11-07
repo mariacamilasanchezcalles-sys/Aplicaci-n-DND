@@ -1,9 +1,20 @@
-import type { AbilityId, CombatantDefinition, CreatureId, DamageType, EffectSpec, Encounter, Operation } from "../models";
+import type {
+  AbilityId,
+  CombatantDefinition,
+  ConditionId,
+  CreatureId,
+  DamageType,
+  EffectSpec,
+  Encounter,
+  LifeState,
+  Operation,
+} from "../models";
+import { applyCondition, conditionResistances, durationSupported, removeCondition, saveConditions } from "./conditions";
+import { dealDamage, healCreature } from "./vitality";
 import { applyDamageModifiers } from "./damage";
 import type { ModifiedDamage } from "./damage";
 import { rollDice, rollDie } from "./dice";
 import type { RandomSource } from "./dice";
-import { applyDamage } from "./resolution";
 
 export type EffectOperation = Extract<Operation, { op: "effect" }>;
 
@@ -19,11 +30,15 @@ export type SaveRecord =
       readonly source: "virtual";
       readonly d20: number;
       readonly bonus: number;
+      /** Cansancio: 2 por nivel. */
+      readonly penalty: number;
       readonly total: number;
       readonly dc: number;
       readonly success: boolean;
     }
-  | { readonly source: "player"; readonly total: number | null; readonly dc: number; readonly success: boolean };
+  | { readonly source: "player"; readonly total: number | null; readonly dc: number; readonly success: boolean }
+  /** Fallo automático por condición (no se tira ni se pide al jugador). */
+  | { readonly source: "automaticFailure"; readonly dc: number; readonly success: false };
 
 export interface EffectTargetResult {
   readonly targetId: CreatureId;
@@ -31,6 +46,11 @@ export interface EffectTargetResult {
   readonly damageAfterDefenses: readonly ModifiedDamage[];
   readonly damageApplied: number;
   readonly healed: number;
+  readonly conditionsApplied: readonly ConditionId[];
+  /** Condiciones que no se aplicaron por inmunidad. */
+  readonly conditionsResisted: readonly ConditionId[];
+  readonly conditionsRemoved: readonly ConditionId[];
+  readonly lifeStateAfter: LifeState;
 }
 
 export interface RolledAmount {
@@ -57,8 +77,17 @@ export type EffectResolution =
 
 /** Efectos que el motor sabe aplicar hoy. */
 export function effectSupported(effect: EffectSpec): boolean {
-  if (effect.kind === "damage") return effect.condition === undefined;
-  return effect.kind === "heal";
+  switch (effect.kind) {
+    case "damage":
+      return effect.condition === undefined;
+    case "heal":
+    case "removeCondition":
+      return true;
+    case "applyCondition":
+      return durationSupported(effect.duration);
+    default:
+      return false;
+  }
 }
 
 /**
@@ -96,19 +125,27 @@ export function resolveEffect(
   affected: readonly CreatureId[],
   dice: RandomSource,
   playerSaves: Readonly<Record<string, PlayerSaveInput>> = {},
+  sourceId: CreatureId | null = null,
 ): EffectResolution {
   const save = operation.save;
   const dc = save && typeof save.dc === "number" ? save.dc : null;
   if (save && dc === null) throw new Error("CD de conjuro no soportada (ver capabilitySupport)");
 
+  // Fallo automático (Paralizado, Petrificado, Aturdido, Inconsciente en FUE/DES).
+  const autoFails = (id: CreatureId): boolean => {
+    const record = encounter.combatants[id];
+    return save !== undefined && record !== undefined && saveConditions(record, save.ability).autoFail;
+  };
+
   if (save) {
     const unknown = affected.filter((id) => {
       const record = encounter.combatants[id];
-      return record?.definition.kind === "monster" && saveBonusOf(record.definition, save.ability) === null;
+      return record?.definition.kind === "monster" && !autoFails(id) && saveBonusOf(record.definition, save.ability) === null;
     });
     if (unknown.length > 0) return { ok: false, reason: "saveBonusUnknown", creatureIds: unknown };
     const missing = affected.filter(
-      (id) => encounter.combatants[id]?.definition.kind === "playerCharacter" && playerSaves[id] === undefined,
+      (id) =>
+        encounter.combatants[id]?.definition.kind === "playerCharacter" && !autoFails(id) && playerSaves[id] === undefined,
     );
     if (missing.length > 0) return { ok: false, reason: "playerSavesRequired", creatureIds: missing };
   }
@@ -119,7 +156,11 @@ export function resolveEffect(
     for (const id of affected) {
       const record = encounter.combatants[id];
       if (!record) continue;
-      if (record.definition.kind === "playerCharacter") {
+      const adjust = saveConditions(record, save.ability);
+      if (adjust.autoFail) {
+        saves.set(id, { source: "automaticFailure", dc, success: false });
+      } else if (record.definition.kind === "playerCharacter") {
+        // El jugador ya aplica sus modificadores (Desventaja, Cansancio) al tirar.
         const input = playerSaves[id];
         if (input === undefined) continue;
         const total = "total" in input ? input.total : null;
@@ -127,20 +168,21 @@ export function resolveEffect(
         saves.set(id, { source: "player", total, dc, success });
       } else {
         const bonus = saveBonusOf(record.definition, save.ability) ?? 0;
-        const d20 = rollDie(20, dice);
-        saves.set(id, { source: "virtual", d20, bonus, total: d20 + bonus, dc, success: d20 + bonus >= dc });
+        const first = rollDie(20, dice);
+        const d20 = adjust.mode === "disadvantage" ? Math.min(first, rollDie(20, dice)) : first;
+        const total = d20 + bonus - adjust.d20Penalty;
+        saves.set(id, { source: "virtual", d20, bonus, penalty: adjust.d20Penalty, total, dc, success: total >= dc });
       }
     }
   }
 
-  const fullyAffected = (id: CreatureId): boolean => !saves.get(id)?.success;
-  const anyDamageOrHeal = affected.some(
-    (id) => fullyAffected(id) || (save?.onSuccess === "halfDamage" && saves.get(id)?.success),
-  );
+  const succeeded = (id: CreatureId): boolean => saves.get(id)?.success === true;
+  const receives = (id: CreatureId): boolean => !succeeded(id) || save?.onSuccess === "halfDamage";
+  const hasAmounts = operation.effects.some((e) => e.kind === "damage" || e.kind === "heal");
 
   // 2. Dados de daño y curación: una sola vez para todos.
   const rolls: RolledAmount[] = [];
-  if (anyDamageOrHeal) {
+  if (hasAmounts && affected.some(receives)) {
     for (const effect of operation.effects) {
       if (effect.kind !== "damage" && effect.kind !== "heal") continue;
       const roll = effect.dice ? rollDice(effect.dice, dice) : { rolls: [], total: 0 };
@@ -161,36 +203,56 @@ export function resolveEffect(
     const record = updated.combatants[id];
     if (!record) continue;
     const saveRecord = saves.get(id) ?? null;
-    const succeeded = saveRecord?.success === true;
-    const halve = succeeded && save?.onSuccess === "halfDamage";
-    const takesNothing = succeeded && save?.onSuccess === "negates";
+    const success = succeeded(id);
+    const halve = success && save?.onSuccess === "halfDamage";
+    const takesNothing = success && save?.onSuccess === "negates";
 
     const damageParts = takesNothing
       ? []
       : rolls.flatMap((r) => (r.kind === "damage" && r.damageType ? [{ type: r.damageType, amount: r.total }] : []));
-    const defended = applyDamageModifiers(record.definition, damageParts, { halve });
-    let damageApplied = 0;
-    if (defended.total > 0 && record.state.currentHitPoints !== null) {
-      damageApplied = Math.min(defended.total, record.state.currentHitPoints);
-      updated = applyDamage(updated, id, defended.total);
+    const defended = applyDamageModifiers(record.definition, damageParts, {
+      halve,
+      resistAll: conditionResistances(record) === "all",
+    });
+    const damage = dealDamage(updated, id, defended.total);
+    updated = damage.encounter;
+
+    // Con la salvación superada se ignora el resto del efecto (curación, condiciones).
+    const healTotal = success ? 0 : rolls.filter((r) => r.kind === "heal").reduce((sum, r) => sum + r.total, 0);
+    const heal = healCreature(updated, id, healTotal);
+    updated = heal.encounter;
+
+    const conditionsApplied: ConditionId[] = [];
+    const conditionsResisted: ConditionId[] = [];
+    const conditionsRemoved: ConditionId[] = [];
+    if (!success) {
+      for (const effect of operation.effects) {
+        if (effect.kind === "applyCondition") {
+          const result = applyCondition(updated, id, effect.condition, sourceId, effect.duration);
+          if (result.applied) {
+            updated = result.encounter;
+            conditionsApplied.push(effect.condition);
+          } else {
+            conditionsResisted.push(effect.condition);
+          }
+        } else if (effect.kind === "removeCondition") {
+          updated = removeCondition(updated, id, effect.condition);
+          conditionsRemoved.push(effect.condition);
+        }
+      }
     }
 
-    // Curación: no se aplica si la salvación tuvo éxito ("ignora el resto del efecto").
-    let healed = 0;
-    const healTotal = succeeded ? 0 : rolls.filter((r) => r.kind === "heal").reduce((sum, r) => sum + r.total, 0);
-    const current = updated.combatants[id];
-    const max = current?.definition.stats.maxHitPoints;
-    if (healTotal > 0 && current && current.state.currentHitPoints !== null && max !== undefined) {
-      // REGLA OFICIAL VERIFICADA: los PG no superan el máximo.
-      const next = Math.min(max, current.state.currentHitPoints + healTotal);
-      healed = next - current.state.currentHitPoints;
-      updated = {
-        ...updated,
-        combatants: { ...updated.combatants, [id]: { ...current, state: { ...current.state, currentHitPoints: next } } },
-      };
-    }
-
-    targets.push({ targetId: id, save: saveRecord, damageAfterDefenses: defended.instances, damageApplied, healed });
+    targets.push({
+      targetId: id,
+      save: saveRecord,
+      damageAfterDefenses: defended.instances,
+      damageApplied: damage.hitPointsLost,
+      healed: heal.healed,
+      conditionsApplied,
+      conditionsResisted,
+      conditionsRemoved,
+      lifeStateAfter: updated.combatants[id]?.state.lifeState ?? "alive",
+    });
   }
 
   return { ok: true, encounter: updated, rolls, targets };
