@@ -194,7 +194,8 @@ opciones sin rehacerlo.
    puerto de simulación con valores esperados.
 3. **[HECHA 2026-11-07, pesos pendientes de aprobación] Evaluación y calibración:** rasgos medidos, escenarios contigo, perfiles en JSON y pesos
    aprobados.
-4. **Planificador:** búsqueda por niveles de dificultad, replanificación por eventos y reacciones.
+4. **[HECHA 2026-11-07, salvo los valores de dificultad] Planificador:** búsqueda por niveles de dificultad, replanificación por eventos y reacciones.
+   `tactical-brain/planner.ts`: `planTurn` (búsqueda por fases con poda, parámetros de dificultad, punto de partida a mitad de turno) y `decideOpportunityAttack`. Ver `BRAIN_CALIBRATION.md` §5.
 5. **Cooperación:** pizarra de intenciones del bando.
 6. **Controlador:** `combat-controller` que juega los turnos de los monstruos de principio a fin, y
    su conexión con `ui-bridge`.

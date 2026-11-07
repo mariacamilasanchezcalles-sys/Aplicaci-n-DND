@@ -124,3 +124,31 @@ Lectura:
 - **Condiciones:** peso 0 en las tres. E10 no contradice "prefiere controlar" porque ese signo
   permite 0, pero tampoco hay ningún caso que pida preferir una condición; hoy el control no suma.
 - `friendlyDamage`: sin casos (peso 0).
+
+## 5. Comportamiento con búsqueda libre (etapa 4, 2026-11-07)
+`planTurn` con haz 4, 3 fases y sin límites, con los pesos aprobados. Los escenarios solo comparaban
+las opciones escritas; la búsqueda prueba todas las legales. Plan elegido y puntuación (respuesta de
+la jugadora entre paréntesis):
+
+| Caso | Respuesta de la jugadora | Plan de la búsqueda | ¿Coincide? |
+|---|---|---|---|
+| E1 pragmático | Cimitarra a Cata y alejarse (−12,5) | Esquivar, Escapismo Ágil (Destrabarse) y alejarse (−11,5) | No |
+| E1 agresivo | Cimitarra a Cata y quedarse | Igual | Sí |
+| E1 pacifista | Cimitarra a Cata y alejarse (−27,9) | Esquivar, Destrabarse y alejarse (−22,1) | No |
+| E2 pragmático y agresivo | Disparar a Caín | Alejarse de Cata y disparar a Caín | Misma intención, mejor posición |
+| E2 pacifista | Ponerse a salvo (0) | Alejarse y disparar a Cata (14,1) | No |
+| E3 pragmático | Esquivar (−12,5) | Esquivar, Destrabarse y alejarse (−11,5) | Parecido |
+| E3 agresivo | Atacar a Cata | Igual | Sí |
+| E3 pacifista | Destrabarse y huir (−61,5) | Correr y huir (−61,5, empate) | No (pidió sin Correr) |
+| E4 pragmático y agresivo | Rodear a Cata | Igual | Sí |
+| E4 pacifista | Ir por Caín (−11,3) | Alejarse y disparar a Cata (14,1) | No |
+| E5 agresivo | Atacar | Moverse y atacar a Caín | Sí |
+| E6 pacifista | Esquivar (−41,1) | Esquivar, Destrabarse y moverse (−22,1) | Parecido |
+| E7 agresivo | Atacar a Cata (−6,2) | Atacar a Cata, Destrabarse y alejarse (11,7) | Parecido |
+| E8 pragmático | Aliento a los dos (−12,3) | Correr y alejarse (0) | No |
+| E9 pragmático | Zarpazo (−6,9) | Correr y alejarse (0) | No |
+| E10 pacifista | Zarpazo (−7,5) | Aliento a Cata (49,3) | No |
+
+Conclusión: los pesos cumplen las 19 decisiones entre las opciones escritas, pero **no generalizan**.
+El Draco pragmático huye en lugar de atacar, y el pacifista usa el aliento. Propuesta (decisión 98):
+recalibrar añadiendo como alternativas los planes de la búsqueda que la jugadora rechace.

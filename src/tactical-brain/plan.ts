@@ -20,6 +20,12 @@ export type PlanStep =
       readonly placement?: AreaPlacement;
     }
   | { readonly kind: "finish" }
+  /** Renunciar al resto de la capacidad en curso (solo si no le quedan opciones). */
+  | { readonly kind: "forfeit" }
+  /** Levantarse de Derribado. */
+  | { readonly kind: "standUp" }
+  /** Regla casera Moral: rendirse cuando huye. */
+  | { readonly kind: "surrender" }
   | { readonly kind: "end" };
 
 export interface Plan {
@@ -70,6 +76,12 @@ function commandFor(port: SimulationPort, state: Encounter, turn: TurnState, ste
       return { kind: "beginCapability", source: step.source };
     case "end":
       return { kind: "endTurn" };
+    case "forfeit":
+      return { kind: "forfeitRemaining" };
+    case "standUp":
+      return { kind: "standUp" };
+    case "surrender":
+      return { kind: "surrender" };
     case "effect": {
       const option = port.getOptions(state, turn).executionOptions.find((o) => o.choice.kind === "effect");
       return option ? { kind: "chooseOption", key: option.key, effectInput: effectInputOf(step) } : null;
@@ -88,18 +100,58 @@ function commandFor(port: SimulationPort, state: Encounter, turn: TurnState, ste
 }
 
 /**
- * Ejecuta un plan sobre el estado creído (dados esperados). Registra las
- * probabilidades de cada ataque ANTES de resolverlo y los ataques de
- * oportunidad que provocaría (se supone que el enemigo los hace; la
- * simulación los deja pasar para seguir).
+ * Simulación parcial de un plan: el estado creído tras los pasos dados. El
+ * planificador la extiende paso a paso sin repetir los anteriores.
  */
-export function simulatePlan(port: SimulationPort, actorId: CreatureId, plan: Plan, start: Encounter = port.belief): PlanSimulation {
-  let state = start;
-  let turn = port.startTurn(state, actorId);
-  const attacks: PlannedAttack[] = [];
-  const effects: PlannedEffect[] = [];
-  const provoked: ProvokedReaction[] = [];
-  for (const [index, step] of plan.steps.entries()) {
+export interface PartialSimulation {
+  readonly initial: Encounter;
+  readonly state: Encounter;
+  readonly turn: TurnState;
+  readonly steps: readonly PlanStep[];
+  readonly attacks: readonly PlannedAttack[];
+  readonly effects: readonly PlannedEffect[];
+  readonly provoked: readonly ProvokedReaction[];
+}
+
+/**
+ * Punto de partida: el turno empieza ahora (`turn` omitido) o se continúa un
+ * turno ya en marcha (replanificar a mitad de turno).
+ */
+export function startSimulation(port: SimulationPort, actorId: CreatureId, start: Encounter = port.belief, turn?: TurnState): PartialSimulation {
+  return {
+    initial: start,
+    state: start,
+    turn: turn ?? port.startTurn(start, actorId),
+    steps: [],
+    attacks: [],
+    effects: [],
+    provoked: [],
+  };
+}
+
+export type ContinuedSimulation =
+  | { readonly ok: true; readonly partial: PartialSimulation }
+  | { readonly ok: false; readonly failedStep: number; readonly reason: string };
+
+/**
+ * Añade pasos a una simulación parcial. Registra las probabilidades de cada
+ * ataque ANTES de resolverlo y los ataques de oportunidad que provocaría (se
+ * supone que el enemigo los hace; la simulación los deja pasar para seguir).
+ * `failedStep` cuenta desde el primer paso del plan completo.
+ */
+export function continueSimulation(
+  port: SimulationPort,
+  actorId: CreatureId,
+  from: PartialSimulation,
+  steps: readonly PlanStep[],
+): ContinuedSimulation {
+  let state = from.state;
+  let turn = from.turn;
+  const attacks = [...from.attacks];
+  const effects = [...from.effects];
+  const provoked = [...from.provoked];
+  for (const [offset, step] of steps.entries()) {
+    const index = from.steps.length + offset;
     const command = commandFor(port, state, turn, step);
     if (command === null) return { ok: false, failedStep: index, reason: "noMatchingOption" };
     if (step.kind === "attack") {
@@ -139,5 +191,29 @@ export function simulatePlan(port: SimulationPort, actorId: CreatureId, plan: Pl
     state = result.encounter;
     turn = result.turn;
   }
-  return { ok: true, initial: start, final: state, turn, attacks, effects, provoked };
+  return {
+    ok: true,
+    partial: { initial: from.initial, state, turn, steps: [...from.steps, ...steps], attacks, effects, provoked },
+  };
+}
+
+/** Resultado de una simulación parcial como plan simulado. */
+export function asPlanSimulation(partial: PartialSimulation): Extract<PlanSimulation, { ok: true }> {
+  const { initial, state, turn, attacks, effects, provoked } = partial;
+  return { ok: true, initial, final: state, turn, attacks, effects, provoked };
+}
+
+/**
+ * Ejecuta un plan completo sobre el estado creído (dados esperados). Con
+ * `startTurn`, continúa un turno ya empezado.
+ */
+export function simulatePlan(
+  port: SimulationPort,
+  actorId: CreatureId,
+  plan: Plan,
+  start: Encounter = port.belief,
+  startTurn?: TurnState,
+): PlanSimulation {
+  const result = continueSimulation(port, actorId, startSimulation(port, actorId, start, startTurn), plan.steps);
+  return result.ok ? asPlanSimulation(result.partial) : result;
 }

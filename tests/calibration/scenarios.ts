@@ -3,7 +3,8 @@ import type { CombatantDefinition, CreatureId, Encounter, GridPosition, Personal
 import { createSimulationPort } from "../../src/combat-controller";
 import { buildKnowledgeView, observeState, priorsForPartyLevel } from "../../src/perception";
 import { computeFeatures, simulatePlan } from "../../src/tactical-brain";
-import type { CalibrationCase, FeatureVector, Plan, PlanStep } from "../../src/tactical-brain";
+import type { CalibrationCase, FeatureVector, Plan, PlanStep, SimulationPort } from "../../src/tactical-brain";
+import type { KnowledgeView } from "../../src/perception";
 import { PROVISIONAL_SCENARIO, TABLE_RULES_OF_THE_PLAYERS_TABLE, goblin } from "../../src/scenarios/provisionalScenario";
 import { engine } from "../helpers";
 import { readFileSync } from "node:fs";
@@ -291,7 +292,8 @@ export const SCENARIOS: readonly Scenario[] = [
 ];
 
 /** Rasgos de cada opción de un escenario, vistos por el actor (solo con su conocimiento). */
-export function scenarioFeatures(scenario: Scenario): Record<string, FeatureVector> {
+/** Estado creído, vista y puerto de simulación del actor del escenario. */
+export function scenarioContext(scenario: Scenario): { readonly port: SimulationPort; readonly view: KnowledgeView } {
   let e = observeState(scenario.encounter);
   if (scenario.id === "E2") {
     // Lo que el bando vio el turno anterior: Caín hirió a goblin-2 (6 de daño, a distancia).
@@ -306,7 +308,11 @@ export function scenarioFeatures(scenario: Scenario): Record<string, FeatureVect
     };
   }
   const view = buildKnowledgeView(e, scenario.actorId, priorsForPartyLevel(1));
-  const port = createSimulationPort(e, view);
+  return { port: createSimulationPort(e, view), view };
+}
+
+export function scenarioFeatures(scenario: Scenario): Record<string, FeatureVector> {
+  const { port, view } = scenarioContext(scenario);
   const out: Record<string, FeatureVector> = {};
   for (const [option, plan] of Object.entries(scenario.options)) {
     const simulation = simulatePlan(port, scenario.actorId, plan);
