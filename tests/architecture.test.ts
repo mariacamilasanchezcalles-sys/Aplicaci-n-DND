@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const ALLOWED: Record<string, readonly string[]> = {
   models: [],
   rules: ["models"],
-  perception: ["models"],
+  perception: ["models", "rules"],
   "tactical-brain": ["models", "perception"],
   persistence: ["models"],
   "ui-bridge": ["models", "rules", "persistence", "scenarios"],

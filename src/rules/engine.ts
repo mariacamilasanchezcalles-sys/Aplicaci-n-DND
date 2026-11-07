@@ -77,6 +77,7 @@ export function createRulesEngine(): RulesEngine {
         round: 0,
         turnIndex: -1,
         sideMorale: {},
+        sideKnowledge: {},
       };
     },
 

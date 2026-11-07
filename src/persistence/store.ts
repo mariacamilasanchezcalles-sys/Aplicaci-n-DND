@@ -9,8 +9,9 @@ import type { Encounter, EncounterId } from "../models";
  * v7: condiciones activas, Cansancio, estado vital y salvaciones contra la muerte.
  * v8: iniciativa (totales, turno actual), reacción disponible y Esquivar persistente.
  * v9: bandos; reglas caseras Flanquear, Marcar, Daño masivo y Moral.
+ * v10: conocimiento compartido por bando (`sideKnowledge`).
  */
-export const SNAPSHOT_SCHEMA_VERSION = 9 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 10 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

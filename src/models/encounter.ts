@@ -1,6 +1,7 @@
 import type { CreatureId, EncounterId } from "./ids";
 import type { CombatantRecord } from "./creature";
 import type { DiagonalRule, GridConfig } from "./position";
+import type { SideKnowledge } from "./knowledge";
 
 /**
  * Política de ocupación de casillas, como DATO del encuentro para que el
@@ -85,4 +86,6 @@ export interface Encounter {
   readonly turnIndex: number;
   /** Moral por bando (regla casera). */
   readonly sideMorale: Readonly<Record<string, SideMorale>>;
+  /** Conocimiento compartido de cada bando (percepción y memoria). */
+  readonly sideKnowledge: Readonly<Record<string, SideKnowledge>>;
 }

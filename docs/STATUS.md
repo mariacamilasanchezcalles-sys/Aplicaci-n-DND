@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 21 archivos de prueba, 286 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 22 archivos de prueba, 295 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -20,7 +20,13 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
-## Cerebro táctico: especificación recibida, diseño propuesto (2026-11-07)
+## Cerebro táctico, etapa 1: percepción y memoria (2026-11-07)
+- `models/knowledge.ts`: memoria por bando (`Encounter.sideKnowledge`, guardado v10).
+- `perception/memory.ts`: `observeState` (posición, estado vital, condiciones visibles, Maltrecho) y `observeLogEntries` (de las órdenes del turno: cotas de CA con las tiradas del propio bando, daño visto y causado, ataques y capacidades vistos). El bando percibe lo que ve cualquiera de sus miembros conscientes.
+- `perception/knowledge.ts`: `buildKnowledgeView` (sí mismo y aliados completos; enemigos solo con lo recordado, con estimaciones e incertidumbre; supuesto inicial pasado como dato, sin tabla todavía).
+- Pendiente: llamar a la percepción tras cada orden lo hará el `combat-controller` (etapa 6); las pruebas lo hacen a mano.
+
+## Cerebro táctico: diseño aprobado (2026-11-07)
 Especificación de la jugadora en `TACTICAL_BRAIN_SPEC.md`; propuesta técnica en `TACTICAL_BRAIN_DESIGN.md` (decisiones 69–75). **Sin código hasta su aprobación.**
 
 ## Bandos y reglas caseras (2026-11-07)

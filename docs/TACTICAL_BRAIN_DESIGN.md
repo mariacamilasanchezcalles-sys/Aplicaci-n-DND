@@ -188,7 +188,7 @@ El cerebro puede empezar sin todo esto: decidirá con lo que exista y cada pieza
 opciones sin rehacerlo.
 
 ## 10. Etapas propuestas
-1. **Percepción y memoria:** eventos, `KnowledgeView`, estimación de CA y PG, capacidades vistas.
+1. **[HECHA 2026-11-07] Percepción y memoria:** eventos, `KnowledgeView`, estimación de CA y PG, capacidades vistas.
    Con pruebas como "no conoce la CA exacta" o "aprende de sus fallos".
 2. **Candidatos y simulación:** `reachableSquares`, generadores de candidatos, estado creído y
    puerto de simulación con valores esperados.

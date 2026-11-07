@@ -115,3 +115,9 @@
 73. ~~**Suposición inicial de CA y PG**~~ → CONFIRMADO: según el **nivel del grupo**, definido en el encuentro; tabla de CA y PG típicos por nivel PENDIENTE (la propondré con fuente para su aprobación), corregida con lo observado.
 74. ~~**Comunicación entre aliados**~~ → CONFIRMADO: los monstruos de un bando comparten todo (conocimiento e intenciones).
 75. ~~**Variación con semilla**~~ → CONFIRMADO: desempate siempre igual (determinista); la variación con semilla queda para más adelante, opcional.
+
+## Etapa 1 del cerebro: percepción y memoria (2026-11-07)
+76. **Maltrecho es visible** (PROPUESTA): quien ve a una criatura sabe si está Maltrecha. Con el daño neto visto acota sus PG máximos. La cota falla si recibió daño o curación que el bando no vio.
+77. **Condiciones visibles** (PROPUESTA): todas las condiciones de una criatura que se ve, salvo Invisible; el Cansancio, como presente o ausente.
+78. **Qué se aprende de un ataque ajeno** (PROPUESTA): de los ataques de otro bando solo se aprende el ataque usado y el daño (no el total de la tirada). Tampoco se aprende aún el bonificador de salvación de los personajes.
+79. **Percepción solo por la vista**: oído, sentidos especiales y luz quedan para cuando existan en el motor (decisión 52).

@@ -85,7 +85,7 @@ describe("contrato del cerebro táctico", () => {
     actorId,
     personality: "pragmatic",
     legalActions,
-    knowledge: { observerId: actorId, knownCreatures: [] },
+    knowledge: { observerId: actorId, side: "monsters", round: 0, knownCreatures: [] },
   };
 
   it("el punto de integración vacío no decide nada", () => {
