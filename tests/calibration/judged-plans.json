@@ -1,0 +1,723 @@
+{
+ "_comment": "Planes que encontr\u00f3 la b\u00fasqueda (planTurn) y que la jugadora juzg\u00f3 (2026-11-07, ronda 1). chosen: lo prefiere a su respuesta; worse: peor que su respuesta; acceptable: tan bueno como su respuesta (sin restricci\u00f3n). Ver docs/BRAIN_CALIBRATION.md \u00a75. Desde la ronda 1, la jugadora delega en Claude los juicios evidentes y los conflictos (2026-11-07); cada uno lleva su nota.",
+ "rounds": [
+  {
+   "round": 1,
+   "plans": [
+    {
+     "scenario": "E1",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dodge"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dodge"
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "bonusAction",
+         "bonusActionId": "nimble-escape"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "disengage"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 3,
+          "row": 9
+         },
+         {
+          "column": 2,
+          "row": 9
+         },
+         {
+          "column": 1,
+          "row": 9
+         },
+         {
+          "column": 0,
+          "row": 8
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "worse",
+      "pacifist": "acceptable"
+     },
+     "note": "Pacifista: la jugadora lo juzg\u00f3 peor, pero contradice exactamente a E6 (Esquivar frente a atacar a Cata, goblin sano); la especificaci\u00f3n (\"evita causar da\u00f1o si tiene alternativas\") favorece E6. Resuelto por Claude por delegaci\u00f3n."
+    },
+    {
+     "scenario": "E2",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 3,
+          "row": 8
+         },
+         {
+          "column": 2,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 6
+         }
+        ]
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "shortbow",
+        "targetId": "cata"
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "chosen"
+     }
+    },
+    {
+     "scenario": "E3",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dodge"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dodge"
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "bonusAction",
+         "bonusActionId": "nimble-escape"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "disengage"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 4,
+          "row": 8
+         },
+         {
+          "column": 4,
+          "row": 7
+         },
+         {
+          "column": 4,
+          "row": 6
+         },
+         {
+          "column": 4,
+          "row": 5
+         },
+         {
+          "column": 4,
+          "row": 4
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "acceptable"
+     }
+    },
+    {
+     "scenario": "E3",
+     "key": "s2",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dash"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dash"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 3,
+          "row": 8
+         },
+         {
+          "column": 2,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 6
+         },
+         {
+          "column": 0,
+          "row": 5
+         },
+         {
+          "column": 0,
+          "row": 4
+         },
+         {
+          "column": 0,
+          "row": 3
+         },
+         {
+          "column": 0,
+          "row": 2
+         },
+         {
+          "column": 0,
+          "row": 1
+         },
+         {
+          "column": 0,
+          "row": 0
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "acceptable"
+     },
+     "note": "La jugadora lo juzg\u00f3 peor, pero mide exactamente igual que su respuesta (un ataque de Cata en ambos casos): empate, sin restricci\u00f3n. Resuelto por Claude por delegaci\u00f3n."
+    },
+    {
+     "scenario": "E4",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 10,
+          "row": 7
+         },
+         {
+          "column": 10,
+          "row": 6
+         },
+         {
+          "column": 11,
+          "row": 5
+         },
+         {
+          "column": 12,
+          "row": 4
+         },
+         {
+          "column": 13,
+          "row": 3
+         }
+        ]
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "shortbow",
+        "targetId": "cata"
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "acceptable"
+     },
+     "note": "Resuelto por Claude por delegaci\u00f3n de la jugadora (conflicto con E10, defensa propia)."
+    },
+    {
+     "scenario": "E6",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dodge"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dodge"
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "bonusAction",
+         "bonusActionId": "nimble-escape"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "disengage"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 1,
+          "row": 0
+         },
+         {
+          "column": 2,
+          "row": 0
+         },
+         {
+          "column": 3,
+          "row": 0
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "acceptable"
+     }
+    },
+    {
+     "scenario": "E7",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "scimitar",
+        "targetId": "cata"
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "bonusAction",
+         "bonusActionId": "nimble-escape"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "disengage"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 4,
+          "row": 8
+         },
+         {
+          "column": 4,
+          "row": 7
+         },
+         {
+          "column": 4,
+          "row": 6
+         },
+         {
+          "column": 4,
+          "row": 5
+         },
+         {
+          "column": 4,
+          "row": 4
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "aggressive": "acceptable"
+     }
+    },
+    {
+     "scenario": "E8",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dash"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dash"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 1,
+          "row": 3
+         },
+         {
+          "column": 1,
+          "row": 4
+         },
+         {
+          "column": 1,
+          "row": 5
+         },
+         {
+          "column": 1,
+          "row": 6
+         },
+         {
+          "column": 1,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 8
+         },
+         {
+          "column": 0,
+          "row": 9
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "worse"
+     }
+    },
+    {
+     "scenario": "E9",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dash"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dash"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 1,
+          "row": 3
+         },
+         {
+          "column": 1,
+          "row": 4
+         },
+         {
+          "column": 1,
+          "row": 5
+         },
+         {
+          "column": 1,
+          "row": 6
+         },
+         {
+          "column": 1,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 8
+         },
+         {
+          "column": 0,
+          "row": 9
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "worse"
+     }
+    },
+    {
+     "scenario": "E10",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "sheet",
+         "capabilityId": "breath"
+        }
+       },
+       {
+        "kind": "effect",
+        "placement": {
+         "origin": {
+          "column": 3,
+          "row": 2
+         },
+         "direction": "se"
+        }
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "worse"
+     }
+    }
+   ]
+  },
+  {
+   "round": 2,
+   "plans": [
+    {
+     "scenario": "E2",
+     "key": "s2",
+     "plan": {
+      "steps": [
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 4,
+          "row": 9
+         },
+         {
+          "column": 3,
+          "row": 8
+         },
+         {
+          "column": 2,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 6
+         }
+        ]
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "shortbow",
+        "targetId": "cain"
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "acceptable",
+      "aggressive": "acceptable"
+     },
+     "note": "Ronda 2: aceptado por Claude por delegaci\u00f3n de la jugadora (\"no es dif\u00edcil asumir la respuesta\"). Su respuesta (disparar a Ca\u00edn) con mejor posici\u00f3n."
+    },
+    {
+     "scenario": "E5",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 5,
+          "row": 9
+         }
+        ]
+       },
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "scimitar",
+        "targetId": "cain"
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "aggressive": "acceptable"
+     },
+     "note": "Ronda 2: aceptado por Claude por delegaci\u00f3n de la jugadora (\"no es dif\u00edcil asumir la respuesta\"). Sigue siendo atacar."
+    },
+    {
+     "scenario": "E10",
+     "key": "s2",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "dash"
+        }
+       },
+       {
+        "kind": "standardAction",
+        "action": "dash"
+       },
+       {
+        "kind": "move",
+        "path": [
+         {
+          "column": 1,
+          "row": 3
+         },
+         {
+          "column": 1,
+          "row": 4
+         },
+         {
+          "column": 1,
+          "row": 5
+         },
+         {
+          "column": 1,
+          "row": 6
+         },
+         {
+          "column": 1,
+          "row": 7
+         },
+         {
+          "column": 1,
+          "row": 8
+         },
+         {
+          "column": 0,
+          "row": 9
+         }
+        ]
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pacifist": "acceptable"
+     },
+     "note": "Ronda 2: aceptado por Claude por delegaci\u00f3n de la jugadora (\"no es dif\u00edcil asumir la respuesta\"). Huir encaja con 'prioriza huir' (especificaci\u00f3n \u00a74)."
+    }
+   ]
+  }
+ ]
+}

@@ -95,7 +95,7 @@ Todos en unidades naturales, calculados sobre el estado creído (sin datos ocult
 Supuestos para medir el riesgo (PROPUESTA, decisión 85; derivados del SRD): un enemigo del que no
 se conocen ataques ataca con +(bonificador por competencia + 3) y 1d8 + 3 a 5 pies, con Velocidad 30.
 
-## 4. Pesos calculados (2026-11-07, 19 decisiones) — PENDIENTES DE APROBACIÓN
+## 4. Pesos calculados (2026-11-07, 19 decisiones) — APROBADOS, sustituidos por los del §6
 Obtenidos con `npm run calibrate` a partir de las 19 decisiones y de los signos que exige la
 descripción de cada personalidad (decisión 88). Guardados en `src/tactical-brain/personalities.json`;
 `tests/calibration/decisions.test.ts` comprueba que cada personalidad elige lo decidido.
@@ -152,3 +152,50 @@ la jugadora entre paréntesis):
 Conclusión: los pesos cumplen las 19 decisiones entre las opciones escritas, pero **no generalizan**.
 El Draco pragmático huye en lugar de atacar, y el pacifista usa el aliento. Propuesta (decisión 98):
 recalibrar añadiendo como alternativas los planes de la búsqueda que la jugadora rechace.
+
+## 6. Recalibración con la búsqueda (2026-11-07)
+Los planes de la búsqueda del §5 se juzgaron y se añadieron como restricciones
+(`tests/calibration/judged-plans.json`): "peor" exige que la respuesta gane; "aceptable" no restringe;
+"elegido" sustituye a la respuesta.
+
+**Ronda 1 (jugadora):** peores: E8 y E9 huir (pragmático), E10 aliento (pacifista), E1 Esquivar y
+huir (pragmático). Elegido: E2 pacifista "alejarse y disparar a Cata". Aceptables: E3 pragmático, E6
+pacifista y E7 agresivo (su idea con un extra).
+
+**Conflictos encontrados** (programa lineal: ningún peso con los signos los cumplía) y cómo se
+resolvieron (la jugadora delega estos juicios, decisión 104):
+1. Pragmático E3 (Esquivar con 2 PG) frente a E9 (zarpazo antes que huir): faltaba medir bien la
+   supervivencia. `deathRisk` pasa a ser la probabilidad de caer a 0 PG (decisión 99).
+2. Pacifista E4 (disparar a Caín, que no amenaza) frente a E10 (zarpazo a Cata, que sí): se mantiene
+   la defensa propia (E10, como E1); en E4, disparar a Cata pasa a ser aceptable.
+3. Pacifista E3: "Correr y huir" mide exactamente igual que "Destrabarse y huir" (un ataque de Cata
+   en ambos casos): empate, aceptable.
+4. Pacifista E3 (huir con 2 PG) frente a E6 (Esquivar sano): nuevo rasgo
+   `adjacentEnemiesWhileBloodied` ("prioriza huir", decisión 100).
+5. Pacifista E1 (atacar y huir) frente a E6 (Esquivar antes que atacar): comparaciones opuestas; la
+   especificación ("evita causar daño si tiene alternativas") favorece E6; en E1, "Esquivar,
+   Destrabarse y alejarse" pasa a ser aceptable para el pacifista.
+
+**Ronda 2 (Claude, por delegación):** con los pesos nuevos, la búsqueda propone en E2 (pragmático y
+agresivo) su respuesta con mejor posición, en E5 (agresivo) moverse y atacar a Caín y en E10
+(pacifista) alejarse de Cata. Los tres son aceptables. Desde entonces la búsqueda elige lo decidido en
+los 18 casos (`tests/calibration/search.test.ts`).
+
+Pesos vigentes (`src/tactical-brain/personalities.json`):
+
+| Rasgo | Pragmático | Agresivo | Pacifista |
+|---|---|---|---|
+| damageDealt | 10,362 | 8,141 | −3,65 |
+| threatReduction | 9,188 | 9,188 | 0 |
+| immediateThreatReduction | 2,475 | 3,612 | 6,275 |
+| finishingChance | 0,969 | 0,814 | −0,365 |
+| damageTaken | −9,87 | −4,35 | −6,322 |
+| deathRisk | −82,418 | −0,817 | 0 |
+| adjacentEnemies | −1 | 1 | −3 |
+| adjacentEnemiesWhileBloodied | 0 | 0 | −29 |
+| flankingPairs | 16 | 2 | −30 |
+| resourcesSpent | −125 | 0 | −68 |
+| conditionsInflicted | 0 | 0 | 0 |
+| friendlyDamage | 0 | 0 | 0 |
+
+Siguen sin casos que las pongan a prueba: condiciones impuestas y daño a aliados (peso 0).

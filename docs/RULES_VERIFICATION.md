@@ -79,9 +79,9 @@ Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PD
 | **X/Day** | Se recuperan los usos con un descanso largo | Ídem | Sin implementar |
 | **Orden de modificadores de daño** | Primero bonificadores, penalizadores y multiplicadores; después Resistencia (mitad, redondeando hacia abajo); por último Vulnerabilidad (doble). No se acumulan. La Inmunidad anula el daño | SRD 5.2.1, "Damage and Healing" | `applyDamageModifiers` (las partes del mismo tipo se agrupan: PROPUESTA, decisión 42) |
 | **Maltrecha (Bloodied)** | La mitad de sus PG o menos | Glosario, "Bloodied" | Predicado `selfBloodied` |
-| **Incapacitado** | No puede realizar acciones, acciones adicionales ni reacciones; pierde la Concentración | Glosario | Sin implementar (no hay condiciones) |
-| **Esquivar** | Hasta el inicio de su siguiente turno: las tiradas de ataque contra ella tienen Desventaja si ve al atacante, y tiene Ventaja en las salvaciones de Destreza. Lo pierde si queda Incapacitada o con Velocidad 0 | Glosario, "Dodge" | Solo se registra `dodging`; sin efectos todavía |
-| **Destrabarse** | Su movimiento no provoca ataques de oportunidad durante el resto del turno | Glosario | Solo se registra `disengaged` |
+| **Incapacitado** | No puede realizar acciones, acciones adicionales ni reacciones; pierde la Concentración | Glosario | Implementado (`cannotAct`); Concentración sin implementar |
+| **Esquivar** | Hasta el inicio de su siguiente turno: las tiradas de ataque contra ella tienen Desventaja si ve al atacante, y tiene Ventaja en las salvaciones de Destreza. Lo pierde si queda Incapacitada o con Velocidad 0 | Glosario, "Dodge" | Implementado: `dodgeActive` y `attackConditions` (`rules/conditions.ts`) |
+| **Destrabarse** | Su movimiento no provoca ataques de oportunidad durante el resto del turno | Glosario | Implementado (`disengaged` evita los ataques de oportunidad) |
 | **Correr** | Movimiento extra igual a su Velocidad (con los modificadores aplicados) | Glosario, "Dash" | `budgetFeet += speedFeet` |
 | **Muerte de monstruos** | Un monstruo muere en el instante en que llega a 0 PG, aunque el DM puede tratarlo como a un personaje | SRD 5.2.1, "Instant Death" | Sin implementar |
 | **Notación de ataques** | "Hit:", "Miss:" y "Hit or Miss:"; un ataque tiene un solo objetivo salvo que se diga otra cosa. "Half damage only": la mitad del daño, ignorando el resto del efecto | SRD 5.2.1, Monsters | `onHit`, `onMiss`, `onHitOrMiss`; `halfDamage` |

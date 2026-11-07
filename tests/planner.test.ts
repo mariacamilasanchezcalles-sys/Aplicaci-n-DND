@@ -14,6 +14,13 @@ import {
 } from "../src/tactical-brain";
 import type { FeatureWeights, SearchParameters } from "../src/tactical-brain";
 import { SCENARIOS, scenarioContext } from "./calibration/scenarios";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { createSimulationPort } from "../src/combat-controller";
+import { buildKnowledgeView, observeState, priorsForPartyLevel } from "../src/perception";
+import { combatantFromSheet, loadCreatureSheet } from "../src/sheets";
+import type { CombatantDefinition } from "../src/models";
+import { emptyEncounter, engine } from "./helpers";
 
 /**
  * Planificador (etapa 4). Solo se comprueba el MECANISMO: legalidad,
@@ -110,5 +117,54 @@ describe("decideOpportunityAttack", () => {
     const decision = decideOpportunityAttack(port, view, opportunity, { ...zero, damageDealt: 1 });
     expect(decision?.attackId).toBe("scimitar");
     expect(decision!.score).toBeGreaterThan(0);
+  });
+});
+
+describe("planTurn con fichas (Multiataque)", () => {
+  /** Bruto de prueba sin la roca: solo garra (5 pies) y mordisco (10 pies, sin Agarrar). */
+  function bruteWithoutRock(): CombatantDefinition {
+    const raw = JSON.parse(readFileSync(join(__dirname, "fixtures/sheets/test-brute.json"), "utf8"));
+    raw.attacks = raw.attacks.filter((a: { id: string }) => a.id !== "rock");
+    // Agarrar al impactar aún no está modelado (el puente omite ese ataque): solo daño.
+    const bite = raw.attacks.find((a: { id: string }) => a.id === "bite");
+    bite.onHit = bite.onHit.filter((e: { kind: string }) => e.kind === "damage");
+    const multiattack = raw.capabilities.find((c: { id: string }) => c.id === "multiattack");
+    multiattack.body.steps[0].body = { op: "attack", attackRef: "claw" };
+    raw.capabilities = raw.capabilities.filter((c: { id: string }) => c.id === "multiattack");
+    const loaded = loadCreatureSheet(JSON.stringify(raw));
+    if (!loaded.valid) throw new Error(JSON.stringify(loaded.errors));
+    return combatantFromSheet(loaded.sheet, { creatureId: "brute", personality: "pragmatic" }).definition;
+  }
+  const pc = (name: string): CombatantDefinition => ({
+    kind: "playerCharacter",
+    registration: "simplified",
+    testRole: "melee-fighter",
+    id: asCreatureId(name),
+    label: name,
+    size: "medium",
+    stats: { maxHitPoints: 10, armorClass: 14, speedFeet: 30 },
+    attacks: [],
+    bonusActions: [],
+    traits: [],
+  });
+
+  it("usa el Multiataque y se mueve entre ataques para alcanzar a otro objetivo", () => {
+    let e = engine.addCombatant(emptyEncounter(16, 16), bruteWithoutRock(), { column: 2, row: 2 });
+    e = engine.addCombatant(e, pc("cata"), { column: 4, row: 2 });
+    e = engine.addCombatant(e, pc("cain"), { column: 2, row: 7 });
+    e = observeState(e);
+    const brute = asCreatureId("brute");
+    const view = buildKnowledgeView(e, brute, priorsForPartyLevel(1));
+    const port = createSimulationPort(e, view);
+    // Solo cuenta rematar (tope 1 por objetivo): repartir los ataques puntúa más.
+    const decision = planTurn(port, view, brute, { ...zero, finishingChance: 1 }, FULL)!;
+    const steps = decision.best.plan.steps;
+    expect(simulatePlan(port, brute, decision.best.plan).ok).toBe(true);
+    expect(steps[0]).toEqual({ kind: "begin", source: { kind: "sheet", capabilityId: "multiattack" } });
+    const targets = steps.flatMap((step) => (step.kind === "attack" ? [step.targetId] : []));
+    expect(new Set(targets)).toEqual(new Set(["cata", "cain"]));
+    const firstAttack = steps.findIndex((step) => step.kind === "attack");
+    const lastAttack = steps.length - 1 - [...steps].reverse().findIndex((step) => step.kind === "attack");
+    expect(steps.slice(firstAttack, lastAttack).some((step) => step.kind === "move")).toBe(true);
   });
 });

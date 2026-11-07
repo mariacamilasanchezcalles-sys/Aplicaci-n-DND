@@ -107,6 +107,8 @@ export const PERSONALITY_SIGNS: Readonly<Record<"pragmatic" | "aggressive" | "pa
   },
   pacifist: {
     damageDealt: "nonPositive",
+    // "Prioriza huir" (especificación §4): sobre todo si está herido.
+    adjacentEnemiesWhileBloodied: "nonPositive",
     finishingChance: "nonPositive",
     damageTaken: "nonPositive",
     deathRisk: "nonPositive",

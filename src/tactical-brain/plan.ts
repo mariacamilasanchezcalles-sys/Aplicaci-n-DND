@@ -46,6 +46,7 @@ export interface ProvokedReaction {
   readonly reactorId: CreatureId;
   /** Daño esperado del ataque de oportunidad (se supone que el enemigo lo hace). */
   readonly expectedDamage: number;
+  readonly hitChance: number;
 }
 
 export type PlanSimulation =
@@ -178,7 +179,7 @@ export function continueSimulation(
       const pending = result.turn.pendingReactions[0]!;
       const attackId = pending.attackIds[0];
       const odds = attackId === undefined ? null : port.attackOdds(result.encounter, pending.reactorId, attackId, actorId);
-      provoked.push({ reactorId: pending.reactorId, expectedDamage: odds?.expectedDamage ?? 0 });
+      provoked.push({ reactorId: pending.reactorId, expectedDamage: odds?.expectedDamage ?? 0, hitChance: odds?.hitChance ?? 0 });
       result = port.apply(result.encounter, result.turn, { kind: "resolveReaction", reactorId: pending.reactorId, take: false });
     }
     // Salvaciones de jugadores pendientes (Daño masivo): en la simulación se

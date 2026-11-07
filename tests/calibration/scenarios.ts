@@ -314,7 +314,7 @@ export function scenarioContext(scenario: Scenario): { readonly port: Simulation
 export function scenarioFeatures(scenario: Scenario): Record<string, FeatureVector> {
   const { port, view } = scenarioContext(scenario);
   const out: Record<string, FeatureVector> = {};
-  for (const [option, plan] of Object.entries(scenario.options)) {
+  for (const [option, plan] of Object.entries(allPlans(scenario))) {
     const simulation = simulatePlan(port, scenario.actorId, plan);
     if (!simulation.ok) throw new Error(`${scenario.id}${option}: paso ${simulation.failedStep} (${simulation.reason})`);
     out[option] = computeFeatures(port, view, scenario.actorId, simulation);
@@ -322,19 +322,57 @@ export function scenarioFeatures(scenario: Scenario): Record<string, FeatureVect
   return out;
 }
 
+/**
+ * Planes que encontró la búsqueda y que la jugadora juzgó por personalidad
+ * (ronda a ronda): "chosen" sustituye a su respuesta, "worse" es peor que su
+ * respuesta y "acceptable" vale tanto como ella (no restringe).
+ */
+type Verdict = "chosen" | "worse" | "acceptable";
+interface JudgedPlan {
+  readonly scenario: string;
+  readonly key: string;
+  readonly plan: Plan;
+  readonly verdicts: Partial<Record<PersonalityId, Verdict>>;
+}
+const JUDGED: readonly JudgedPlan[] = (
+  JSON.parse(readFileSync(join(__dirname, "judged-plans.json"), "utf8")) as { rounds: { plans: JudgedPlan[] }[] }
+).rounds.flatMap((r) => r.plans);
+
+export const judgedPlans = (scenario: Scenario): readonly JudgedPlan[] => JUDGED.filter((j) => j.scenario === scenario.id);
+
+/** Todos los planes del escenario: las opciones escritas y los juzgados. */
+export function allPlans(scenario: Scenario): Readonly<Record<string, Plan>> {
+  return { ...scenario.options, ...Object.fromEntries(judgedPlans(scenario).map((j) => [j.key, j.plan])) };
+}
+
+/** Lo que decidió la jugadora para una personalidad: plan elegido, peores y equivalentes. */
+export function comparisonsFor(
+  scenario: Scenario,
+  personality: PersonalityId,
+): { readonly answer: string; readonly worse: readonly string[]; readonly acceptable: readonly string[] } | null {
+  const original = scenario.answers[personality];
+  if (original === undefined) return null;
+  const judged = judgedPlans(scenario);
+  const answer = judged.find((j) => j.verdicts[personality] === "chosen")?.key ?? original;
+  const acceptable = judged.filter((j) => j.verdicts[personality] === "acceptable").map((j) => j.key);
+  const worse = [
+    ...Object.keys(scenario.options).filter((o) => o !== answer),
+    ...judged.filter((j) => j.verdicts[personality] === "worse").map((j) => j.key),
+  ];
+  return { answer, worse, acceptable };
+}
+
 /** Casos de calibración de una personalidad. */
 export function calibrationCases(personality: PersonalityId): CalibrationCase[] {
   return SCENARIOS.flatMap((scenario) => {
-    const answer = scenario.answers[personality];
-    if (answer === undefined) return [];
+    const comparison = comparisonsFor(scenario, personality);
+    if (comparison === null) return [];
     const features = scenarioFeatures(scenario);
     return [
       {
         id: scenario.id,
-        chosen: features[answer]!,
-        others: Object.entries(features)
-          .filter(([option]) => option !== answer)
-          .map(([option, f]) => ({ id: option, features: f })),
+        chosen: features[comparison.answer]!,
+        others: comparison.worse.map((option) => ({ id: option, features: features[option]! })),
       },
     ];
   });

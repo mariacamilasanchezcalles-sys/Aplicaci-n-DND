@@ -125,12 +125,39 @@ export function planTurn(
     }
   };
 
+  const attackTargets = (partial: PartialSimulation): CreatureId[] =>
+    port
+      .getOptions(partial.state, partial.turn)
+      .executionOptions.flatMap((o) => (o.choice.kind === "attack" ? [o.choice.targetId] : []));
+
+  /**
+   * Moverse entre ataques (acción de Atacar o Multiataque que se realiza como
+   * ella; PROPUESTA, decisión 101): solo tras un ataque, y solo a la casilla
+   * más barata desde la que alcanza a cada objetivo que no alcanza ya.
+   */
+  const movesBetweenAttacks = (partial: PartialSimulation): PartialSimulation[] => {
+    if (partial.steps.at(-1)?.kind !== "attack" || !port.getOptions(partial.state, partial.turn).canMove) return [];
+    const reachableNow = new Set(attackTargets(partial));
+    const nearest = new Map<CreatureId, PartialSimulation>();
+    const squares = port
+      .reachable(partial.state, partial.turn)
+      .map((r, order) => ({ r, order }))
+      .sort((a, b) => a.r.costFeet - b.r.costFeet || a.order - b.order);
+    for (const { r } of squares) {
+      const moved = extend(partial, [{ kind: "move", path: r.path }]);
+      if (!moved) continue;
+      for (const target of attackTargets(moved)) if (!reachableNow.has(target) && !nearest.has(target)) nearest.set(target, moved);
+    }
+    return [...new Set(nearest.values())];
+  };
+
   /**
    * Completa la capacidad en curso probando cada opción en cada punto de
-   * decisión. No explora moverse entre ataques de la acción de Atacar.
+   * decisión (y moverse entre ataques, ver arriba).
    */
   const completeCapability = (partial: PartialSimulation): PartialSimulation[] => {
     if (partial.turn.execution === null) return [partial];
+    const between = movesBetweenAttacks(partial).flatMap(completeCapability);
     const options = port.getOptions(partial.state, partial.turn).executionOptions;
     const steps: PlanStep[] = [];
     for (const option of options) {
@@ -141,11 +168,14 @@ export function planTurn(
       else steps.push(...effectVariants(partial, option));
     }
     if (steps.length === 0) steps.push({ kind: "forfeit" });
-    return steps.flatMap((step) => {
-      const next = extend(partial, [step]);
-      // Un paso que no avanza (no cambia el número de serie) cortaría la búsqueda.
-      return next && next.turn.serial !== partial.turn.serial ? completeCapability(next) : [];
-    });
+    return [
+      ...steps.flatMap((step) => {
+        const next = extend(partial, [step]);
+        // Un paso que no avanza (no cambia el número de serie) cortaría la búsqueda.
+        return next && next.turn.serial !== partial.turn.serial ? completeCapability(next) : [];
+      }),
+      ...between,
+    ];
   };
 
   /** Movimientos de una fase: quedarse o ir a cada casilla donde pueda terminar el turno. */

@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 25 archivos de prueba, 336 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 27 archivos de prueba, 355 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -24,7 +24,9 @@
 - `tactical-brain/plan.ts`: simulación incremental (`startSimulation`, `continueSimulation`) y pasos `forfeit`, `standUp` y `surrender`; `simulatePlan` puede continuar un turno empezado.
 - `tactical-brain/planner.ts`: `planTurn` busca el mejor plan completo por fases (levantarse, mover, capacidad con todas sus elecciones; Destrabarse y Correr junto con su movimiento), con poda por haz y parámetros de dificultad (`SearchParameters`). Determinista; replanifica desde un turno a medias.
 - `decideOpportunityAttack`: hace el ataque de oportunidad si mejora la puntuación con los mismos pesos.
-- Provisional: valores de cada nivel de dificultad (decisión 96). Con búsqueda libre, los pesos actuales eligen planes que no estaban entre las opciones de la jugadora (`BRAIN_CALIBRATION.md` §5): hay que recalibrar (decisión 98).
+- Moverse entre ataques de Atacar o de un Multiataque (decisión 101).
+- Recalibración con la búsqueda (rondas 1 y 2): `tests/calibration/judged-plans.json` guarda los planes de la búsqueda juzgados; `tests/calibration/search.test.ts` comprueba que con búsqueda libre cada personalidad elige lo decidido. Nuevo cálculo de `deathRisk` y rasgo `adjacentEnemiesWhileBloodied` (12 rasgos).
+- Provisional: valores de cada nivel de dificultad (decisión 96). Pendiente en el motor: efectos al impactar de ataques (102) y reacciones de ficha (103).
 
 ## Cerebro táctico, etapa 3: evaluación y calibración (2026-11-07)
 - Supuestos por nivel aprobados (`perception/priors.ts`) y ataque y Velocidad supuestos de los enemigos en el estado creído.

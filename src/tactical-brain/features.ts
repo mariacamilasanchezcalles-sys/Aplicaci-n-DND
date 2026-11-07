@@ -22,10 +22,19 @@ export interface FeatureVector {
   readonly finishingChance: number;
   /** Daño esperado que recibirá hasta su próximo turno, con los ataques de oportunidad del plan (PG). */
   readonly damageTaken: number;
-  /** min(1, daño esperado recibido / PG actuales). */
+  /**
+   * Probabilidad de caer a 0 PG antes de su próximo turno (Supervivencia de la
+   * especificación, en negativo). Cada amenaza impacta con su probabilidad y
+   * hace su daño medio por impacto (PROPUESTA, decisión 99).
+   */
   readonly deathRisk: number;
   /** Enemigos en pie a 5 pies o menos al terminar. */
   readonly adjacentEnemies: number;
+  /**
+   * Los mismos, solo si al terminar está Maltrecho (la mitad de sus PG o
+   * menos; REGLA OFICIAL VERIFICADA); si no, 0 (PROPUESTA, decisión 100).
+   */
+  readonly adjacentEnemiesWhileBloodied: number;
   /** Pares (miembro del bando, enemigo) en los que hay flanqueo al terminar. */
   readonly flankingPairs: number;
   /** Usos limitados gastados. */
@@ -44,6 +53,7 @@ export const FEATURE_NAMES = [
   "damageTaken",
   "deathRisk",
   "adjacentEnemies",
+  "adjacentEnemiesWhileBloodied",
   "flankingPairs",
   "resourcesSpent",
   "conditionsInflicted",
@@ -107,14 +117,16 @@ export function computeFeatures(
     if (hp !== null && hp !== undefined && hp > 0) finishingChance += Math.min(1, damage / hp);
   }
 
-  const provokedDamage = simulation.provoked.reduce((sum, p) => sum + p.expectedDamage, 0);
-  const incoming = port.incomingThreats(final, actorId).reduce((sum, t) => sum + t.expectedDamage, 0);
-  const damageTaken = provokedDamage + incoming;
+  const threats = [...simulation.provoked, ...port.incomingThreats(final, actorId)];
+  const damageTaken = threats.reduce((sum, t) => sum + t.expectedDamage, 0);
   const hp = me.state.currentHitPoints;
-  const deathRisk = hp === null ? 0 : hp <= 0 ? 1 : Math.min(1, damageTaken / hp);
+  const deathRisk = hp === null ? 0 : hp <= 0 ? 1 : dropChance(threats, hp);
 
   const enemies = enemiesOf(final, side).filter((id) => final.combatants[id]!.state.lifeState === "alive");
   const adjacentEnemies = enemies.filter((id) => (port.distanceFeet(final, actorId, id) ?? Infinity) <= 5).length;
+  const maxHp = me.definition.stats.maxHitPoints;
+  const bloodied = hp !== null && maxHp !== undefined && hp * 2 <= maxHp;
+  const adjacentEnemiesWhileBloodied = bloodied ? adjacentEnemies : 0;
   const members = (Object.keys(final.combatants).sort() as CreatureId[]).filter((id) => final.combatants[id]!.side === side);
   let flankingPairs = 0;
   for (const member of members) for (const enemy of enemies) if (port.flanks(final, member, enemy)) flankingPairs++;
@@ -132,11 +144,37 @@ export function computeFeatures(
     damageTaken,
     deathRisk,
     adjacentEnemies,
+    adjacentEnemiesWhileBloodied,
     flankingPairs,
     resourcesSpent,
     conditionsInflicted,
     friendlyDamage,
   };
+}
+
+/**
+ * P(la suma de daños de los impactos ≥ PG). Cada amenaza es independiente:
+ * impacta con `hitChance` y entonces hace `expectedDamage / hitChance` (el
+ * daño medio de un impacto, con críticos). Se recorren todas las
+ * combinaciones de impactos (pocas amenazas por turno).
+ */
+function dropChance(threats: readonly { readonly expectedDamage: number; readonly hitChance: number }[], hp: number): number {
+  const live = threats.filter((t) => t.hitChance > 0 && t.expectedDamage > 0);
+  let distribution = new Map<number, number>([[0, 1]]);
+  for (const t of live) {
+    const perHit = t.expectedDamage / t.hitChance;
+    const next = new Map<number, number>();
+    for (const [damage, p] of distribution) {
+      // Por encima de los PG da igual cuánto más: se agrupa para acotar el cálculo.
+      const hit = Math.min(hp, damage + perHit);
+      next.set(hit, (next.get(hit) ?? 0) + p * t.hitChance);
+      next.set(damage, (next.get(damage) ?? 0) + p * (1 - t.hitChance));
+    }
+    distribution = next;
+  }
+  let dropped = 0;
+  for (const [damage, p] of distribution) if (damage >= hp) dropped += p;
+  return Math.min(1, dropped);
 }
 
 export type FeatureWeights = Readonly<Record<FeatureName, number>>;
