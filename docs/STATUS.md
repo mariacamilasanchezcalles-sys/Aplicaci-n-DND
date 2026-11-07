@@ -20,6 +20,9 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## Cerebro táctico: especificación recibida, diseño propuesto (2026-11-07)
+Especificación de la jugadora en `TACTICAL_BRAIN_SPEC.md`; propuesta técnica en `TACTICAL_BRAIN_DESIGN.md` (decisiones 69–75). **Sin código hasta su aprobación.**
+
 ## Bandos y reglas caseras (2026-11-07)
 - **Bandos**: `CombatantRecord.side` (por defecto monstruos contra jugadores), `isEnemy`; Desventaja a distancia con un enemigo a 5 pies (regla oficial verificada); ataques de oportunidad solo de enemigos.
 - **Reglas caseras** de la guía 2014 como interruptores (`rules/houseRules.ts`): Flanquear, Marcar, Daño masivo (salvaciones pendientes de jugadores con `resolvePendingSave`) y Moral (disparadores, huida, rendición). Guardado v9. Detalle en `HOUSE_RULES.md`.

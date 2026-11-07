@@ -31,7 +31,7 @@
 11. **Rasgos con más ataques** (Extra Attack, Multiattack): hoy `attacksPerAttackAction`.
 
 ## Motor y cerebro táctico
-12. **Cómo "piensa" el cerebro.** La jugadora indicó que el cerebro piensa todo el tiempo y que lo explicará; hasta recibir esa explicación no se diseña nada. Bloquea `getLegalActions` (¿pasos sueltos o turnos completos?).
+12. **Cómo "piensa" el cerebro** → Especificación recibida el 2026-11-07 (`TACTICAL_BRAIN_SPEC.md`). Diseño propuesto en `TACTICAL_BRAIN_DESIGN.md`, **pendiente de aprobación**. Propuesta para `getLegalActions`: el cerebro construye planes encadenando los puntos de decisión del ejecutor y generadores de candidatos legales.
 13. Rangos, escalas y pesos de los cuatro factores; catálogo de personalidades (solo `pragmatic`); niveles de habilidad.
 14. Qué percibe cada criatura, memoria y ocultamiento.
 15. Catálogo de recursos (conjuros, usos por descanso) y de roles del registro simplificado.
@@ -106,3 +106,12 @@
 66. **Shock "hasta el final de su siguiente turno"** (PROPUESTA): si ocurre durante su propio turno, dura también todo el siguiente.
 67. **Escenario base de pruebas**: las pruebas del motor usan la mesa de la jugadora **sin** Flanquear, Marcar, Daño masivo ni Moral (`CORE_TEST_TABLE_RULES`); cada regla casera tiene sus propias pruebas.
 68. **Encaramarse a una criatura más grande** (regla casera confirmada): sin implementar; necesita agarrar y pruebas de característica enfrentadas.
+
+## Cerebro táctico (propuesta 2026-11-07, ver `TACTICAL_BRAIN_DESIGN.md`)
+69. **Arquitectura:** nuevo módulo `combat-controller`; `perception` podrá importar `rules` (visibilidad); el cerebro simula consecuencias con un puerto de simulación sobre un estado creído.
+70. **Factores:** sustituir los 4 factores del brief por la lista de la especificación, medida en unidades naturales.
+71. **Pesos:** calibración con escenarios aprobados por la jugadora; perfiles de personalidad como datos (JSON).
+72. **Inteligencia y memoria:** cómo influyen INT y SAB en lo que aprende y recuerda una criatura.
+73. **Suposición inicial de CA y PG desconocidos** antes de observar nada.
+74. **Comunicación entre aliados:** si comparten conocimiento e intenciones sin restricción.
+75. **Variación con semilla** del cerebro (opcional, separada de los dados).
