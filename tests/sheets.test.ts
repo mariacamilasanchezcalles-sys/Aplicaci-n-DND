@@ -155,6 +155,12 @@ describe("fichas: errores de coherencia", () => {
     ]);
   });
 
+  it("un recurso con Recarga solo puede tener un uso (SRD 5.2.1)", () => {
+    const sheet = brute();
+    sheet["resources"][0].max = 2;
+    expect(errorsOf(sheet)).toEqual([{ code: "invalidValue", path: "resources[0].max" }]);
+  });
+
   it("takenAs solo se admite en capacidades de acción", () => {
     const sheet = brute();
     sheet["capabilities"][2].takenAs = "attack";
@@ -217,11 +223,12 @@ describe("fichas: puente con el modelo actual del motor", () => {
     });
     expect(gaps.map((g) => `${g.path}:${g.reason}`)).toEqual([
       "attacks[1]:attackEffectNotSupported",
-      "resources:resourcesNotSupported",
       "traits[0]:traitEffectNotSupported",
-      "damageResistances:damageModifiersNotSupported",
       "conditionImmunities:conditionImmunitiesNotSupported",
     ]);
+    // Recursos y defensas contra el daño pasan a la criatura.
+    expect(definition.resources?.map((r) => r.id)).toEqual(["fire-breath"]);
+    expect(definition.damageResistances).toEqual(["cold"]);
     // El Mordisco (agarra al impactar) no entra en la criatura: no se aproxima.
     expect(definition.attacks.map((a) => a.id)).toEqual(["claw", "rock"]);
     // Las capacidades pasan tal cual; qué se puede ejecutar lo decide el motor.

@@ -31,6 +31,8 @@ export function stepCost(
   if (!diagonal) return { valid: true, cost: 1, diagonalCount: diagonalCountBefore };
 
   switch (rule) {
+    case "standard":
+      return { valid: true, cost: 1, diagonalCount: diagonalCountBefore + 1 };
     case "alternating-1-2":
       return {
         valid: true,

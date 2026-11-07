@@ -52,7 +52,10 @@ Una regla de moral convierte esa decisión en una **tirada** que obliga a huir. 
 iría en el motor como regla casera que **restringe** las opciones legales (por ejemplo, "debe
 huir"). El cerebro nunca la evaluaría como un peso más.
 
-## Integración (configuración de mesa: DECISIÓN CONFIRMADA; sin implementar)
+## Integración (configuración de mesa: DECISIÓN CONFIRMADA; **implementada** el 2026-11-07)
+
+Estado: `Encounter.tableRules` existe con `diagonal` (`standard` / `alternating-1-2`) y `movementThroughCreatures` (`houseSmallOrMedium`). Las reglas de la guía 2014 que usa la mesa se añadirán como interruptores **cuando se implementen**; una regla sin implementar no tiene interruptor, para que no se pueda "activar" algo que no hace nada.
+
 1. **Configuración de mesa** (`TableRules`) por encuentro o campaña, con cada regla casera u
    opcional como un interruptor con identificador, por ejemplo `diagonal: "alternating-1-2"` o
    `flanking: false`. El motor la lee; el cerebro nunca la cambia. Hoy solo existe

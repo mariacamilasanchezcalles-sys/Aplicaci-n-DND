@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 11 archivos de prueba, 182 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 14 archivos de prueba, 201 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,11 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Configuración de mesa, recursos y defensas contra el daño (2026-11-07)
+- **Configuración de mesa** (`Encounter.tableRules`): interruptores `diagonal` (`standard` = regla oficial 2024; `alternating-1-2` = regla casera) y `movementThroughCreatures` (`houseSmallOrMedium`). La diagonal sale de `grid`; el formato de guardado sube a la versión 5. La mesa de la jugadora está en `TABLE_RULES_OF_THE_PLAYERS_TABLE`.
+- **Recursos** (`rules/resources.ts`): empiezan completos, se gastan de forma atómica al iniciar la capacidad (`resourcesUnavailable` si no alcanzan) y hay un predicado `resourceAvailable`. Recarga X–6 con `rollRechargesAtTurnStart`.
+- **Defensas contra el daño** (`rules/damage.ts`): Inmunidad, Resistencia y Vulnerabilidad en el orden oficial; el ejecutor las aplica y lo registra en `damageAfterDefenses`.
 
 ## Ejecutor de turno paso a paso (2026-11-07)
 `src/rules/turnExecution.ts`: `startTurn`, `getTurnOptions` (solo opciones legales) y `applyTurnCommand` (mover, iniciar capacidad, elegir opción, renunciar, terminar turno). Ejecuta la acción de Atacar estándar, Correr, Destrabarse, Esquivar, acciones adicionales simples y capacidades de ficha compuestas de ataques y acciones estándar (Multiataque con `sequence`/`choice`/`repeat`/`optional`/`conditional`). Desventaja automática más allá del alcance normal. Lo no modelado (costes, recursos, efectos, conjuros, reacciones, condiciones, Esconderse) se rechaza con un código. Comprobaciones compartidas con `validateTurnPlan` en `rules/turnSteps.ts`.

@@ -22,10 +22,7 @@ export type AdapterGapReason =
   /** Ataque con efectos distintos del daño o efectos al fallar: se omite de la criatura. */
   | "attackEffectNotSupported"
   | "spellcastingNotSupported"
-  | "resourcesNotSupported"
   | "traitEffectNotSupported"
-  /** Resistencias, inmunidades o vulnerabilidades: `applyDamage` aún no las aplica. */
-  | "damageModifiersNotSupported"
   | "conditionImmunitiesNotSupported";
 
 export interface AdapterGap {
@@ -129,13 +126,9 @@ export function combatantFromSheet(
   }
 
   if (sheet.spellcasting) gaps.push({ path: "spellcasting", reason: "spellcastingNotSupported" });
-  if ((sheet.resources ?? []).length > 0) gaps.push({ path: "resources", reason: "resourcesNotSupported" });
   (sheet.traits ?? []).forEach((trait, index) => {
     if (trait.effects.length > 0) gaps.push({ path: `traits[${index}]`, reason: "traitEffectNotSupported" });
   });
-  for (const key of ["damageResistances", "damageImmunities", "damageVulnerabilities"] as const) {
-    if ((sheet[key] ?? []).length > 0) gaps.push({ path: key, reason: "damageModifiersNotSupported" });
-  }
   if ((sheet.conditionImmunities ?? []).length > 0) {
     gaps.push({ path: "conditionImmunities", reason: "conditionImmunitiesNotSupported" });
   }
@@ -156,6 +149,10 @@ export function combatantFromSheet(
       bonusActions,
       traits: (sheet.traits ?? []).map((trait) => ({ id: asTraitId(trait.id), label: trait.label })),
       ...(capabilities.length > 0 ? { capabilities } : {}),
+      ...(sheet.resources && sheet.resources.length > 0 ? { resources: sheet.resources } : {}),
+      ...(sheet.damageResistances?.length ? { damageResistances: sheet.damageResistances } : {}),
+      ...(sheet.damageImmunities?.length ? { damageImmunities: sheet.damageImmunities } : {}),
+      ...(sheet.damageVulnerabilities?.length ? { damageVulnerabilities: sheet.damageVulnerabilities } : {}),
     },
     gaps,
   };

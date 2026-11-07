@@ -19,6 +19,7 @@ Limitaciones: el texto se extrajo con una herramienta de lectura web, no leyendo
 | **Dash**: movimiento extra igual a la Velocidad durante el resto del turno | SRD / Glosario | Aumenta el presupuesto de movimiento |
 | **Disengage**: el movimiento no provoca ataques de oportunidad ese turno | SRD / Glosario | Aceptada como acción; sin efecto aún (no hay ataques de oportunidad) |
 | Casilla = 5 pies; Velocidad / 5 = casillas | SRD, "Playing on a Grid" | `feetPerSquare`, presupuesto de movimiento |
+| Diagonal = 1 casilla (regla base) | SRD, "Playing on a Grid" | `tableRules.diagonal: "standard"` (la mesa de la jugadora usa la casera `alternating-1-2`) |
 | **Tamaño y espacio**: Pequeña y Mediana 1x1; Grande 2x2; Enorme 3x3; Gargantuesca 4x4; 4 Diminutas por casilla | SRD, "Creature Size and Space" | `FOOTPRINT_SIDE` (Diminuta: ver pendientes) |
 | No se puede terminar el movimiento voluntariamente en un espacio ocupado | SRD, "Moving around Other Creatures" | `validatePlacement` en cada paso |
 | Alcance cuerpo a cuerpo estándar: 5 pies | Basic Rules, "Reach" | `AttackDefinition.rangeFeet.normal` (melee) |
@@ -74,9 +75,9 @@ Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PD
 | **Acción de Atacar** | Permite **una** tirada de ataque. "Moving between Attacks": si un rasgo da más de un ataque como parte de la acción de Atacar, se puede usar movimiento entre esos ataques | Glosario, "Attack [Action]" | Ataque estándar con un ataque; `canMove` entre ataques solo con `takenAs: "attack"` |
 | **Multiataque** | "Some creatures can make more than one attack when they take the Attack action… This entry details the attacks… as part of the Attack action" | SRD 5.2.1, Monsters, "Multiattack" | `Capability.takenAs: "attack"` |
 | **Mover entre ataques de Multiataque** | Se deduce de las dos filas anteriores: el Multiataque da varios ataques como parte de la acción de Atacar, así que se aplica "Moving between Attacks". Es una deducción, no una frase literal | Combinación de ambas | Ejecutor (`canMoveNow`) |
-| **Recarga X–Y** | Se puede usar una vez; al inicio de cada turno del monstruo se tira 1d6 y, si sale en el rango, se recupera; también se recupera con un descanso corto o largo | SRD 5.2.1, Monsters, "Limited Usage" | `RecoverySpec.recharge` (sin implementar) |
+| **Recarga X–Y** | Se puede usar una vez; al inicio de cada turno del monstruo se tira 1d6 y, si sale en el rango, se recupera; también se recupera con un descanso corto o largo | SRD 5.2.1, Monsters, "Limited Usage" | `rollRechargesAtTurnStart`; el validador exige 1 uso. Recuperación en descansos: sin implementar |
 | **X/Day** | Se recuperan los usos con un descanso largo | Ídem | Sin implementar |
-| **Orden de modificadores de daño** | Primero bonificadores, penalizadores y multiplicadores; después Resistencia (mitad, redondeando hacia abajo); por último Vulnerabilidad (doble). No se acumulan. La Inmunidad anula el daño | SRD 5.2.1, "Damage and Healing" | Sin implementar |
+| **Orden de modificadores de daño** | Primero bonificadores, penalizadores y multiplicadores; después Resistencia (mitad, redondeando hacia abajo); por último Vulnerabilidad (doble). No se acumulan. La Inmunidad anula el daño | SRD 5.2.1, "Damage and Healing" | `applyDamageModifiers` (las partes del mismo tipo se agrupan: PROPUESTA, decisión 42) |
 | **Maltrecha (Bloodied)** | La mitad de sus PG o menos | Glosario, "Bloodied" | Predicado `selfBloodied` |
 | **Incapacitado** | No puede realizar acciones, acciones adicionales ni reacciones; pierde la Concentración | Glosario | Sin implementar (no hay condiciones) |
 | **Esquivar** | Hasta el inicio de su siguiente turno: las tiradas de ataque contra ella tienen Desventaja si ve al atacante, y tiene Ventaja en las salvaciones de Destreza. Lo pierde si queda Incapacitada o con Velocidad 0 | Glosario, "Dodge" | Solo se registra `dodging`; sin efectos todavía |

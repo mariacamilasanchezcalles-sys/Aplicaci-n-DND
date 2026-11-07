@@ -7,9 +7,10 @@ import type {
   GridPosition,
   LegalActionSet,
   OccupancyPolicy,
+  TableRules,
   TurnPlan,
 } from "../models";
-import { PendingImplementationError } from "../models";
+import { PendingImplementationError, asResourceId } from "../models";
 import { PlacementError, validatePlacement } from "./placement";
 import { validateTurnPlan } from "./turnPlan";
 import type { LegalityResult } from "./turnPlan";
@@ -26,6 +27,8 @@ export interface CreateEncounterInput {
   /** Obligatorio: el mapa tiene dimensiones explícitas (columnas y filas). */
   readonly grid: GridConfig;
   readonly occupancyPolicy: OccupancyPolicy;
+  /** Configuración de mesa (reglas caseras activas). */
+  readonly tableRules: TableRules;
 }
 
 /**
@@ -65,6 +68,7 @@ export function createRulesEngine(): RulesEngine {
         label: input.label,
         grid: input.grid,
         occupancyPolicy: input.occupancyPolicy,
+        tableRules: input.tableRules,
         combatants: {},
         initiativeOrder: [],
         round: 0,
@@ -87,7 +91,8 @@ export function createRulesEngine(): RulesEngine {
             state: {
               position,
               currentHitPoints: definition.stats.maxHitPoints ?? null,
-              resources: [],
+              // Los usos limitados empiezan completos.
+              resources: (definition.resources ?? []).map((r) => ({ id: asResourceId(r.id), current: r.max, max: r.max })),
             },
           },
         },

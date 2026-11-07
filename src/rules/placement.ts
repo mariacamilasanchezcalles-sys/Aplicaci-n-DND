@@ -101,8 +101,11 @@ export function validatePassage(
     const blockerId = findCreatureAt(encounter, square, options.ignoreCreatureId);
     if (blockerId === null) continue;
     const blocker = encounter.combatants[blockerId];
-    if (blocker && !PASSABLE_SIZES.has(blocker.definition.size)) {
-      return { valid: false, reason: "blocked" };
+    if (!blocker) continue;
+    switch (encounter.tableRules.movementThroughCreatures) {
+      case "houseSmallOrMedium":
+        if (!PASSABLE_SIZES.has(blocker.definition.size)) return { valid: false, reason: "blocked" };
+        break;
     }
   }
   return { valid: true };

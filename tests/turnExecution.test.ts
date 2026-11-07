@@ -328,7 +328,8 @@ describe("ejecutor: requisitos y mecánicas no modeladas", () => {
     if (!loaded.valid) throw new Error("ficha no válida");
     const { definition } = combatantFromSheet(loaded.sheet, { creatureId: "brute", personality: "pragmatic" });
     expect(capabilitySupport(definition, sheetCapability("multiattack"))).toEqual(["unknownReference"]);
-    expect(capabilitySupport(definition, sheetCapability("breath"))).toEqual(["costsNotModeled", "operationNotModeled"]);
+    // El coste (carga del aliento) ya está modelado; el efecto en área no.
+    expect(capabilitySupport(definition, sheetCapability("breath"))).toEqual(["operationNotModeled"]);
     expect(capabilitySupport(definition, sheetCapability("snap-back"))).toEqual(["reactionsNotModeled"]);
   });
 });

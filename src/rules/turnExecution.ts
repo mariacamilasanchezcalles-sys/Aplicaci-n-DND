@@ -13,7 +13,10 @@ import type {
 import type { RandomSource } from "./dice";
 import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
+import { applyDamageModifiers } from "./damage";
+import type { ModifiedDamage } from "./damage";
 import { applyDamage, combineRollModes, resolveAttack } from "./resolution";
+import { spendResources } from "./resources";
 import type { AttackResolution, RollMode } from "./resolution";
 import { advanceMovement, checkAttackTarget } from "./turnSteps";
 import type { MovementProgress } from "./turnSteps";
@@ -64,6 +67,8 @@ export type TurnLogEntry =
       readonly attackId: AttackId;
       readonly targetId: CreatureId;
       readonly resolution: Extract<AttackResolution, { resolved: true }>;
+      /** Daño por tipo tras Inmunidad, Resistencia y Vulnerabilidad del objetivo. */
+      readonly damageAfterDefenses: readonly ModifiedDamage[];
       /** Daño restado a los PG (0 si el objetivo no tiene PG registrados). */
       readonly damageApplied: number;
     }
@@ -146,6 +151,7 @@ export type TurnCommandError =
   | "activationUnavailable"
   | "capabilityNotSupported"
   | "requirementsNotMet"
+  | "resourcesUnavailable"
   | "noLegalOptions"
   | "staleOption"
   | "unknownOption"
@@ -252,6 +258,7 @@ function predicateSupported(predicate: SheetPredicate): boolean {
   switch (predicate.kind) {
     case "selfBloodied":
     case "previousAttackHit":
+    case "resourceAvailable":
       return true;
     case "not":
       return predicateSupported(predicate.predicate);
@@ -259,7 +266,7 @@ function predicateSupported(predicate: SheetPredicate): boolean {
     case "any":
       return predicate.predicates.every(predicateSupported);
     default:
-      // Recursos y condiciones aún no existen en el estado del encuentro.
+      // Las condiciones aún no existen en el estado del encuentro.
       return false;
   }
 }
@@ -277,7 +284,10 @@ export function capabilitySupport(
   if (!resolved) return ["unknownReference"];
   const issues = new Set<CapabilitySupportIssue>();
   if (resolved.activation === "reaction") issues.add("reactionsNotModeled");
-  if (resolved.costs.length > 0) issues.add("costsNotModeled");
+  for (const cost of resolved.costs) {
+    if (cost.kind === "spellSlot") issues.add("costsNotModeled");
+    else if (!(definition.resources ?? []).some((r) => r.id === cost.resourceRef)) issues.add("unknownReference");
+  }
   if (!resolved.requirements.every(predicateSupported)) issues.add("predicateNotModeled");
 
   const visit = (operation: Operation, depth: number): void => {
@@ -297,7 +307,9 @@ export function capabilitySupport(
           issues.add("unknownReference");
           break;
         }
-        // DECISIÓN CONFIRMADA: se gastan los recursos de la capacidad usada; aún no hay recursos.
+        // DECISIÓN CONFIRMADA: se gastan los recursos de la capacidad usada.
+        // PENDIENTE: cobrarlos al elegir esa rama (puede estar en un choice u
+        // optional); hasta entonces una capacidad anidada con costes no se ejecuta.
         if ((referenced.costs ?? []).length > 0) issues.add("costsNotModeled");
         visit(referenced.body, depth + 1);
         break;
@@ -356,6 +368,10 @@ function evaluatePredicate(predicate: SheetPredicate, context: EvaluationContext
     }
     case "previousAttackHit":
       return context.lastAttackHit === true;
+    case "resourceAvailable": {
+      const pool = context.actor.state.resources.find((r) => r.id === predicate.resourceRef);
+      return pool !== undefined && pool.current >= 1;
+    }
     case "not":
       return !evaluatePredicate(predicate.predicate, context);
     case "all":
@@ -503,7 +519,9 @@ function tryBegin(
   actor: CombatantRecord,
   turn: TurnState,
   source: CapabilitySource,
-): { ok: true; execution: CapabilityExecution; activation: Capability["activation"] } | { ok: false; reasonCode: TurnCommandError } {
+):
+  | { ok: true; execution: CapabilityExecution; activation: Capability["activation"]; paidEncounter: Encounter }
+  | { ok: false; reasonCode: TurnCommandError } {
   const resolved = resolveCapability(actor.definition, source);
   if (!resolved) return { ok: false, reasonCode: "capabilityUnavailable" };
   if (capabilitySupport(actor.definition, source).length > 0) {
@@ -514,6 +532,10 @@ function tryBegin(
   if (!resolved.requirements.every((p) => evaluatePredicate(p, context))) {
     return { ok: false, reasonCode: "requirementsNotMet" };
   }
+  // DECISIÓN CONFIRMADA: los recursos se pagan al iniciar, todos o ninguno.
+  const resourceCosts = resolved.costs.flatMap((c) => (c.kind === "resource" ? [c] : []));
+  const paidEncounter = spendResources(encounter, actor.definition.id, resourceCosts);
+  if (paidEncounter === null) return { ok: false, reasonCode: "resourcesUnavailable" };
   const execution: CapabilityExecution = {
     source,
     takenAs: resolved.takenAs,
@@ -524,7 +546,7 @@ function tryBegin(
   // legal (p. ej. Atacar sin nadie al alcance): primero hay que moverse.
   const options = concreteOptions(encounter, actor, execution);
   if (!options.some((o) => o.choice.kind !== "finish")) return { ok: false, reasonCode: "noLegalOptions" };
-  return { ok: true, execution, activation: resolved.activation };
+  return { ok: true, execution, activation: resolved.activation, paidEncounter };
 }
 
 export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptions {
@@ -606,10 +628,11 @@ export function applyTurnCommand(
       if (turn.execution !== null) return fail("executionInProgress");
       const begun = tryBegin(encounter, actor, turn, command.source);
       if (!begun.ok) return fail(begun.reasonCode);
-      // DECISIÓN CONFIRMADA: la activación se paga una sola vez, al iniciar, y no se devuelve.
+      // DECISIÓN CONFIRMADA: la activación y los recursos se pagan una sola
+      // vez, al iniciar, y no se devuelven.
       return {
         ok: true,
-        encounter,
+        encounter: begun.paidEncounter,
         turn: next(
           {
             actionUsed: turn.actionUsed || begun.activation === "action",
@@ -721,12 +744,16 @@ function applyChoice(
       // Sin CA registrada no se puede resolver: no se consume nada.
       if (!resolution.resolved) return fail("targetArmorClassUnknown");
 
+      const defended = applyDamageModifiers(
+        check.target.definition,
+        resolution.damage.map((part) => ({ type: part.type, amount: part.total })),
+      );
       let updatedEncounter = encounter;
       let damageApplied = 0;
-      if (resolution.totalDamage > 0 && check.target.state.currentHitPoints !== null) {
-        damageApplied = Math.min(resolution.totalDamage, check.target.state.currentHitPoints);
-        // PENDIENTE: resistencias/vulnerabilidades e inmunidades; consecuencias de 0 PG.
-        updatedEncounter = applyDamage(encounter, choice.targetId, resolution.totalDamage);
+      if (defended.total > 0 && check.target.state.currentHitPoints !== null) {
+        damageApplied = Math.min(defended.total, check.target.state.currentHitPoints);
+        // PENDIENTE: consecuencias de llegar a 0 PG (decisión 8).
+        updatedEncounter = applyDamage(encounter, choice.targetId, defended.total);
       }
       const updated: CapabilityExecution = {
         ...execution,
@@ -734,7 +761,16 @@ function applyChoice(
         lastAttackHit: resolution.outcome !== "miss",
       };
       const entries = finished(
-        [{ kind: "attackResolved", attackId: choice.attackId, targetId: choice.targetId, resolution, damageApplied }],
+        [
+          {
+            kind: "attackResolved",
+            attackId: choice.attackId,
+            targetId: choice.targetId,
+            resolution,
+            damageAfterDefenses: defended.instances,
+            damageApplied,
+          },
+        ],
         updated,
       );
       return {

@@ -8,3 +8,5 @@ export * from "./resolution";
 export * from "./turnPlan";
 export * from "./turnSteps";
 export * from "./turnExecution";
+export * from "./damage";
+export * from "./resources";

@@ -8,7 +8,11 @@ import type {
 } from "../src/models";
 import { createRulesEngine } from "../src/rules";
 import type { RandomSource } from "../src/rules";
-import { PROVISIONAL_SCENARIO, goblin } from "../src/scenarios/provisionalScenario";
+import {
+  PROVISIONAL_SCENARIO,
+  TABLE_RULES_OF_THE_PLAYERS_TABLE,
+  goblin,
+} from "../src/scenarios/provisionalScenario";
 
 export const engine = createRulesEngine();
 
@@ -20,9 +24,9 @@ export function emptyEncounter(columns = 16, rows = 16, id = "e-test"): Encounte
       feetPerSquare: 5,
       terrain: "open",
       dimensions: { columns, rows },
-      diagonalRule: "alternating-1-2",
     },
     occupancyPolicy: "one-creature-per-space",
+    tableRules: TABLE_RULES_OF_THE_PLAYERS_TABLE,
   });
 }
 
@@ -32,6 +36,7 @@ export function buildScenario(): Encounter {
     label: PROVISIONAL_SCENARIO.label,
     grid: PROVISIONAL_SCENARIO.grid,
     occupancyPolicy: PROVISIONAL_SCENARIO.occupancyPolicy,
+    tableRules: PROVISIONAL_SCENARIO.tableRules,
   });
   for (const { definition, position } of PROVISIONAL_SCENARIO.placements) {
     encounter = engine.addCombatant(encounter, definition, position);

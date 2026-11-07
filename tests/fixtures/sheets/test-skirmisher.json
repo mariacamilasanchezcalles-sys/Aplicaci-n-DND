@@ -2,35 +2,75 @@
   "sheetFormat": 1,
   "id": "test-skirmisher",
   "label": "Hostigador de prueba",
-  "source": { "kind": "testFixture", "reference": "Ficha inventada para probar el ejecutor; no es una criatura oficial" },
+  "source": {
+    "kind": "testFixture",
+    "reference": "Ficha inventada para probar el ejecutor; no es una criatura oficial"
+  },
   "size": "medium",
   "armorClass": 14,
-  "hitPoints": { "average": 20 },
-  "speed": { "walk": 30 },
+  "hitPoints": {
+    "average": 20
+  },
+  "speed": {
+    "walk": 30
+  },
   "attacks": [
     {
       "id": "claw",
       "label": "Garra",
       "mode": "melee",
-      "rangeFeet": { "normal": 5 },
+      "rangeFeet": {
+        "normal": 5
+      },
       "toHitBonus": 5,
-      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 3, "damageType": "slashing" }]
+      "onHit": [
+        {
+          "kind": "damage",
+          "dice": {
+            "count": 1,
+            "sides": 6
+          },
+          "bonus": 3,
+          "damageType": "slashing"
+        }
+      ]
     },
     {
       "id": "javelin",
       "label": "Jabalina",
       "mode": "ranged",
-      "rangeFeet": { "normal": 30, "long": 120 },
+      "rangeFeet": {
+        "normal": 30,
+        "long": 120
+      },
       "toHitBonus": 5,
-      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 3, "damageType": "piercing" }]
+      "onHit": [
+        {
+          "kind": "damage",
+          "dice": {
+            "count": 1,
+            "sides": 6
+          },
+          "bonus": 3,
+          "damageType": "piercing"
+        }
+      ]
     },
     {
       "id": "bite",
       "label": "Mordisco",
       "mode": "melee",
-      "rangeFeet": { "normal": 5 },
+      "rangeFeet": {
+        "normal": 5
+      },
       "toHitBonus": 5,
-      "onHit": [{ "kind": "damage", "bonus": 2, "damageType": "piercing" }]
+      "onHit": [
+        {
+          "kind": "damage",
+          "bonus": 2,
+          "damageType": "piercing"
+        }
+      ]
     }
   ],
   "capabilities": [
@@ -45,12 +85,32 @@
           {
             "op": "repeat",
             "times": 2,
-            "body": { "op": "choice", "options": [{ "op": "attack", "attackRef": "claw" }, { "op": "attack", "attackRef": "javelin" }] }
+            "body": {
+              "op": "choice",
+              "options": [
+                {
+                  "op": "attack",
+                  "attackRef": "claw"
+                },
+                {
+                  "op": "attack",
+                  "attackRef": "javelin"
+                }
+              ]
+            }
           },
           {
             "op": "conditional",
-            "when": { "kind": "previousAttackHit" },
-            "then": { "op": "optional", "body": { "op": "attack", "attackRef": "bite" } }
+            "when": {
+              "kind": "previousAttackHit"
+            },
+            "then": {
+              "op": "optional",
+              "body": {
+                "op": "attack",
+                "attackRef": "bite"
+              }
+            }
           }
         ]
       }
@@ -59,20 +119,90 @@
       "id": "lunge",
       "label": "Embestida",
       "activation": "action",
-      "body": { "op": "sequence", "steps": [{ "op": "attack", "attackRef": "claw" }, { "op": "attack", "attackRef": "claw" }] }
+      "body": {
+        "op": "sequence",
+        "steps": [
+          {
+            "op": "attack",
+            "attackRef": "claw"
+          },
+          {
+            "op": "attack",
+            "attackRef": "claw"
+          }
+        ]
+      }
     },
     {
       "id": "rally",
       "label": "Arrebato",
       "activation": "bonusAction",
-      "requirements": [{ "kind": "selfBloodied" }],
-      "body": { "op": "standardAction", "action": "dash" }
+      "requirements": [
+        {
+          "kind": "selfBloodied"
+        }
+      ],
+      "body": {
+        "op": "standardAction",
+        "action": "dash"
+      }
     },
     {
       "id": "howl",
       "label": "Aullido",
       "activation": "bonusAction",
-      "body": { "op": "unmodeled", "note": "Asusta a los cercanos" }
+      "body": {
+        "op": "unmodeled",
+        "note": "Asusta a los cercanos"
+      }
+    },
+    {
+      "id": "volley",
+      "label": "Andanada",
+      "activation": "action",
+      "costs": [
+        {
+          "kind": "resource",
+          "resourceRef": "volley-charge",
+          "amount": 1
+        }
+      ],
+      "requirements": [
+        {
+          "kind": "resourceAvailable",
+          "resourceRef": "volley-charge"
+        }
+      ],
+      "body": {
+        "op": "repeat",
+        "times": 3,
+        "body": {
+          "op": "attack",
+          "attackRef": "javelin"
+        }
+      }
     }
+  ],
+  "resources": [
+    {
+      "id": "volley-charge",
+      "label": "Carga de andanada",
+      "max": 1,
+      "recovery": [
+        {
+          "kind": "recharge",
+          "minRoll": 5
+        }
+      ]
+    }
+  ],
+  "damageResistances": [
+    "piercing"
+  ],
+  "damageVulnerabilities": [
+    "fire"
+  ],
+  "damageImmunities": [
+    "poison"
   ]
 }

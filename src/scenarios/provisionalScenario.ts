@@ -5,6 +5,7 @@ import type {
   GridPosition,
   MonsterDefinition,
   OccupancyPolicy,
+  TableRules,
   PlayerCharacterDefinition,
 } from "../models";
 
@@ -116,6 +117,16 @@ export const PROVISIONAL_FIELDS: Readonly<Record<string, readonly string[]>> = {
  */
 export const PROVISIONAL_GRID_DIMENSIONS = { columns: 15, rows: 21 } as const;
 
+/**
+ * Configuración de la mesa de la jugadora (DECISIONES CONFIRMADAS): diagonal
+ * alternada 1-2-1-2 y atravesar criaturas Diminutas, Pequeñas y Medianas.
+ * Ver docs/HOUSE_RULES.md.
+ */
+export const TABLE_RULES_OF_THE_PLAYERS_TABLE = {
+  diagonal: "alternating-1-2",
+  movementThroughCreatures: "houseSmallOrMedium",
+} as const satisfies TableRules;
+
 export const PROVISIONAL_SCENARIO = {
   encounterId: asEncounterId("provisional-1"),
   label: "Escenario provisional",
@@ -123,9 +134,9 @@ export const PROVISIONAL_SCENARIO = {
     feetPerSquare: 5,
     terrain: "open",
     dimensions: PROVISIONAL_GRID_DIMENSIONS,
-    diagonalRule: "alternating-1-2",
   } satisfies GridConfig,
   occupancyPolicy: "one-creature-per-space" satisfies OccupancyPolicy,
+  tableRules: TABLE_RULES_OF_THE_PLAYERS_TABLE,
   placements: [
     { definition: goblin, position: { column: 10, row: 5 } },
     { definition: cata, position: { column: 6, row: 5 } },

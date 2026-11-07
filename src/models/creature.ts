@@ -1,7 +1,7 @@
 import type { AttackId, BonusActionId, CreatureId, ResourceId, TraitId } from "./ids";
 import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
-import type { Capability } from "./sheet";
+import type { Capability, ResourceDefinition } from "./sheet";
 
 /** PENDIENTE: catálogo de personalidades. Por ahora solo existe la de prueba. */
 export type PersonalityId = "pragmatic";
@@ -121,6 +121,11 @@ interface CombatantBase {
    * paso (`rules/turnExecution.ts`). Opcional: las criaturas simples no la necesitan.
    */
   readonly capabilities?: readonly Capability[];
+  /** Usos limitados (Recarga, X/Día…). Su estado está en `CombatantState.resources`. */
+  readonly resources?: readonly ResourceDefinition[];
+  readonly damageResistances?: readonly DamageType[];
+  readonly damageImmunities?: readonly DamageType[];
+  readonly damageVulnerabilities?: readonly DamageType[];
 }
 
 export interface MonsterDefinition extends CombatantBase {

@@ -21,6 +21,7 @@ export function createProvisionalEncounter(
     label,
     grid: PROVISIONAL_SCENARIO.grid,
     occupancyPolicy: PROVISIONAL_SCENARIO.occupancyPolicy,
+    tableRules: PROVISIONAL_SCENARIO.tableRules,
   });
   for (const { definition, position } of PROVISIONAL_SCENARIO.placements) {
     api.registerCombatant(encounterId, definition, position);

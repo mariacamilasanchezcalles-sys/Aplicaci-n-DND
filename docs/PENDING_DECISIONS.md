@@ -68,3 +68,9 @@
 ## Guía del DM 2014 (ver `HOUSE_RULES.md`)
 - **Resueltas el 2026-11-07:** solo hay guía de 2014 (decisión 40). La mesa usa Flanquear, Moral, Daño masivo, Marcar y Encaramarse a una criatura más grande, como reglas caseras (37). La decisión 1 ("subirse a una criatura") es "Encaramarse a una criatura más grande" (38). La configuración de mesa por interruptores queda aprobada (39).
 41. **Adaptar cada regla de 2014 a 2024** al implementarla: por ejemplo, Moral y Daño masivo usan estados y salvaciones que hay que mapear a las condiciones 2024; Marcar depende de los ataques de oportunidad (decisión 7). Se preguntará regla por regla.
+
+## Recursos y daño (etapa 2026-11-07)
+42. **"Instancia de daño"** (PROPUESTA): las partes del mismo tipo de una tirada se suman antes de aplicar la Resistencia. Afecta al redondeo: 3 + 3 cortante con Resistencia da 3 (sumando) o 2 (por partes). El SRD no lo aclara.
+43. **Costes de capacidades anidadas**: una capacidad usada desde otra y que tiene costes aún no se ejecuta. Falta decidir cuándo se cobra si está dentro de un `choice` u `optional` (propuesta: al elegir esa rama).
+44. **Descansos** (corto y largo): recuperan recursos (también los de Recarga, verificado), PG y más. Están fuera del combate y sin implementar.
+45. **Cuándo se tira la Recarga**: hoy hay que llamar a `rollRechargesAtTurnStart` antes de `startTurn`. Se unirán al diseñar la iniciativa (decisión 9).

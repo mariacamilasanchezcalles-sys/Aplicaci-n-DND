@@ -48,7 +48,8 @@ export function advanceMovement(
   budgetFeet: number | null,
 ): MovementCheck {
   if (path.length === 0) return { ok: false, reasonCode: "emptyPath" };
-  const { feetPerSquare, diagonalRule } = encounter.grid;
+  const { feetPerSquare } = encounter.grid;
+  const diagonalRule = encounter.tableRules.diagonal;
 
   let from = progress.position;
   let squares = 0;
@@ -120,7 +121,7 @@ export function checkAttackTarget(
       definition.size,
       target.state.position,
       target.definition.size,
-      encounter.grid.diagonalRule,
+      encounter.tableRules.diagonal,
     ) * encounter.grid.feetPerSquare;
   const maxFeet =
     attack.mode === "melee" ? attack.rangeFeet.normal : (attack.rangeFeet.long ?? attack.rangeFeet.normal);

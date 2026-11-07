@@ -23,19 +23,21 @@ export interface GridDimensions {
 export type TerrainKind = "open";
 
 /**
- * Convención de coste de las casillas en diagonal.
+ * Convención de coste de las casillas en diagonal (interruptor de la
+ * configuración de mesa, `TableRules.diagonal`).
  *
- * - `alternating-1-2`: decisión de diseño del proyecto. La primera diagonal
- *   del turno cuenta 1 casilla, la segunda 2, la tercera 1, la cuarta 2, etc.
- *   Los movimientos ortogonales cuestan 1 y no afectan a la cuenta. NO es la
- *   regla base del SRD 5.2.1 / Basic Rules 2024 (allí la diagonal cuesta 1).
+ * - `standard`: REGLA OFICIAL VERIFICADA (SRD 5.2.1 / Basic Rules 2024,
+ *   "Playing on a Grid"): entrar en una casilla adyacente, también en
+ *   diagonal, cuesta 1 casilla.
+ * - `alternating-1-2`: REGLA CASERA de la mesa ("Regla opcional: Diagonales",
+ *   Guía del DM 2014). La primera diagonal del turno cuenta 1 casilla, la
+ *   segunda 2, la tercera 1… Los pasos rectos cuestan 1 y no reinician la cuenta.
  */
-export type DiagonalRule = "alternating-1-2";
+export type DiagonalRule = "standard" | "alternating-1-2";
 
 export interface GridConfig {
   /** Pies por casilla (5 en el escenario inicial). */
   readonly feetPerSquare: number;
   readonly terrain: TerrainKind;
   readonly dimensions: GridDimensions;
-  readonly diagonalRule: DiagonalRule;
 }

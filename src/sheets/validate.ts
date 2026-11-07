@@ -67,6 +67,13 @@ function checkCoherence(sheet: CreatureSheet, issues: SheetIssue[]): void {
   const spellIds = new Set((sheet.spellcasting?.spells ?? []).map((s) => s.spellRef));
   const hasSpellSaveDc = sheet.spellcasting?.saveDc !== undefined;
 
+  // REGLA OFICIAL VERIFICADA (SRD 5.2.1, "Recharge X–Y"): se puede usar UNA vez.
+  (sheet.resources ?? []).forEach((resource, index) => {
+    if (resource.recovery.some((r) => r.kind === "recharge") && resource.max !== 1) {
+      issues.push(issue("invalidValue", `resources[${index}].max`));
+    }
+  });
+
   // Alcances: a distancia, el largo no puede ser menor que el normal; cuerpo a cuerpo no tiene largo.
   (sheet.attacks ?? []).forEach((attack, index) => {
     const { normal, long } = attack.rangeFeet;
