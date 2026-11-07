@@ -1,7 +1,7 @@
 import type { AttackId, BonusActionId, CreatureId, ResourceId, TraitId } from "./ids";
 import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
-import type { Capability, ResourceDefinition } from "./sheet";
+import type { AbilityId, Capability, ResourceDefinition } from "./sheet";
 
 /** PENDIENTE: catálogo de personalidades. Por ahora solo existe la de prueba. */
 export type PersonalityId = "pragmatic";
@@ -126,6 +126,10 @@ interface CombatantBase {
   readonly damageResistances?: readonly DamageType[];
   readonly damageImmunities?: readonly DamageType[];
   readonly damageVulnerabilities?: readonly DamageType[];
+  /** Puntuaciones de característica (para el modificador de salvación). */
+  readonly abilities?: Partial<Record<AbilityId, number>>;
+  /** Bonificador total de salvación cuando difiere del modificador. */
+  readonly savingThrows?: Partial<Record<AbilityId, number>>;
 }
 
 export interface MonsterDefinition extends CombatantBase {

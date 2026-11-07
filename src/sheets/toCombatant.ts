@@ -153,6 +153,8 @@ export function combatantFromSheet(
       ...(sheet.damageResistances?.length ? { damageResistances: sheet.damageResistances } : {}),
       ...(sheet.damageImmunities?.length ? { damageImmunities: sheet.damageImmunities } : {}),
       ...(sheet.damageVulnerabilities?.length ? { damageVulnerabilities: sheet.damageVulnerabilities } : {}),
+      ...(sheet.abilities ? { abilities: sheet.abilities } : {}),
+      ...(sheet.savingThrows ? { savingThrows: sheet.savingThrows } : {}),
     },
     gaps,
   };

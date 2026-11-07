@@ -11,6 +11,11 @@ import type {
   StandardActionType,
 } from "../models";
 import type { RandomSource } from "./dice";
+import { areaSquares, creaturesInSquares } from "./areas";
+import type { AreaPlacement, AreaPlacementError } from "./areas";
+import { footprintDistanceSquares } from "./distance";
+import { effectSupported, resolveEffect } from "./effects";
+import type { EffectOperation, EffectTargetResult, PlayerSaveInput, RolledAmount } from "./effects";
 import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
 import { applyDamageModifiers } from "./damage";
@@ -81,6 +86,12 @@ export type TurnLogEntry =
       /** Al renunciar: si quedaban opciones legales (renuncia voluntaria) o no (paso perdido). */
       readonly hadLegalOptions?: boolean;
     }
+  | {
+      readonly kind: "effectResolved";
+      readonly affected: readonly CreatureId[];
+      readonly rolls: readonly RolledAmount[];
+      readonly targets: readonly EffectTargetResult[];
+    }
   | { readonly kind: "turnEnded" };
 
 export interface TurnState {
@@ -110,6 +121,16 @@ export type ExecutionChoice =
       readonly rollMode: RollMode;
     }
   | { readonly kind: "standardAction"; readonly action: ExecutableStandardAction }
+  /**
+   * Operación de efecto (aliento, aura, curación…). Se completa al elegirla
+   * con `effectInput`: objetivos (`creatures`) o colocación del área (`area`).
+   */
+  | {
+      readonly kind: "effect";
+      readonly targeting: "self" | "creatures" | "area";
+      /** Datos para la persona o el cerebro: cuántos objetivos, alcance, forma… */
+      readonly operation: EffectOperation;
+    }
   /** Terminar la capacidad: no quedan operaciones obligatorias. */
   | { readonly kind: "finish" };
 
@@ -133,9 +154,19 @@ export interface TurnOptions {
 export type TurnCommand =
   | { readonly kind: "move"; readonly path: readonly GridPosition[] }
   | { readonly kind: "beginCapability"; readonly source: CapabilitySource }
-  | { readonly kind: "chooseOption"; readonly key: string }
+  | { readonly kind: "chooseOption"; readonly key: string; readonly effectInput?: EffectInput }
   | { readonly kind: "forfeitRemaining" }
   | { readonly kind: "endTurn" };
+
+/** Datos que completa quien elige una opción de efecto. */
+export interface EffectInput {
+  /** Targeting `creatures`: objetivos elegidos (distintos, sin repetir). */
+  readonly targetIds?: readonly CreatureId[];
+  /** Targeting `area`: colocación (no se usa en emanaciones). */
+  readonly placement?: AreaPlacement;
+  /** Salvaciones de personajes jugadores tiradas con dados físicos. */
+  readonly playerSaves?: Readonly<Record<string, PlayerSaveInput>>;
+}
 
 export type TurnCommandError =
   | "unknownActor"
@@ -155,7 +186,11 @@ export type TurnCommandError =
   | "noLegalOptions"
   | "staleOption"
   | "unknownOption"
-  | "targetArmorClassUnknown";
+  | "targetArmorClassUnknown"
+  | "invalidEffectTargets"
+  | "invalidAreaPlacement"
+  | "saveBonusUnknown"
+  | "playerSavesRequired";
 
 export type TurnCommandResult =
   | { readonly ok: true; readonly encounter: Encounter; readonly turn: TurnState }
@@ -163,6 +198,9 @@ export type TurnCommandResult =
       readonly ok: false;
       readonly reasonCode: TurnCommandError;
       readonly placementReason?: PlacementReason;
+      readonly areaReason?: AreaPlacementError;
+      /** Criaturas implicadas (p. ej. a quién hay que pedir la salvación). */
+      readonly creatureIds?: readonly CreatureId[];
     };
 
 /** Por qué una capacidad no se puede ejecutar con este motor (aunque la ficha sea válida). */
@@ -330,6 +368,11 @@ export function capabilitySupport(
         if (operation.otherwise) visit(operation.otherwise, depth + 1);
         break;
       case "effect":
+        // Hoy: daño (sin condiciones de daño) y curación, con CD fija.
+        if (!operation.effects.every(effectSupported) || operation.save?.dc === "spellSaveDc") {
+          issues.add("operationNotModeled");
+        }
+        break;
       case "castSpell":
       case "unmodeled":
         issues.add("operationNotModeled");
@@ -344,7 +387,7 @@ export function capabilitySupport(
 // Expansión de la agenda: primeras operaciones atómicas posibles
 // ---------------------------------------------------------------------------
 
-type AtomicOperation = Extract<Operation, { op: "attack" | "standardAction" }>;
+type AtomicOperation = Extract<Operation, { op: "attack" | "standardAction" | "effect" }>;
 
 interface Expansion {
   /** null: la capacidad puede terminar aquí. */
@@ -397,6 +440,7 @@ function expand(agenda: readonly Operation[], context: EvaluationContext, depth 
   switch (head.op) {
     case "attack":
     case "standardAction":
+    case "effect":
       return [{ atom: head, rest: tail }];
     case "sequence":
       return expand([...head.steps, ...tail], context, depth + 1);
@@ -419,7 +463,7 @@ function expand(agenda: readonly Operation[], context: EvaluationContext, depth 
       return referenced ? expand([referenced.body, ...tail], context, depth + 1) : [];
     }
     default:
-      // effect, castSpell, unmodeled: no ejecutables (ver `capabilitySupport`).
+      // castSpell, unmodeled: no ejecutables (ver `capabilitySupport`).
       return [];
   }
 }
@@ -467,12 +511,100 @@ function concreteOptions(
           rest,
         });
       }
+    } else if (atom.op === "effect") {
+      const targeting = atom.targeting.kind;
+      // Con objetivos elegidos, tiene que haber al menos uno al alcance.
+      if (targeting === "creatures" && creatureCandidates(encounter, actor, atom).length === 0) continue;
+      push({ choice: { kind: "effect", targeting, operation: atom }, rest });
     } else if (isExecutableStandard(atom.action) && atom.action !== "attack") {
       // Las ramas con acciones no modeladas (Esconderse…) no se ofrecen.
       push({ choice: { kind: "standardAction", action: atom.action }, rest });
     }
   }
   return result;
+}
+
+/** Criaturas al alcance de un efecto con objetivos elegidos (sin el actor), por id. */
+function creatureCandidates(encounter: Encounter, actor: CombatantRecord, operation: EffectOperation): CreatureId[] {
+  if (operation.targeting.kind !== "creatures") return [];
+  const range = operation.targeting.rangeFeet;
+  return (Object.keys(encounter.combatants).sort() as CreatureId[]).filter((id) => {
+    const target = encounter.combatants[id];
+    if (!target || id === actor.definition.id) return false;
+    const distance =
+      footprintDistanceSquares(
+        actor.state.position,
+        actor.definition.size,
+        target.state.position,
+        target.definition.size,
+        encounter.tableRules.diagonal,
+      ) * encounter.grid.feetPerSquare;
+    return distance <= range;
+  });
+}
+
+export type EffectTargetsResult =
+  | { readonly ok: true; readonly affected: readonly CreatureId[]; readonly playerSavesNeeded: readonly CreatureId[] }
+  | { readonly ok: false; readonly reasonCode: "invalidEffectTargets" | "invalidAreaPlacement"; readonly areaReason?: AreaPlacementError };
+
+/** Qué criaturas afecta un efecto con estos datos (sin tirar dados ni cambiar nada). */
+function effectAffected(
+  encounter: Encounter,
+  actor: CombatantRecord,
+  operation: EffectOperation,
+  input: EffectInput,
+): EffectTargetsResult {
+  const targeting = operation.targeting;
+  let affected: CreatureId[];
+  switch (targeting.kind) {
+    case "self":
+      affected = [actor.definition.id];
+      break;
+    case "creatures": {
+      const chosen = input.targetIds ?? [];
+      const candidates = new Set(creatureCandidates(encounter, actor, operation));
+      const distinct = new Set(chosen);
+      if (
+        chosen.length < 1 ||
+        chosen.length > targeting.count ||
+        distinct.size !== chosen.length ||
+        !chosen.every((id) => candidates.has(id))
+      ) {
+        return { ok: false, reasonCode: "invalidEffectTargets" };
+      }
+      affected = [...chosen].sort();
+      break;
+    }
+    case "area": {
+      const area = areaSquares(encounter, actor, targeting, input.placement ?? {});
+      if (!area.ok) return { ok: false, reasonCode: "invalidAreaPlacement", areaReason: area.reason };
+      affected = creaturesInSquares(encounter, area.squares, targeting.includesSelf ? null : actor.definition.id);
+      break;
+    }
+  }
+  const playerSavesNeeded = operation.save
+    ? affected.filter((id) => encounter.combatants[id]?.definition.kind === "playerCharacter")
+    : [];
+  return { ok: true, affected, playerSavesNeeded };
+}
+
+/**
+ * Vista previa de una opción de efecto: a quién afectaría y a qué jugadores
+ * hay que pedir la salvación. No tira dados ni cambia nada.
+ */
+export function previewEffect(
+  encounter: Encounter,
+  turn: TurnState,
+  key: string,
+  input: EffectInput,
+): EffectTargetsResult | { readonly ok: false; readonly reasonCode: "staleOption" | "unknownOption" | "noExecution" } {
+  const actor = encounter.combatants[turn.actorId];
+  if (!actor || turn.execution === null) return { ok: false, reasonCode: "noExecution" };
+  const [serialText, indexText] = key.split(":");
+  if (Number(serialText) !== turn.serial) return { ok: false, reasonCode: "staleOption" };
+  const option = concreteOptions(encounter, actor, turn.execution)[Number(indexText)];
+  if (!option || option.choice.kind !== "effect") return { ok: false, reasonCode: "unknownOption" };
+  return effectAffected(encounter, actor, option.choice.operation, input);
 }
 
 // ---------------------------------------------------------------------------
@@ -665,7 +797,7 @@ export function applyTurnCommand(
       // Revalidación: las opciones se recalculan con el estado actual.
       const option = concreteOptions(encounter, actor, execution)[Number(indexText)];
       if (!option) return fail("unknownOption");
-      return applyChoice(encounter, actor, turn, execution, option, dice, next);
+      return applyChoice(encounter, actor, turn, execution, option, dice, next, command.effectInput ?? {});
     }
 
     case "endTurn": {
@@ -688,6 +820,7 @@ function applyChoice(
   option: ConcreteOption,
   dice: RandomSource,
   next: (changes: Partial<TurnState>, entries: readonly TurnLogEntry[]) => TurnState,
+  effectInput: EffectInput,
 ): TurnCommandResult {
   const finished = (entries: TurnLogEntry[], updated: CapabilityExecution): TurnLogEntry[] =>
     updated.agenda.length === 0
@@ -704,6 +837,28 @@ function applyChoice(
           { kind: "capabilityFinished", source: execution.source, outcome: "completed" },
         ]),
       };
+
+    case "effect": {
+      const targets = effectAffected(encounter, actor, choice.operation, effectInput);
+      if (!targets.ok) {
+        return targets.areaReason === undefined
+          ? fail(targets.reasonCode)
+          : { ok: false, reasonCode: targets.reasonCode, areaReason: targets.areaReason };
+      }
+      const resolution = resolveEffect(encounter, choice.operation, targets.affected, dice, effectInput.playerSaves);
+      // Si faltan datos o tiradas de jugadores, no se consume nada.
+      if (!resolution.ok) return { ok: false, reasonCode: resolution.reason, creatureIds: resolution.creatureIds };
+      const updated: CapabilityExecution = { ...execution, agenda: option.rest };
+      const entries = finished(
+        [{ kind: "effectResolved", affected: targets.affected, rolls: resolution.rolls, targets: resolution.targets }],
+        updated,
+      );
+      return {
+        ok: true,
+        encounter: resolution.encounter,
+        turn: next({ execution: updated.agenda.length === 0 ? null : updated }, entries),
+      };
+    }
 
     case "standardAction": {
       const updated: CapabilityExecution = { ...execution, agenda: option.rest };

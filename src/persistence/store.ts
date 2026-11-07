@@ -5,8 +5,9 @@ import type { Encounter, EncounterId } from "../models";
  * el mapa y política de ocupación por espacio.
  * v4: criaturas con capacidades declarativas opcionales (`capabilities`).
  * v5: configuración de mesa (`tableRules`); la regla diagonal sale de `grid`.
+ * v6: `tableRules.areaTemplate`; criaturas con `abilities` y `savingThrows`.
  */
-export const SNAPSHOT_SCHEMA_VERSION = 5 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 6 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

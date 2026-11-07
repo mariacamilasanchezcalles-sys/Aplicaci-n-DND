@@ -206,9 +206,14 @@ export type TargetingSpec =
   | {
       readonly kind: "area";
       readonly shape: AreaShape;
+      /** Radio (esfera, cilindro), lado (cubo), longitud (cono, línea) o distancia (emanación). */
       readonly sizeFeet: number;
       /** Distancia a la que puede estar el punto de origen (0 = desde la criatura). */
       readonly rangeFeet: number;
+      /** Solo líneas: anchura (por defecto 5 pies). */
+      readonly widthFeet?: number;
+      /** Si la propia criatura puede quedar afectada (por defecto no). */
+      readonly includesSelf?: boolean;
     };
 
 // ---------------------------------------------------------------------------

@@ -14,7 +14,11 @@ describe("creación de un encuentro", () => {
     expect(encounter.grid.feetPerSquare).toBe(5);
     expect(encounter.grid.terrain).toBe("open");
     expect(encounter.grid.dimensions).toEqual({ columns: 12, rows: 9 });
-    expect(encounter.tableRules).toEqual({ diagonal: "alternating-1-2", movementThroughCreatures: "houseSmallOrMedium" });
+    expect(encounter.tableRules).toEqual({
+      diagonal: "alternating-1-2",
+      movementThroughCreatures: "houseSmallOrMedium",
+      areaTemplate: "halfSquareDmg2014",
+    });
     expect(encounter.occupancyPolicy).toBe("one-creature-per-space");
     expect(Object.keys(encounter.combatants)).toHaveLength(0);
   });

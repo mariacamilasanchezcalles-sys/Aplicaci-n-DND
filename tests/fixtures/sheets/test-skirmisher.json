@@ -181,6 +181,29 @@
           "attackRef": "javelin"
         }
       }
+    },
+    {
+      "id": "mend",
+      "label": "Remendar",
+      "activation": "bonusAction",
+      "body": {
+        "op": "effect",
+        "targeting": {
+          "kind": "creatures",
+          "count": 1,
+          "rangeFeet": 30
+        },
+        "effects": [
+          {
+            "kind": "heal",
+            "dice": {
+              "count": 1,
+              "sides": 4
+            },
+            "bonus": 2
+          }
+        ]
+      }
     }
   ],
   "resources": [

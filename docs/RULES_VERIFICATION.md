@@ -47,7 +47,7 @@ Limitaciones: el texto se extrajo con una herramienta de lectura web, no leyendo
 4. **Quién bloquea:** cuenta el tamaño de la criatura atravesada, no el de quien se mueve (una criatura Grande puede atravesar a una Pequeña, pero no a otra Grande).
 5. **Atacarse a uno mismo:** se rechaza (decisión de modelado, no regla verificada).
 6. **Sin Velocidad registrada** (registro simplificado de personajes): no se valida el presupuesto de movimiento.
-7. **Impacto:** se decide con "total >= CA". No pude confirmar el texto exacto en las páginas leídas.
+7. ~~**Impacto:** "total >= CA"~~ → VERIFICADO (SRD 5.2.1, "D20 Tests": iguala o supera).
 
 ## Verificado pero NO implementado
 - **Ataques de oportunidad** (reacción cuando una criatura sale de tu alcance) y su evitación con Destrabarse.
@@ -85,6 +85,21 @@ Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PD
 | **Correr** | Movimiento extra igual a su Velocidad (con los modificadores aplicados) | Glosario, "Dash" | `budgetFeet += speedFeet` |
 | **Muerte de monstruos** | Un monstruo muere en el instante en que llega a 0 PG, aunque el DM puede tratarlo como a un personaje | SRD 5.2.1, "Instant Death" | Sin implementar |
 | **Notación de ataques** | "Hit:", "Miss:" y "Hit or Miss:"; un ataque tiene un solo objetivo salvo que se diga otra cosa. "Half damage only": la mitad del daño, ignorando el resto del efecto | SRD 5.2.1, Monsters | `onHit`, `onMiss`, `onHitOrMiss`; `halfDamage` |
+
+## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
+| Regla | Texto oficial (resumen fiel) | Dónde se aplica |
+|---|---|---|
+| **Prueba d20** | Se suman los modificadores; si el total **iguala o supera** el número objetivo (CD o CA), tiene éxito. **Esto confirma la suposición 7 ("total >= CA").** | `resolveAttack`, `resolveEffect` |
+| **20 y 1 naturales** | Solo en **tiradas de ataque** (impacto crítico y fallo automático). No afectan a salvaciones | `resolveEffect` no los trata |
+| **Modificador de característica** | Tabla: 1 → −5 … 10–11 → +0 … 30 → +10, es decir floor((puntuación − 10) / 2). Los monstruos tienen modificador y salvación por característica | `saveBonusOf` |
+| **Salvación** | Se puede elegir fallar sin tirar. Si al objetivo le falta la característica, falla automáticamente | Elegir fallar: sin implementar; criatura sin datos registrados: `saveBonusUnknown` (no es lo mismo que "le falta la característica") |
+| **Daño contra varios objetivos** | Un efecto que obliga a varios objetivos a salvar a la vez tira el daño **una sola vez** para todos | `resolveEffect` |
+| **Mitad del daño** | Redondeando hacia abajo; es la mitad del daño de una salvación fallida. En los perfiles, "Half damage only" ignora el resto del efecto | `onSuccess: "halfDamage"`; la mitad va antes que la Resistencia (es un multiplicador) |
+| **Formas de área** | Cono: anchura en cada punto = distancia al origen; Esfera: radio, origen incluido; Emanación: desde una criatura en todas direcciones; Línea: longitud y anchura; Cubo: origen en una cara; Cilindro: radio y altura | `rules/areas.ts` |
+| **Bloqueo** | Un punto del área no está incluido si todas las líneas desde el origen están bloqueadas (Cobertura total) | Sin obstáculos en el mapa todavía |
+| **Goblin Warrior** | Feérico Pequeño; FUE 8, DES 15, CON 10, INT 10, SAB 8, CAR 8 (salvaciones iguales); PG 10 (3d6); Sigilo +6; Visión en la oscuridad 60 pies; Percepción pasiva 9 | `data/sheets/goblin-warrior.json` y escenario |
+
+**No definido en las reglas 2024:** qué casillas cubre un área. Se usa la **REGLA CASERA** de la mesa (Guía del DM 2014): origen en una intersección y casilla afectada si queda cubierta al menos a la mitad (`tableRules.areaTemplate: "halfSquareDmg2014"`).
 
 ## Vocabulario de las fichas (VERIFICADO el 2026-11-07, ver arriba)
 Las fichas declarativas (`src/models/sheet.ts`) usan listas cerradas que deben cotejarse con SRD 5.2.1: 13 tipos de daño, 15 condiciones, 14 tipos de criatura, 6 formas de área, 18 habilidades y la mecánica de Recharge. Se escribieron a partir de la especificación de la jugadora y del conocimiento general de las reglas 2024, **sin** leer la fuente en esta etapa.

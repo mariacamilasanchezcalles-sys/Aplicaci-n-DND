@@ -196,7 +196,7 @@ const targetingSchema: Schema<TargetingSpec> = tagged("kind", {
     shape: oneOf(["cone", "cube", "cylinder", "emanation", "line", "sphere"]),
     sizeFeet: int(5, MAX_FEET),
     rangeFeet: feet,
-  }),
+  }, { widthFeet: int(5, MAX_FEET), includesSelf: bool }),
 });
 
 const saveSchema = obj({

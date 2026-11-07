@@ -2,16 +2,18 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { asCreatureId } from "../src/models";
-import type { CombatantDefinition, Encounter, GridPosition } from "../src/models";
+import type { CombatantDefinition, CreatureId, Encounter, GridPosition } from "../src/models";
 import {
   applyDamage,
   applyTurnCommand,
+  previewEffect,
   capabilitySupport,
   getTurnOptions,
   startTurn,
 } from "../src/rules";
 import type {
   CapabilitySource,
+  EffectInput,
   ExecutionChoice,
   TurnCommand,
   TurnCommandResult,
@@ -322,14 +324,14 @@ describe("ejecutor: requisitos y mecánicas no modeladas", () => {
     expect(getTurnOptions(encounter, turn).capabilities).not.toContainEqual(sheetCapability("howl"));
   });
 
-  it("la ficha compleja: Multiataque con un ataque omitido y aliento con recarga no son ejecutables", () => {
+  it("la ficha compleja: el Multiataque con un ataque omitido y la reacción no son ejecutables", () => {
     const json = readFileSync(join(__dirname, "fixtures/sheets/test-brute.json"), "utf8");
     const loaded = loadCreatureSheet(json);
     if (!loaded.valid) throw new Error("ficha no válida");
     const { definition } = combatantFromSheet(loaded.sheet, { creatureId: "brute", personality: "pragmatic" });
     expect(capabilitySupport(definition, sheetCapability("multiattack"))).toEqual(["unknownReference"]);
-    // El coste (carga del aliento) ya está modelado; el efecto en área no.
-    expect(capabilitySupport(definition, sheetCapability("breath"))).toEqual(["operationNotModeled"]);
+    // Coste (carga del aliento), salvación y área ya están modelados.
+    expect(capabilitySupport(definition, sheetCapability("breath"))).toEqual([]);
     expect(capabilitySupport(definition, sheetCapability("snap-back"))).toEqual(["reactionsNotModeled"]);
   });
 });
@@ -375,8 +377,22 @@ describe("ejecutor: fin de turno e invariantes", () => {
         if (result.ok && depth > 0) checked += explore(result, depth - 1);
       }
       for (const option of options.executionOptions) {
+        // Una opción de efecto con objetivos elegidos se completa con el
+        // primer objetivo que la vista previa acepte (siempre debe haber uno).
+        let effectInput: EffectInput | undefined;
+        if (option.choice.kind === "effect" && option.choice.targeting === "creatures") {
+          const ids = Object.keys(state.encounter.combatants) as CreatureId[];
+          const valid = ids.find((id) => previewEffect(state.encounter, state.turn, option.key, { targetIds: [id] }).ok);
+          expect(valid).toBeDefined();
+          effectInput = { targetIds: [valid as CreatureId] };
+        }
         // Dados fijos en 4 (suficientes para cualquier opción, impacte o no).
-        const result = applyTurnCommand(state.encounter, state.turn, { kind: "chooseOption", key: option.key }, scriptedDice(Array(10).fill(4)));
+        const result = applyTurnCommand(
+          state.encounter,
+          state.turn,
+          effectInput ? { kind: "chooseOption", key: option.key, effectInput } : { kind: "chooseOption", key: option.key },
+          scriptedDice(Array(10).fill(4)),
+        );
         expect(result.ok).toBe(true);
         checked++;
         if (result.ok && depth > 0) checked += explore(result, depth - 1);

@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 14 archivos de prueba, 201 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 16 archivos de prueba, 218 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,11 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Efectos con salvación y áreas (2026-11-07)
+- `rules/areas.ts`: las seis formas oficiales sobre la cuadrícula con la regla casera de la mitad de la casilla; validación de origen, dirección y alcance.
+- `rules/effects.ts`: salvaciones (los monstruos con dados virtuales; los personajes jugadores, tirada anotada), daño tirado una vez para todos, mitad o anulación, defensas y curación con tope.
+- Ejecutor: opción `effect` que se completa con `effectInput` (objetivos, colocación y salvaciones de jugadores); `previewEffect` dice a quién afectaría y a quién hay que pedir la tirada. El aliento del Bruto de prueba ya se ejecuta de principio a fin.
 
 ## Configuración de mesa, recursos y defensas contra el daño (2026-11-07)
 - **Configuración de mesa** (`Encounter.tableRules`): interruptores `diagonal` (`standard` = regla oficial 2024; `alternating-1-2` = regla casera) y `movementThroughCreatures` (`houseSmallOrMedium`). La diagonal sale de `grid`; el formato de guardado sube a la versión 5. La mesa de la jugadora está en `TABLE_RULES_OF_THE_PLAYERS_TABLE`.

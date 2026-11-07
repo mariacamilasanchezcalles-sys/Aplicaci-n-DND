@@ -38,6 +38,7 @@ export interface ModifiedDamageResult {
 export function applyDamageModifiers(
   defender: CombatantDefinition,
   parts: readonly DamageInstance[],
+  options: { readonly halve?: boolean } = {},
 ): ModifiedDamageResult {
   const byType = new Map<DamageType, number>();
   for (const part of parts) {
@@ -45,6 +46,11 @@ export function applyDamageModifiers(
       throw new RangeError(`Daño no válido: ${part.amount}`);
     }
     byType.set(part.type, (byType.get(part.type) ?? 0) + part.amount);
+  }
+  // "Half damage" de una salvación superada es un multiplicador: se aplica
+  // ANTES que Resistencia y Vulnerabilidad (orden oficial), redondeando abajo.
+  if (options.halve) {
+    for (const [type, amount] of byType) byType.set(type, Math.floor(amount / 2));
   }
 
   const immune = new Set(defender.damageImmunities ?? []);

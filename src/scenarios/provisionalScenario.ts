@@ -25,6 +25,8 @@ export const goblin: MonsterDefinition = {
   personality: "pragmatic",
   size: "small",
   stats: { maxHitPoints: 7, armorClass: 15, speedFeet: 30 },
+  // Verificadas en la ficha oficial (MM 2024, p. 142); salvaciones = modificadores.
+  abilities: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 },
   attacks: [
     {
       id: asAttackId("scimitar"),
@@ -119,12 +121,14 @@ export const PROVISIONAL_GRID_DIMENSIONS = { columns: 15, rows: 21 } as const;
 
 /**
  * Configuración de la mesa de la jugadora (DECISIONES CONFIRMADAS): diagonal
- * alternada 1-2-1-2 y atravesar criaturas Diminutas, Pequeñas y Medianas.
+ * alternada 1-2-1-2, atravesar criaturas Diminutas, Pequeñas y Medianas y
+ * áreas por "mitad de la casilla" (guía DM 2014).
  * Ver docs/HOUSE_RULES.md.
  */
 export const TABLE_RULES_OF_THE_PLAYERS_TABLE = {
   diagonal: "alternating-1-2",
   movementThroughCreatures: "houseSmallOrMedium",
+  areaTemplate: "halfSquareDmg2014",
 } as const satisfies TableRules;
 
 export const PROVISIONAL_SCENARIO = {

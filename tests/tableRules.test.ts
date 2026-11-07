@@ -55,6 +55,7 @@ describe("configuración de mesa: interruptor de diagonal", () => {
     expect(goblinAlone().tableRules).toEqual({
       diagonal: "alternating-1-2",
       movementThroughCreatures: "houseSmallOrMedium",
+      areaTemplate: "halfSquareDmg2014",
     });
     expect(goblin.id).toBe(GOBLIN);
   });

@@ -28,9 +28,17 @@ export type MovementThroughCreaturesRule = "houseSmallOrMedium";
  * táctico nunca la cambia. Solo contiene reglas IMPLEMENTADAS: una regla sin
  * implementar no puede activarse (ver docs/HOUSE_RULES.md).
  */
+/**
+ * Qué casillas cubre un área de efecto (las reglas 2024 no lo definen).
+ * - `halfSquareDmg2014`: REGLA CASERA (Guía del DM 2014, "Áreas de efecto"):
+ *   origen en una intersección; casilla afectada si el área cubre al menos la mitad.
+ */
+export type AreaTemplateRule = "halfSquareDmg2014";
+
 export interface TableRules {
   readonly diagonal: DiagonalRule;
   readonly movementThroughCreatures: MovementThroughCreaturesRule;
+  readonly areaTemplate: AreaTemplateRule;
 }
 
 /**

@@ -10,6 +10,20 @@ export interface GridPosition {
 }
 
 /**
+ * Intersección entre casillas (esquina). La intersección (c, f) es la esquina
+ * superior izquierda de la casilla (c, f); van de 0 a columnas/filas incluidos.
+ * Las áreas de efecto se originan en intersecciones (regla casera, Guía del
+ * DM 2014, "Áreas de efecto").
+ */
+export interface GridIntersection {
+  readonly column: number;
+  readonly row: number;
+}
+
+/** Ocho direcciones de la cuadrícula; las filas crecen hacia el sur. */
+export type Direction8 = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
+
+/**
  * Dimensiones explícitas del mapa, en columnas y filas.
  * PENDIENTE: elegir las dimensiones definitivas. El área VISIBLE en pantalla
  * (5 x 9 casillas, con desplazamiento y zoom) es un requisito de interfaz y

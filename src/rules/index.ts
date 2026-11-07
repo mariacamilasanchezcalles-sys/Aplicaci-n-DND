@@ -10,3 +10,5 @@ export * from "./turnSteps";
 export * from "./turnExecution";
 export * from "./damage";
 export * from "./resources";
+export * from "./areas";
+export * from "./effects";

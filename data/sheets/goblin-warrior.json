@@ -2,23 +2,66 @@
   "sheetFormat": 1,
   "id": "goblin-warrior",
   "label": "Goblin",
-  "source": { "kind": "official", "reference": "Goblin Warrior, Monster Manual 2024, p. 142" },
+  "source": {
+    "kind": "official",
+    "reference": "Goblin Warrior, Monster Manual 2024, p. 142"
+  },
   "size": "small",
+  "creatureType": "fey",
   "armorClass": 15,
-  "hitPoints": { "average": 10 },
-  "speed": { "walk": 30 },
+  "hitPoints": {
+    "average": 10,
+    "formula": {
+      "dice": {
+        "count": 3,
+        "sides": 6
+      },
+      "bonus": 0
+    }
+  },
+  "speed": {
+    "walk": 30
+  },
+  "abilities": {
+    "str": 8,
+    "dex": 15,
+    "con": 10,
+    "int": 10,
+    "wis": 8,
+    "cha": 8
+  },
+  "skills": {
+    "stealth": 6
+  },
+  "senses": {
+    "darkvision": 60,
+    "passivePerception": 9
+  },
   "attacks": [
     {
       "id": "scimitar",
       "label": "Cimitarra",
       "mode": "melee",
-      "rangeFeet": { "normal": 5 },
+      "rangeFeet": {
+        "normal": 5
+      },
       "toHitBonus": 4,
       "onHit": [
-        { "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 2, "damageType": "slashing" },
         {
           "kind": "damage",
-          "dice": { "count": 1, "sides": 4 },
+          "dice": {
+            "count": 1,
+            "sides": 6
+          },
+          "bonus": 2,
+          "damageType": "slashing"
+        },
+        {
+          "kind": "damage",
+          "dice": {
+            "count": 1,
+            "sides": 4
+          },
           "bonus": 0,
           "damageType": "slashing",
           "condition": "attackRollHadAdvantage"
@@ -29,13 +72,27 @@
       "id": "shortbow",
       "label": "Arco corto",
       "mode": "ranged",
-      "rangeFeet": { "normal": 80, "long": 320 },
+      "rangeFeet": {
+        "normal": 80,
+        "long": 320
+      },
       "toHitBonus": 4,
       "onHit": [
-        { "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 2, "damageType": "piercing" },
         {
           "kind": "damage",
-          "dice": { "count": 1, "sides": 4 },
+          "dice": {
+            "count": 1,
+            "sides": 6
+          },
+          "bonus": 2,
+          "damageType": "piercing"
+        },
+        {
+          "kind": "damage",
+          "dice": {
+            "count": 1,
+            "sides": 4
+          },
           "bonus": 0,
           "damageType": "piercing",
           "condition": "attackRollHadAdvantage"
@@ -51,8 +108,14 @@
       "body": {
         "op": "choice",
         "options": [
-          { "op": "standardAction", "action": "disengage" },
-          { "op": "standardAction", "action": "hide" }
+          {
+            "op": "standardAction",
+            "action": "disengage"
+          },
+          {
+            "op": "standardAction",
+            "action": "hide"
+          }
         ]
       }
     }

@@ -74,3 +74,11 @@
 43. **Costes de capacidades anidadas**: una capacidad usada desde otra y que tiene costes aún no se ejecuta. Falta decidir cuándo se cobra si está dentro de un `choice` u `optional` (propuesta: al elegir esa rama).
 44. **Descansos** (corto y largo): recuperan recursos (también los de Recarga, verificado), PG y más. Están fuera del combate y sin implementar.
 45. **Cuándo se tira la Recarga**: hoy hay que llamar a `rollRechargesAtTurnStart` antes de `startTurn`. Se unirán al diseñar la iniciativa (decisión 9).
+
+## Efectos y áreas (etapa 2026-11-07)
+- **Resueltas:** las áreas usan el método de la guía 2014 (mitad de la casilla, todas las formas) y las salvaciones de los personajes jugadores las tira el jugador y la app las anota (total o éxito/fracaso).
+46. **Colocación de áreas** (PROPUESTA): cono y línea en 8 direcciones; el cubo crece en diagonal desde una esquina de una cara (subconjunto de "cualquier punto de una cara"); con alcance 0 el origen está en el borde del espacio de la criatura.
+47. **Quién está "dentro" de un área** (PROPUESTA): basta con una casilla de su espacio. Quien crea el área queda fuera salvo `includesSelf`.
+48. **Línea de 5 pies trazada por una línea de la cuadrícula**: con la regla de la mitad cubre media casilla a cada lado, así que afecta a dos filas. Es lo que dice el método; confirmar que la mesa lo juega así.
+49. **Efectos aún no aplicables**: condiciones, PG temporales, desplazamiento forzado, CD de conjuros. Una capacidad que los incluya no se ejecuta.
+50. **Ataques de personajes jugadores** con dados físicos (decisiones 28 y 36): el mismo mecanismo de "el jugador tira y la app lo anota" serviría para sus tiradas de ataque y su daño.

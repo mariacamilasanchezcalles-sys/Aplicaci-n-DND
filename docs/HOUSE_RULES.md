@@ -16,6 +16,7 @@ Mearls, Crawford, Perkins y Wyatt). Es la guía de **2014**, no la de 2024.
 | Regla del proyecto | Origen | Coincidencia |
 |---|---|---|
 | **Diagonal alternada 1-2-1-2** (`alternating-1-2`) | Guía DM 2014, cap. 8, "Regla opcional: Diagonales" (p. 251-252 del PDF) | **Total.** La 1.ª diagonal cuenta 5 pies y la 2.ª 10, y el patrón se repite. La cuenta **sigue aunque haya pasos rectos entre diagonales**, y se aplica también **al medir alcances** (`squareDistance`). La guía no dice cuándo se reinicia la cuenta; el proyecto la reinicia cada turno (suposición 1 de `RULES_VERIFICATION.md`). |
+| **Áreas: mitad de la casilla** (`halfSquareDmg2014`) | Guía DM 2014, cap. 8, "Áreas de efecto" (p. 253 del PDF) | La guía lo dice de las áreas circulares; la jugadora aprobó aplicarlo a **todas** las formas. El origen es una intersección entre casillas. |
 | **Atravesar criaturas Diminutas, Pequeñas y Medianas** | No aparece en la guía. Es propia del DM | La guía trae otras opciones para pasar por el espacio de un enemigo ("Abrirse paso" y "Rodar", ver abajo) que **no** coinciden con esta regla. |
 
 ## Confirmado por la jugadora (2026-11-07)
@@ -54,7 +55,7 @@ huir"). El cerebro nunca la evaluaría como un peso más.
 
 ## Integración (configuración de mesa: DECISIÓN CONFIRMADA; **implementada** el 2026-11-07)
 
-Estado: `Encounter.tableRules` existe con `diagonal` (`standard` / `alternating-1-2`) y `movementThroughCreatures` (`houseSmallOrMedium`). Las reglas de la guía 2014 que usa la mesa se añadirán como interruptores **cuando se implementen**; una regla sin implementar no tiene interruptor, para que no se pueda "activar" algo que no hace nada.
+Estado: `Encounter.tableRules` existe con `diagonal` (`standard` / `alternating-1-2`), `movementThroughCreatures` (`houseSmallOrMedium`) y `areaTemplate` (`halfSquareDmg2014`: áreas de la guía 2014, confirmada por la jugadora el 2026-11-07). Las reglas de la guía 2014 que usa la mesa se añadirán como interruptores **cuando se implementen**; una regla sin implementar no tiene interruptor, para que no se pueda "activar" algo que no hace nada.
 
 1. **Configuración de mesa** (`TableRules`) por encuentro o campaña, con cada regla casera u
    opcional como un interruptor con identificador, por ejemplo `diagonal: "alternating-1-2"` o
