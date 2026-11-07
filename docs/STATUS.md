@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 8 archivos de prueba, 135 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 10 archivos de prueba, 163 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -10,7 +10,8 @@
   - `validateTurnPlan`: valida un turno completo (movimiento, una acción, una acción adicional, ataques conocidos, objetivo, alcance desde la posición que se tiene en ese punto del turno, paso por casillas ocupadas, fin de turno en casilla libre).
   - Dados inyectables (`RandomSource`), `resolveAttack` (ventaja, desventaja, crítico, daño condicionado) y `applyDamage`.
 - **Persistencia:** interfaz, serialización JSON (versión 3) y almacén en memoria.
-- **Fachada `ui-bridge`** mínima y **escenario de prueba** provisional (Goblin, Cata, Caín).
+- **Fachada `ui-bridge`** ampliada (vistas de mapa y menú de turno, `validateTurnPlan`, escenario provisional, biblioteca de encuentros) y **escenario de prueba** provisional (Goblin, Cata, Caín).
+- **Fichas declarativas** (`src/sheets`, tipos en `src/models/sheet.ts`): esquema, validación de estructura y coherencia, carga desde JSON y puente temporal al modelo del motor. Ficha del Goblin Warrior en `data/sheets/goblin-warrior.json` (produce la misma criatura que el escenario). Diseño en `docs/SHEET_ARCHITECTURE.md`.
 - **Pruebas:** estructura, movimiento, tamaños, dados, economía de acciones, integración y separación de módulos.
 
 ## Solo estructura o provisional
@@ -19,8 +20,11 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
-## Siguiente etapa acordada: pantallas
-Ver `docs/UI_REQUIREMENTS.md`. Resumen: prototipo para probar en el celular con tres pantallas (mapa de combate, panel de turno, lista de encuentros). No se ha escrito código de interfaz todavía.
+## Etapa actual: fichas declarativas y acciones compuestas
+Especificación vigente: `docs/PROJECT_SPEC.md`. Hecho: tipos, validación y carga. Propuesto (sin implementar, requiere aprobación): ejecutor de capacidades con reevaluación paso a paso, acciones estándar como capacidades integradas, catálogo de efectos y condiciones. Ver `docs/SHEET_ARCHITECTURE.md` y decisiones 19–27.
+
+## Pausado: prototipo de pantallas
+Se empezó (viewport con arrastre y pellizco, textos en español, almacenes local y Firebase) y se pausó por el cambio de prioridad. Está completo en el commit `62634f7`; en el árbol actual solo queda la ampliación de `ui-bridge`. Ver `docs/UI_REQUIREMENTS.md`.
 
 ## En espera
 - **Cerebro táctico:** la jugadora explicará cómo "piensa todo el tiempo". No se diseña nada hasta recibir esa explicación.

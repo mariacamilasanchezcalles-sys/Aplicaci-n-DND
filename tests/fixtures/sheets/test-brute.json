@@ -1,0 +1,98 @@
+{
+  "sheetFormat": 1,
+  "id": "test-brute",
+  "label": "Bruto de prueba",
+  "source": { "kind": "testFixture", "reference": "Ficha inventada para pruebas; no es una criatura oficial" },
+  "size": "large",
+  "creatureType": "monstrosity",
+  "armorClass": 13,
+  "hitPoints": { "average": 45, "formula": { "dice": { "count": 6, "sides": 10 }, "bonus": 12 } },
+  "speed": { "walk": 40, "climb": 20 },
+  "abilities": { "str": 18, "dex": 12, "con": 14, "int": 4, "wis": 10, "cha": 6 },
+  "senses": { "darkvision": 60, "passivePerception": 10 },
+  "damageResistances": ["cold"],
+  "conditionImmunities": ["frightened"],
+  "resources": [
+    { "id": "fire-breath", "label": "Aliento de fuego", "max": 1, "recovery": [{ "kind": "recharge", "minRoll": 5 }] }
+  ],
+  "traits": [
+    { "id": "keen-smell", "label": "Olfato agudo", "effects": [{ "kind": "unmodeled", "note": "Ventaja en Percepción por olfato" }] }
+  ],
+  "attacks": [
+    {
+      "id": "claw",
+      "label": "Garra",
+      "mode": "melee",
+      "rangeFeet": { "normal": 5 },
+      "toHitBonus": 6,
+      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 8 }, "bonus": 4, "damageType": "slashing" }]
+    },
+    {
+      "id": "bite",
+      "label": "Mordisco",
+      "mode": "melee",
+      "rangeFeet": { "normal": 10 },
+      "toHitBonus": 6,
+      "onHit": [
+        { "kind": "damage", "dice": { "count": 2, "sides": 6 }, "bonus": 4, "damageType": "piercing" },
+        { "kind": "applyCondition", "condition": "grappled", "duration": { "kind": "untilEscape", "escapeDc": 14 } }
+      ]
+    },
+    {
+      "id": "rock",
+      "label": "Roca",
+      "mode": "ranged",
+      "rangeFeet": { "normal": 30, "long": 90 },
+      "toHitBonus": 6,
+      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 10 }, "bonus": 4, "damageType": "bludgeoning" }]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "multiattack",
+      "label": "Multiataque",
+      "activation": "action",
+      "body": {
+        "op": "sequence",
+        "steps": [
+          {
+            "op": "repeat",
+            "times": 2,
+            "body": { "op": "choice", "options": [{ "op": "attack", "attackRef": "claw" }, { "op": "attack", "attackRef": "rock" }] }
+          },
+          {
+            "op": "conditional",
+            "when": { "kind": "previousAttackHit" },
+            "then": { "op": "optional", "body": { "op": "attack", "attackRef": "bite" } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "breath",
+      "label": "Aliento de fuego",
+      "activation": "action",
+      "costs": [{ "kind": "resource", "resourceRef": "fire-breath", "amount": 1 }],
+      "body": {
+        "op": "effect",
+        "targeting": { "kind": "area", "shape": "cone", "sizeFeet": 15, "rangeFeet": 0 },
+        "save": { "ability": "dex", "dc": 13, "onSuccess": "halfDamage" },
+        "effects": [{ "kind": "damage", "dice": { "count": 4, "sides": 6 }, "bonus": 0, "damageType": "fire" }]
+      }
+    },
+    {
+      "id": "rampage",
+      "label": "Arrebato",
+      "activation": "bonusAction",
+      "requirements": [{ "kind": "selfBloodied" }],
+      "body": { "op": "capability", "capabilityRef": "multiattack" }
+    },
+    {
+      "id": "snap-back",
+      "label": "Contragolpe",
+      "activation": "reaction",
+      "trigger": { "kind": "selfHitByAttack" },
+      "body": { "op": "attack", "attackRef": "claw" }
+    }
+  ]
+}

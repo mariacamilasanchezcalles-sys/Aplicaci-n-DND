@@ -27,6 +27,23 @@
 15. Catálogo de recursos (conjuros, usos por descanso) y de roles del registro simplificado.
 
 ## Persistencia y Android
-16. Dónde se guarda en Android. El formato de guardado subió a la versión 3 (sin datos previos que migrar).
+16. **Dónde se guarda.** La jugadora eligió Firebase para el prototipo, pero `PROJECT_SPEC.md` prohíbe servicios en la nube como requisito. Propuesta: guardado local como base (funciona sin conexión) y Firebase como copia/sincronización **opcional**. El adaptador de Firestore (caché local persistente, usuario anónimo, `firestore.rules`) quedó en el commit `62634f7`, sin probar contra un proyecto real. Falta: proyecto de Firebase, método de inicio de sesión (anónimo liga los datos al dispositivo) y confirmar el enfoque. El formato de guardado está en la versión 3.
 17. **Capacitor**: compatible (v8.6.0 exige Node >= 22; hay 22.23), pero no instalado. Faltan empaquetador web, `capacitor.config.ts`, JDK y Android SDK.
 18. **Licencia y visibilidad del repositorio** (ver README): los datos del Goblin Warrior vienen de un libro que no está en el SRD.
+
+## Fichas declarativas y acciones compuestas (ver `SHEET_ARCHITECTURE.md`)
+19. **Aprobar la arquitectura de fichas**: tipos en `models`, módulo `sheets`, vocabulario cerrado con `unmodeled` explícito, personalidad y habilidad asignadas en el encuentro y no en la ficha.
+20. **Ejecución de capacidades** (propuesta): planear el turno completo y ejecutar operación por operación, con reevaluación y revalidación; estado de ejecución serializable dentro del encuentro. Resuelve en parte la decisión 12.
+21. **Acciones estándar y ataque de oportunidad como capacidades integradas** con el mismo formato que las fichas.
+22. **Costes**: se pagan todos de una vez al iniciar la capacidad y no se devuelven; una operación `capability` no paga la activación de la capacidad referida, pero sí sus recursos.
+23. **Pasos sin opción legal** dentro de una capacidad: se pierden y quedan registrados. ¿Se puede renunciar voluntariamente al resto?
+24. **Moverse entre los ataques de un Multiataque** (PENDIENTE DE VALIDAR en 2024).
+25. **Límites provisionales** del formato: `repeat` 1–10, `choice` 2–20, `sequence` 1–20, profundidad 8, CD 1–40, bonificadores ±30.
+26. **Verificar el vocabulario** contra SRD 5.2.1: 13 tipos de daño, 15 condiciones, tipos de criatura, formas de área, Recharge y el orden de resistencias y vulnerabilidades.
+27. **Catálogo de conjuros**: las fichas aceptan `spellcasting` y `castSpell`, pero no existe catálogo (aviso `spellCatalogMissing`).
+
+## De la especificación ampliada (sin diseñar)
+28. **Personajes jugadores con dados físicos**: `resolveAttack` hoy tira dados virtuales; falta una entrada para "la tirada que comunicó el usuario" y la confirmación del daño.
+29. **Semillas reproducibles**: hoy hay un único `RandomSource`. Propuesta: un generador con semilla y dos flujos separados (dados del combate y desempates del cerebro).
+30. **Personalidades** Agresiva y Pacifista (hoy solo existe `pragmatic`) y **niveles de dificultad** por profundidad y amplitud de búsqueda.
+31. **Reglas caseras vigentes frente a la especificación**: diagonal 1-2-1-2 y atravesar criaturas Diminutas, Pequeñas y Medianas siguen siendo DECISIÓN CONFIRMADA. La especificación pide verificar la ocupación según las reglas oficiales; se mantiene la regla casera salvo indicación.

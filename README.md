@@ -27,6 +27,8 @@ src/
   persistence/     interfaz de guardado/carga y serialización JSON
   ui-bridge/       fachada mínima entre una interfaz y el núcleo
   scenarios/       datos de prueba provisionales (Goblin, Cata, Caín)
+  sheets/          fichas declarativas: validación y carga
+data/sheets/       fichas de criaturas en JSON
 tests/             pruebas automatizadas (Vitest)
 docs/              arquitectura, reglas verificadas y decisiones pendientes
 ```
@@ -36,6 +38,8 @@ Cada módulo solo puede importar los permitidos en `docs/ARCHITECTURE.md`; `test
 ## Documentación
 - [`CLAUDE.md`](CLAUDE.md): reglas de trabajo, arquitectura y decisiones para quien continúe el desarrollo (incluido Claude Code).
 - [`docs/STATUS.md`](docs/STATUS.md): estado actual y siguiente etapa.
+- [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md): especificación ampliada vigente.
+- [`docs/SHEET_ARCHITECTURE.md`](docs/SHEET_ARCHITECTURE.md): fichas declarativas y acciones compuestas.
 - [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md): brief original.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): módulos y dependencias.
 - [`docs/RULES_VERIFICATION.md`](docs/RULES_VERIFICATION.md): reglas 2024 verificadas, implementadas y pendientes.

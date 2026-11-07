@@ -14,7 +14,24 @@ export type CreatureSize =
   | "huge"
   | "gargantuan";
 
-export type DamageType = "slashing" | "piercing" | "bludgeoning";
+/**
+ * Tipos de daño de las reglas 2024 (Rules Glossary, "Damage Types").
+ * PENDIENTE DE VALIDAR: cotejar la lista con SRD 5.2.1.
+ */
+export type DamageType =
+  | "acid"
+  | "bludgeoning"
+  | "cold"
+  | "fire"
+  | "force"
+  | "lightning"
+  | "necrotic"
+  | "piercing"
+  | "poison"
+  | "psychic"
+  | "radiant"
+  | "slashing"
+  | "thunder";
 
 export interface DiceExpression {
   readonly count: number;

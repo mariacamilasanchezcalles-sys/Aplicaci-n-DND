@@ -1,0 +1,60 @@
+{
+  "sheetFormat": 1,
+  "id": "goblin-warrior",
+  "label": "Goblin",
+  "source": { "kind": "official", "reference": "Goblin Warrior, Monster Manual 2024, p. 142" },
+  "size": "small",
+  "armorClass": 15,
+  "hitPoints": { "average": 10 },
+  "speed": { "walk": 30 },
+  "attacks": [
+    {
+      "id": "scimitar",
+      "label": "Cimitarra",
+      "mode": "melee",
+      "rangeFeet": { "normal": 5 },
+      "toHitBonus": 4,
+      "onHit": [
+        { "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 2, "damageType": "slashing" },
+        {
+          "kind": "damage",
+          "dice": { "count": 1, "sides": 4 },
+          "bonus": 0,
+          "damageType": "slashing",
+          "condition": "attackRollHadAdvantage"
+        }
+      ]
+    },
+    {
+      "id": "shortbow",
+      "label": "Arco corto",
+      "mode": "ranged",
+      "rangeFeet": { "normal": 80, "long": 320 },
+      "toHitBonus": 4,
+      "onHit": [
+        { "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 2, "damageType": "piercing" },
+        {
+          "kind": "damage",
+          "dice": { "count": 1, "sides": 4 },
+          "bonus": 0,
+          "damageType": "piercing",
+          "condition": "attackRollHadAdvantage"
+        }
+      ]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "nimble-escape",
+      "label": "Escapismo Ágil",
+      "activation": "bonusAction",
+      "body": {
+        "op": "choice",
+        "options": [
+          { "op": "standardAction", "action": "disengage" },
+          { "op": "standardAction", "action": "hide" }
+        ]
+      }
+    }
+  ]
+}

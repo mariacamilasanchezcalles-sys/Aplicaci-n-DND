@@ -9,9 +9,12 @@ Dependencias permitidas (verificadas por `tests/architecture.test.ts`):
 | `perception` | models | Contrato de conocimiento por criatura. Sin implementación. |
 | `tactical-brain` | models, perception | Contrato de entrada/salida y punto de integración vacío. |
 | `persistence` | models | Interfaz guardar/cargar + serialización JSON + almacén en memoria. |
-| `ui-bridge` | models, rules | Fachada mínima para que una interfaz hable con el núcleo. |
+| `ui-bridge` | models, rules, persistence, scenarios | Fachada para la interfaz: vistas de mapa y menú de turno, validación de turno, escenario provisional y biblioteca de encuentros sobre `EncounterStore`. |
 | `scenarios` | models | Datos de prueba provisionales (Goblin, Cata, Caín). |
+| `sheets` | models | Fichas declarativas: esquema con combinadores propios, validación (estructura y coherencia), carga desde JSON y puente temporal `combatantFromSheet`. Diseño: `SHEET_ARCHITECTURE.md`. |
 
-Flujo previsto: `rules` genera acciones legales → `perception` construye lo que el monstruo conoce → `tactical-brain` evalúa solo opciones legales → `rules` resuelve. Nada de esto se conecta todavía.
+Datos: `data/sheets/*.json` (fichas). Los tipos de la ficha están en `models/sheet.ts` porque `rules` los interpretará.
+
+Flujo previsto: `sheets` carga y valida fichas → `rules` genera acciones legales → `perception` construye lo que el monstruo conoce → `tactical-brain` evalúa solo opciones legales → `rules` resuelve. Nada de esto se conecta todavía.
 
 Comandos: `npm run typecheck`, `npm run build`, `npm test`, `npm run verify`.

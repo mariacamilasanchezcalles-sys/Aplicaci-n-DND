@@ -60,3 +60,8 @@ Limitaciones: el texto se extrajo con una herramienta de lectura web, no leyendo
 ## Pendiente de verificar
 - Texto general de Extra Attack y Multiattack.
 - Acciones Help, Influence, Magic, Ready, Search, Study, Utilize: el motor las rechaza con `actionNotYetModeled` porque faltan datos (conjuros, disparador de Ready, objetivos).
+
+## Vocabulario de las fichas (PENDIENTE DE VALIDAR)
+Las fichas declarativas (`src/models/sheet.ts`) usan listas cerradas que deben cotejarse con SRD 5.2.1: 13 tipos de daño, 15 condiciones, 14 tipos de criatura, 6 formas de área, 18 habilidades y la mecánica de Recharge. Se escribieron a partir de la especificación de la jugadora y del conocimiento general de las reglas 2024, **sin** leer la fuente en esta etapa.
+
+La ficha `data/sheets/goblin-warrior.json` contiene solo datos ya verificados en la tabla de arriba (tamaño, CA, 10 PG, Velocidad, ataques y Nimble Escape). Se omitieron a propósito las puntuaciones de característica, el tipo de criatura y la fórmula de PG porque no se verificaron.

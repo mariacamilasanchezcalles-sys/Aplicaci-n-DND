@@ -1,6 +1,8 @@
-# Requisitos de interfaz (NO implementados)
+# Requisitos de interfaz (prototipo PAUSADO)
 
-Hoy el proyecto solo tiene la fachada mínima `ui-bridge`. No existe código de pantallas.
+El prototipo se empezó y se pausó al llegar la especificación ampliada (`PROJECT_SPEC.md`: el diseño visual es secundario respecto al motor). El trabajo hecho está en el commit `62634f7` (carpeta `app/`, Vite, viewport con arrastre/pellizco, textos en español, almacenes local y Firebase); faltaban las pantallas y `main.ts`. En el árbol actual queda la ampliación de `ui-bridge` (vistas, menú de turno, validación, biblioteca de encuentros), con pruebas.
+
+Acordado con la jugadora para el prototipo: el panel de turno solo **valida** (no ejecuta); la ruta se traza tocando casillas con botón para quitar la última; zoom 0,5x–2,5x, desplazamiento limitado al borde y casillas de al menos 44 px (provisional). Guardado: la jugadora eligió **Firebase**; ver decisión 16 por el conflicto con el requisito offline.
 
 ## Primera etapa acordada
 Formato: **prototipo para probar en el celular** (aprobar diseño y manejo táctil antes de pulirlo). Pantallas:

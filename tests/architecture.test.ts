@@ -11,6 +11,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   persistence: ["models"],
   "ui-bridge": ["models", "rules", "persistence", "scenarios"],
   scenarios: ["models"],
+  sheets: ["models"],
 };
 
 const SRC = join(__dirname, "..", "src");
