@@ -6,6 +6,19 @@ import { computeFeatures, simulatePlan } from "../../src/tactical-brain";
 import type { CalibrationCase, FeatureVector, Plan, PlanStep } from "../../src/tactical-brain";
 import { PROVISIONAL_SCENARIO, TABLE_RULES_OF_THE_PLAYERS_TABLE, goblin } from "../../src/scenarios/provisionalScenario";
 import { engine } from "../helpers";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { combatantFromSheet, loadCreatureSheet } from "../../src/sheets";
+
+const DRAKE = id_("drake");
+function id_(name: string): CreatureId {
+  return asCreatureId(name);
+}
+function drakeDef(): CombatantDefinition {
+  const loaded = loadCreatureSheet(readFileSync(join(__dirname, "../fixtures/sheets/test-drake.json"), "utf8"));
+  if (!loaded.valid) throw new Error(JSON.stringify(loaded.errors));
+  return combatantFromSheet(loaded.sheet, { creatureId: "drake", personality: "pragmatic" }).definition;
+}
 
 /**
  * ESCENARIOS DE CALIBRACIÓN de la jugadora (docs/BRAIN_CALIBRATION.md §2).
@@ -58,6 +71,10 @@ const withHp = (e: Encounter, who: CreatureId, hp: number): Encounter => {
 };
 const line = (from: GridPosition, dColumn: number, dRow: number, n: number): GridPosition[] =>
   Array.from({ length: n }, (_, i) => ({ column: from.column + dColumn * (i + 1), row: from.row + dRow * (i + 1) }));
+
+/** Cono de 15 pies del Draco (Grande en (2,2)) hacia el este: cubre (5,2), (5,3), (6,2) y (6,3). */
+const drakeCone = { origin: { column: 4, row: 3 }, direction: "e" as const };
+const claw = asAttackId("claw");
 
 const begin = (action: "attack" | "dash" | "disengage" | "dodge"): PlanStep => ({ kind: "begin", source: { kind: "standard", action } });
 const nimble: PlanStep = { kind: "begin", source: { kind: "bonusAction", bonusActionId: "nimble-escape" } };
@@ -201,6 +218,73 @@ export const SCENARIOS: readonly Scenario[] = [
       a: { steps: [begin("attack"), { kind: "attack", attackId: scimitar, targetId: CATA }, end] },
       b: { steps: [begin("dodge"), { kind: "standardAction", action: "dodge" }, end] },
       c: { steps: [nimble, { kind: "standardAction", action: "disengage" }, { kind: "move", path: line({ column: 0, row: 0 }, 0, 1, 6) }, end] },
+    },
+    answers: { pacifist: "b" },
+  },
+  {
+    // Riesgo inútil: ir por Caín pasando junto a Cata sin Destrabarse.
+    id: "E7",
+    actorId: G,
+    encounter: encounter([
+      [goblinDef(G), 5, 10],
+      [pc("cata", "melee-fighter", 16, 20), 6, 10],
+      [pc("cain", "ranged-spellcaster", 12, 14), 10, 10],
+    ]),
+    options: {
+      a: { steps: [begin("attack"), { kind: "attack", attackId: scimitar, targetId: CATA }, end] },
+      b: {
+        steps: [
+          { kind: "move", path: [{ column: 6, row: 11 }, { column: 7, row: 11 }, { column: 8, row: 11 }, { column: 9, row: 10 }] },
+          begin("attack"),
+          { kind: "attack", attackId: scimitar, targetId: CAIN },
+          end,
+        ],
+      },
+    },
+    answers: { aggressive: "a" },
+  },
+  {
+    // Recurso: aliento con Cata y Caín dentro del cono, o zarpazo a Cata.
+    id: "E8",
+    actorId: DRAKE,
+    encounter: encounter([
+      [drakeDef(), 2, 2],
+      [pc("cata", "melee-fighter", 16, 20), 5, 3],
+      [pc("cain", "ranged-spellcaster", 12, 14), 6, 2],
+    ]),
+    options: {
+      a: { steps: [{ kind: "begin", source: { kind: "sheet", capabilityId: "breath" } }, { kind: "effect", placement: drakeCone }, end] },
+      b: { steps: [begin("attack"), { kind: "attack", attackId: claw, targetId: CATA }, end] },
+    },
+    answers: { pragmatic: "a" },
+  },
+  {
+    // Recurso: solo Cata en el cono.
+    id: "E9",
+    actorId: DRAKE,
+    encounter: encounter([
+      [drakeDef(), 2, 2],
+      [pc("cata", "melee-fighter", 16, 20), 5, 3],
+      [pc("cain", "ranged-spellcaster", 12, 14), 12, 15],
+    ]),
+    options: {
+      a: { steps: [{ kind: "begin", source: { kind: "sheet", capabilityId: "breath" } }, { kind: "effect", placement: drakeCone }, end] },
+      b: { steps: [begin("attack"), { kind: "attack", attackId: claw, targetId: CATA }, end] },
+    },
+    answers: { pragmatic: "b" },
+  },
+  {
+    // Control: derribar a Cata o zarpazo.
+    id: "E10",
+    actorId: DRAKE,
+    encounter: encounter([
+      [drakeDef(), 2, 2],
+      [pc("cata", "melee-fighter", 16, 20), 5, 3],
+      [pc("cain", "ranged-spellcaster", 12, 14), 12, 15],
+    ]),
+    options: {
+      a: { steps: [{ kind: "begin", source: { kind: "sheet", capabilityId: "trip" } }, { kind: "effect", targetIds: [CATA] }, end] },
+      b: { steps: [begin("attack"), { kind: "attack", attackId: claw, targetId: CATA }, end] },
     },
     answers: { pacifist: "b" },
   },

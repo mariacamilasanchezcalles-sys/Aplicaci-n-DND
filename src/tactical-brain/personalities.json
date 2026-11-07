@@ -2,38 +2,41 @@
   "_comment": "Pesos por personalidad. Salen de la calibración con escenarios aprobados por la jugadora (docs/BRAIN_CALIBRATION.md); no se editan a mano. Pendientes de su aprobación.",
   "pragmatic": {
     "damageDealt": 0,
-    "threatReduction": 9.188,
-    "immediateThreatReduction": 1.1,
+    "threatReduction": 12.25,
+    "immediateThreatReduction": 3.063,
     "finishingChance": 0,
-    "damageTaken": -4.14,
+    "damageTaken": -5.04,
     "deathRisk": 0,
     "adjacentEnemies": -1,
-    "flankingPairs": 8,
-    "resourcesSpent": 0,
-    "conditionsInflicted": 0
+    "flankingPairs": 20,
+    "resourcesSpent": -45,
+    "conditionsInflicted": 0,
+    "friendlyDamage": 0
   },
   "aggressive": {
-    "damageDealt": 1.466,
-    "threatReduction": 3.063,
-    "immediateThreatReduction": 0,
-    "finishingChance": 0.147,
-    "damageTaken": 0,
-    "deathRisk": 0,
+    "damageDealt": 8.141,
+    "threatReduction": 9.188,
+    "immediateThreatReduction": 3.612,
+    "finishingChance": 0.814,
+    "damageTaken": -4.35,
+    "deathRisk": -0.13,
     "adjacentEnemies": 1,
-    "flankingPairs": 0,
+    "flankingPairs": 2,
     "resourcesSpent": 0,
-    "conditionsInflicted": 0
+    "conditionsInflicted": 0,
+    "friendlyDamage": 0
   },
   "pacifist": {
-    "damageDealt": -5.209,
+    "damageDealt": -3.65,
     "threatReduction": -3.062,
-    "immediateThreatReduction": 2.513,
-    "finishingChance": -0.521,
-    "damageTaken": -0.42,
-    "deathRisk": -34.611,
-    "adjacentEnemies": -7,
+    "immediateThreatReduction": 8.3,
+    "finishingChance": -0.365,
+    "damageTaken": -6.229,
+    "deathRisk": -34.431,
+    "adjacentEnemies": -19,
     "flankingPairs": -2,
     "resourcesSpent": 0,
-    "conditionsInflicted": 0
+    "conditionsInflicted": 0,
+    "friendlyDamage": 0
   }
 }

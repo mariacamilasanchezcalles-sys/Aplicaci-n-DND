@@ -137,6 +137,7 @@ describe("supuestos por nivel del grupo (tabla aprobada, SRD 5.2.1)", () => {
       maxHitPoints: 10,
       speedFeet: 30,
       presumedAttack: { toHitBonus: 5, dice: { count: 1, sides: 8 }, damageBonus: 3, reachFeet: 5 },
+      saveBonus: 1.5,
     });
     expect(priorsForPartyLevel(3).maxHitPoints).toBe(23);
     expect(priorsForPartyLevel(5)).toMatchObject({ maxHitPoints: 36, presumedAttack: { toHitBonus: 6 } });

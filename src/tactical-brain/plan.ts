@@ -1,6 +1,6 @@
 import type { AttackId, CreatureId, Encounter, GridPosition } from "../models";
-import type { CapabilitySource, ExecutableStandardAction, TurnCommand, TurnState } from "../rules";
-import type { EstimatedAttackOdds, SimulationPort } from "./simulation";
+import type { AreaPlacement, CapabilitySource, EffectInput, ExecutableStandardAction, TurnCommand, TurnState } from "../rules";
+import type { EffectTargetOdds, EstimatedAttackOdds, SimulationPort } from "./simulation";
 
 /**
  * PLAN DE TURNO: secuencia de intenciones que el cerebro compara completa
@@ -13,6 +13,12 @@ export type PlanStep =
   | { readonly kind: "begin"; readonly source: CapabilitySource }
   | { readonly kind: "attack"; readonly attackId: AttackId; readonly targetId: CreatureId }
   | { readonly kind: "standardAction"; readonly action: ExecutableStandardAction }
+  /** Operación de efecto de la capacidad en curso, con sus objetivos o su colocación. */
+  | {
+      readonly kind: "effect";
+      readonly targetIds?: readonly CreatureId[];
+      readonly placement?: AreaPlacement;
+    }
   | { readonly kind: "finish" }
   | { readonly kind: "end" };
 
@@ -24,6 +30,10 @@ export interface PlannedAttack {
   readonly attackId: AttackId;
   readonly targetId: CreatureId;
   readonly odds: EstimatedAttackOdds;
+}
+
+export interface PlannedEffect {
+  readonly targets: readonly EffectTargetOdds[];
 }
 
 export interface ProvokedReaction {
@@ -39,9 +49,17 @@ export type PlanSimulation =
       readonly final: Encounter;
       readonly turn: TurnState;
       readonly attacks: readonly PlannedAttack[];
+      readonly effects: readonly PlannedEffect[];
       readonly provoked: readonly ProvokedReaction[];
     }
   | { readonly ok: false; readonly failedStep: number; readonly reason: string };
+
+function effectInputOf(step: Extract<PlanStep, { kind: "effect" }>): EffectInput {
+  return {
+    ...(step.targetIds ? { targetIds: step.targetIds } : {}),
+    ...(step.placement ? { placement: step.placement } : {}),
+  };
+}
 
 /** Traduce un paso a una orden del ejecutor (null si no hay opción legal que coincida). */
 function commandFor(port: SimulationPort, state: Encounter, turn: TurnState, step: PlanStep): TurnCommand | null {
@@ -52,6 +70,10 @@ function commandFor(port: SimulationPort, state: Encounter, turn: TurnState, ste
       return { kind: "beginCapability", source: step.source };
     case "end":
       return { kind: "endTurn" };
+    case "effect": {
+      const option = port.getOptions(state, turn).executionOptions.find((o) => o.choice.kind === "effect");
+      return option ? { kind: "chooseOption", key: option.key, effectInput: effectInputOf(step) } : null;
+    }
     case "attack":
     case "standardAction":
     case "finish": {
@@ -75,6 +97,7 @@ export function simulatePlan(port: SimulationPort, actorId: CreatureId, plan: Pl
   let state = start;
   let turn = port.startTurn(state, actorId);
   const attacks: PlannedAttack[] = [];
+  const effects: PlannedEffect[] = [];
   const provoked: ProvokedReaction[] = [];
   for (const [index, step] of plan.steps.entries()) {
     const command = commandFor(port, state, turn, step);
@@ -83,7 +106,20 @@ export function simulatePlan(port: SimulationPort, actorId: CreatureId, plan: Pl
       const odds = port.attackOdds(state, actorId, step.attackId, step.targetId);
       if (odds) attacks.push({ attackId: step.attackId, targetId: step.targetId, odds });
     }
-    let result = port.apply(state, turn, command);
+    let effectiveCommand = command;
+    if (step.kind === "effect" && command.kind === "chooseOption") {
+      const odds = port.effectOdds(state, turn, command.key, effectInputOf(step));
+      if (odds === null) return { ok: false, failedStep: index, reason: "invalidEffectInput" };
+      effects.push({ targets: odds });
+      // Salvaciones de jugadores en la simulación: el resultado más probable (PROPUESTA, decisión 92).
+      const playerSaves = Object.fromEntries(
+        odds
+          .filter((t) => state.combatants[t.targetId]?.definition.kind === "playerCharacter")
+          .map((t) => [t.targetId, { outcome: t.saveFailChance > 0.5 ? "failure" : "success" } as const]),
+      );
+      effectiveCommand = { ...command, effectInput: { ...effectInputOf(step), playerSaves } };
+    }
+    let result = port.apply(state, turn, effectiveCommand);
     if (!result.ok) return { ok: false, failedStep: index, reason: result.reasonCode };
     // Reacciones provocadas por el movimiento: se cuentan y se dejan pasar.
     while (result.ok && result.turn.pendingReactions.length > 0) {
@@ -103,5 +139,5 @@ export function simulatePlan(port: SimulationPort, actorId: CreatureId, plan: Pl
     state = result.encounter;
     turn = result.turn;
   }
-  return { ok: true, initial: start, final: state, turn, attacks, provoked };
+  return { ok: true, initial: start, final: state, turn, attacks, effects, provoked };
 }

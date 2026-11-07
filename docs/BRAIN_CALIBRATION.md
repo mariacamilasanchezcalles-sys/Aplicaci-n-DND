@@ -54,6 +54,11 @@ Escenarios añadidos (2026-11-07):
 | E5 | Goblin con 3 PG, Cata y Caín pegados a él. | (a) Atacar (a Caín). (b) Destrabarse y alejarse 30 pies. (c) Esquivar. |
 | E6 | Goblin sano arrinconado en una esquina, Cata pegada a él. | (a) Atacar a Cata. (b) Esquivar. (c) Destrabarse y moverse lo que pueda. |
 
+| E7 | Goblin junto a Cata; Caín a 20 pies detrás de ella. | (a) Atacar a Cata. (b) Pasar junto a Cata sin Destrabarse (ataque de oportunidad) y atacar a Caín. |
+| E8 | Draco de prueba (Grande, ficha inventada) con Cata y Caín dentro del cono de su aliento. | (a) Aliento (Recarga 5–6) a los dos. (b) Zarpazo a Cata. |
+| E9 | Igual, pero solo Cata en el cono. | (a) Aliento. (b) Zarpazo, guardar el aliento. |
+| E10 | Draco junto a Cata. | (a) Derribarla (salvación de FUE CD 13, Derribado). (b) Zarpazo. |
+
 "Destrabarse y huir" (E3, E5, E6) = Escapismo Ágil y mover 30 pies, **sin Correr** (respuesta de la jugadora).
 
 ### Decisiones de la jugadora (2026-11-07)
@@ -65,6 +70,10 @@ Escenarios añadidos (2026-11-07):
 | E4 | (a) Rodear a Cata (flanqueo) | (a) Rodear a Cata (flanqueo) | (b) Ir por Caín |
 | E5 | — | (a) Atacar igualmente | — |
 | E6 | — | — | (b) Esquivar |
+| E7 | — | (a) Atacar a Cata | — |
+| E8 | (a) Aliento a los dos | — | — |
+| E9 | (b) Zarpazo, guardar el aliento | — | — |
+| E10 | — | — | (b) Zarpazo |
 
 ## 3. Rasgos que se miden (etapa 3, `tactical-brain/features.ts`)
 Todos en unidades naturales, calculados sobre el estado creído (sin datos ocultos):
@@ -80,34 +89,38 @@ Todos en unidades naturales, calculados sobre el estado creído (sin datos ocult
 | `adjacentEnemies` | Enemigos a 5 pies al terminar |
 | `flankingPairs` | Flanqueos de su bando al terminar (regla casera) |
 | `resourcesSpent` | Usos limitados gastados |
-| `conditionsInflicted` | Condiciones nuevas en enemigos |
+| `conditionsInflicted` | Probabilidad esperada de imponer condiciones a enemigos |
+| `friendlyDamage` | Daño esperado a aliados (áreas) |
 
 Supuestos para medir el riesgo (PROPUESTA, decisión 85; derivados del SRD): un enemigo del que no
 se conocen ataques ataca con +(bonificador por competencia + 3) y 1d8 + 3 a 5 pies, con Velocidad 30.
 
-## 4. Pesos calculados (2026-11-07, 15 decisiones) — PENDIENTES DE APROBACIÓN
-Obtenidos con `npm run calibrate` a partir de las 15 decisiones y de los signos que exige la
+## 4. Pesos calculados (2026-11-07, 19 decisiones) — PENDIENTES DE APROBACIÓN
+Obtenidos con `npm run calibrate` a partir de las 19 decisiones y de los signos que exige la
 descripción de cada personalidad (decisión 88). Guardados en `src/tactical-brain/personalities.json`;
 `tests/calibration/decisions.test.ts` comprueba que cada personalidad elige lo decidido.
 
 | Rasgo | Pragmático | Agresivo | Pacifista |
 |---|---|---|---|
-| damageDealt | 0 | 1,466 | −5,209 |
-| threatReduction | 9,188 | 3,063 | −3,062 |
-| immediateThreatReduction | 1,1 | 0 | 2,513 |
-| finishingChance | 0 | 0,147 | −0,521 |
-| damageTaken | −4,14 | 0 | −0,42 |
-| deathRisk | 0 | 0 | −34,611 |
-| adjacentEnemies | −1 | 1 | −7 |
-| flankingPairs | 8 | 0 | −2 |
-| resourcesSpent | 0 | 0 | 0 |
+| damageDealt | 0 | 8,141 | −3,65 |
+| threatReduction | 12,25 | 9,188 | −3,062 |
+| immediateThreatReduction | 3,063 | 3,612 | 8,3 |
+| finishingChance | 0 | 0,814 | −0,365 |
+| damageTaken | −5,04 | −4,35 | −6,229 |
+| deathRisk | 0 | −0,13 | −34,431 |
+| adjacentEnemies | −1 | 1 | −19 |
+| flankingPairs | 20 | 2 | −2 |
+| resourcesSpent | −45 | 0 | 0 |
 | conditionsInflicted | 0 | 0 | 0 |
+| friendlyDamage | 0 | 0 | 0 |
 
 Lectura:
-- **Pragmático:** valora sobre todo golpear a quien ha demostrado ser peligroso, evita el daño y
-  coopera (flanqueos).
-- **Agresivo:** valora el daño y castigar a quien hace daño; le gusta estar pegado al enemigo; **hoy
-  ignora el riesgo** (pesos 0) porque ningún caso le pide evitarlo (E5 pide lo contrario).
-- **Pacifista:** evita causar daño y quedarse junto a enemigos, teme mucho morir, y aun así golpea a
-  quien le amenaza de inmediato (defensa propia, E1).
-- Recursos y condiciones siguen sin casos: pesos 0.
+- **Pragmático:** golpea a quien ha demostrado ser peligroso, evita el daño, coopera (flanqueos) y
+  **guarda los recursos** salvo que el beneficio sea grande (E8 sí, E9 no).
+- **Agresivo:** valora el daño y castigar a quien hace daño, le gusta estar pegado al enemigo y
+  **ahora sí evita el riesgo inútil** (E7), aunque sigue atacando con pocos PG (E5).
+- **Pacifista:** evita causar daño y quedarse junto a enemigos, teme mucho morir, y golpea a quien le
+  amenaza de inmediato (defensa propia, E1 y E10).
+- **Condiciones:** peso 0 en las tres. E10 no contradice "prefiere controlar" porque ese signo
+  permite 0, pero tampoco hay ningún caso que pida preferir una condición; hoy el control no suma.
+- `friendlyDamage`: sin casos (peso 0).

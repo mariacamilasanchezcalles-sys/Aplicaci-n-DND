@@ -32,6 +32,8 @@ export interface KnowledgePriors {
   readonly speedFeet: number | null;
   /** Ataque supuesto de un enemigo al que aún no se le conocen ataques. */
   readonly presumedAttack: PresumedAttack | null;
+  /** Bonificador de salvación supuesto de un enemigo (cualquier característica). */
+  readonly saveBonus: number | null;
 }
 
 export const NO_PRIORS: KnowledgePriors = {
@@ -40,6 +42,7 @@ export const NO_PRIORS: KnowledgePriors = {
   maxHitPoints: null,
   speedFeet: null,
   presumedAttack: null,
+  saveBonus: null,
 };
 
 /** Estimación con incertidumbre: cotas observadas y supuesto inicial. */

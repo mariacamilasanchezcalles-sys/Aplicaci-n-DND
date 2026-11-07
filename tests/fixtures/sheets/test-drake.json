@@ -1,0 +1,48 @@
+{
+  "sheetFormat": 1,
+  "id": "test-drake",
+  "label": "Draco de prueba",
+  "source": { "kind": "testFixture", "reference": "Ficha inventada para la calibración del cerebro; no es una criatura oficial" },
+  "size": "large",
+  "creatureType": "dragon",
+  "armorClass": 14,
+  "hitPoints": { "average": 45 },
+  "speed": { "walk": 30 },
+  "abilities": { "str": 18, "dex": 12, "con": 14, "int": 6, "wis": 10, "cha": 8 },
+  "resources": [{ "id": "fire-breath", "label": "Aliento de fuego", "max": 1, "recovery": [{ "kind": "recharge", "minRoll": 5 }] }],
+  "attacks": [
+    {
+      "id": "claw",
+      "label": "Zarpazo",
+      "mode": "melee",
+      "rangeFeet": { "normal": 10 },
+      "toHitBonus": 6,
+      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 8 }, "bonus": 4, "damageType": "slashing" }]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "breath",
+      "label": "Aliento de fuego",
+      "activation": "action",
+      "costs": [{ "kind": "resource", "resourceRef": "fire-breath", "amount": 1 }],
+      "body": {
+        "op": "effect",
+        "targeting": { "kind": "area", "shape": "cone", "sizeFeet": 15, "rangeFeet": 0 },
+        "save": { "ability": "dex", "dc": 13, "onSuccess": "halfDamage" },
+        "effects": [{ "kind": "damage", "dice": { "count": 4, "sides": 6 }, "bonus": 0, "damageType": "fire" }]
+      }
+    },
+    {
+      "id": "trip",
+      "label": "Derribar",
+      "activation": "action",
+      "body": {
+        "op": "effect",
+        "targeting": { "kind": "creatures", "count": 1, "rangeFeet": 10 },
+        "save": { "ability": "str", "dc": 13, "onSuccess": "negates" },
+        "effects": [{ "kind": "applyCondition", "condition": "prone", "duration": { "kind": "indefinite" } }]
+      }
+    }
+  ]
+}

@@ -92,6 +92,7 @@ export const PERSONALITY_SIGNS: Readonly<Record<"pragmatic" | "aggressive" | "pa
     flankingPairs: "nonNegative",
     resourcesSpent: "nonPositive",
     conditionsInflicted: "nonNegative",
+    friendlyDamage: "nonPositive",
   },
   aggressive: {
     damageDealt: "nonNegative",
@@ -102,6 +103,7 @@ export const PERSONALITY_SIGNS: Readonly<Record<"pragmatic" | "aggressive" | "pa
     deathRisk: "nonPositive",
     flankingPairs: "nonNegative",
     conditionsInflicted: "nonNegative",
+    friendlyDamage: "nonPositive",
   },
   pacifist: {
     damageDealt: "nonPositive",
@@ -109,5 +111,6 @@ export const PERSONALITY_SIGNS: Readonly<Record<"pragmatic" | "aggressive" | "pa
     damageTaken: "nonPositive",
     deathRisk: "nonPositive",
     conditionsInflicted: "nonNegative",
+    friendlyDamage: "nonPositive",
   },
 };

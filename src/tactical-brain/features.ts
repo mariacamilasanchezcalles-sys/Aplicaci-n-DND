@@ -30,8 +30,10 @@ export interface FeatureVector {
   readonly flankingPairs: number;
   /** Usos limitados gastados. */
   readonly resourcesSpent: number;
-  /** Condiciones nuevas en enemigos (control). */
+  /** Condiciones esperadas en enemigos (control): suma de probabilidades. */
   readonly conditionsInflicted: number;
+  /** Daño esperado a criaturas del propio bando (fuego amigo, PG). */
+  readonly friendlyDamage: number;
 }
 
 export const FEATURE_NAMES = [
@@ -45,6 +47,7 @@ export const FEATURE_NAMES = [
   "flankingPairs",
   "resourcesSpent",
   "conditionsInflicted",
+  "friendlyDamage",
 ] as const satisfies readonly (keyof FeatureVector)[];
 
 export type FeatureName = (typeof FEATURE_NAMES)[number];
@@ -82,6 +85,22 @@ export function computeFeatures(
     if (totalSeen > 0) threatReduction += attack.odds.expectedDamage * ((seen.get(attack.targetId) ?? 0) / totalSeen);
     immediateThreatReduction += attack.odds.expectedDamage * (immediateShare.get(attack.targetId) ?? 0);
   }
+  // Efectos (alientos, derribar…): daño y condiciones esperados por objetivo.
+  let friendlyDamage = 0;
+  let conditionsInflicted = 0;
+  for (const effect of simulation.effects) {
+    for (const t of effect.targets) {
+      if (t.ally) {
+        friendlyDamage += t.expectedDamage;
+        continue;
+      }
+      damageDealt += t.expectedDamage;
+      conditionsInflicted += t.conditionChance;
+      damageByTarget.set(t.targetId, (damageByTarget.get(t.targetId) ?? 0) + t.expectedDamage);
+      if (totalSeen > 0) threatReduction += t.expectedDamage * ((seen.get(t.targetId) ?? 0) / totalSeen);
+      immediateThreatReduction += t.expectedDamage * (immediateShare.get(t.targetId) ?? 0);
+    }
+  }
   let finishingChance = 0;
   for (const [targetId, damage] of damageByTarget) {
     const hp = initial.combatants[targetId]?.state.currentHitPoints;
@@ -104,10 +123,6 @@ export function computeFeatures(
     const after = me.state.resources.find((r) => r.id === pool.id)?.current ?? pool.current;
     return sum + Math.max(0, pool.current - after);
   }, 0);
-  const conditionsInflicted = enemies.reduce((sum, id) => {
-    const before = initial.combatants[id]?.state.conditions.length ?? 0;
-    return sum + Math.max(0, final.combatants[id]!.state.conditions.length - before);
-  }, 0);
 
   return {
     damageDealt,
@@ -120,6 +135,7 @@ export function computeFeatures(
     flankingPairs,
     resourcesSpent,
     conditionsInflicted,
+    friendlyDamage,
   };
 }
 

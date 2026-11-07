@@ -3,6 +3,7 @@ import type { AttackId, CreatureId, Encounter } from "../models";
 // los tipos de las órdenes, pero no puede ejecutar ninguna regla).
 import type {
   AreaPlacementCandidate,
+  EffectInput,
   ReachableSquare,
   TurnCommand,
   TurnCommandResult,
@@ -46,6 +47,22 @@ export interface SimulationPort {
   distanceFeet(state: Encounter, a: CreatureId, b: CreatureId): number | null;
   /** ¿`attackerId` flanquea a `targetId`? (regla casera de la mesa, si está activa). */
   flanks(state: Encounter, attackerId: CreatureId, targetId: CreatureId): boolean;
+  /**
+   * Probabilidades de una opción de efecto con unos datos (objetivos o
+   * colocación): por criatura afectada, probabilidad de fallar la salvación,
+   * daño esperado y probabilidad de cada condición. null si no es válida.
+   */
+  effectOdds(state: Encounter, turn: TurnState, key: string, input: EffectInput): readonly EffectTargetOdds[] | null;
+}
+
+export interface EffectTargetOdds {
+  readonly targetId: CreatureId;
+  /** Del mismo bando que el actor (fuego amigo). */
+  readonly ally: boolean;
+  readonly saveFailChance: number;
+  readonly expectedDamage: number;
+  /** Probabilidad de que se le aplique alguna condición. */
+  readonly conditionChance: number;
 }
 
 export interface IncomingThreat {

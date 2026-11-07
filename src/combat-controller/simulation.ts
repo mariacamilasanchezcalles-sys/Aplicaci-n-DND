@@ -3,7 +3,13 @@ import { buildBeliefEncounter, plausibleValues } from "../perception";
 import type { KnowledgeView } from "../perception";
 import {
   applyTurnCommand,
+  effectOperationOf,
   footprintDistanceSquares,
+  previewEffect,
+  saveBonusOf,
+  saveConditions,
+  saveSuccessChance,
+  averageDice,
   startTurn,
   areaPlacementCandidates,
   attackConditions,
@@ -16,7 +22,7 @@ import {
   reachableSquares,
 } from "../rules";
 import type { RandomSource } from "../rules";
-import type { EstimatedAttackOdds, IncomingThreat, SimulationPort } from "../tactical-brain";
+import type { EffectTargetOdds, EstimatedAttackOdds, IncomingThreat, SimulationPort } from "../tactical-brain";
 import type { AttackDefinition, CombatantRecord } from "../models";
 
 /**
@@ -92,6 +98,50 @@ export function createSimulationPort(publicEncounter: Encounter, view: Knowledge
   return {
     belief,
     startTurn: (state, actorId) => startTurn(state, actorId),
+    effectOdds(state, turn, key, input): EffectTargetOdds[] | null {
+      const operation = effectOperationOf(state, turn, key);
+      const actor = state.combatants[turn.actorId];
+      if (!operation || !actor) return null;
+      const preview = previewEffect(state, turn, key, input);
+      if (!preview.ok) return null;
+      const save = operation.save;
+      const dc = save && typeof save.dc === "number" ? save.dc : null;
+      // Media del daño (se tira una vez para todos) por tipo.
+      const damage = operation.effects.flatMap((e) => (e.kind === "damage" ? [{ type: e.damageType, amount: (e.dice ? averageDice(e.dice) : 0) + e.bonus }] : []));
+      const conditionIds = operation.effects.flatMap((e) => (e.kind === "applyCondition" ? [e.condition] : []));
+      return preview.affected.map((targetId) => {
+        const target = state.combatants[targetId]!;
+        const known = knownEnemies.get(targetId);
+        let failChance = 1;
+        if (save && dc !== null) {
+          const adjust = saveConditions(target, save.ability);
+          // Bonificador: el real de los del propio bando; el supuesto de los enemigos.
+          const bonus = known ? (view.priors.saveBonus ?? 0) : (saveBonusOf(target.definition, save.ability) ?? 0);
+          failChance = adjust.autoFail ? 1 : 1 - saveSuccessChance(bonus, dc, adjust.mode, adjust.d20Penalty);
+        }
+        const successFactor = save?.onSuccess === "halfDamage" ? 0.5 : 0;
+        const defenses = known
+          ? {}
+          : {
+              immunities: target.definition.damageImmunities ?? [],
+              resistances: target.definition.damageResistances ?? [],
+              vulnerabilities: target.definition.damageVulnerabilities ?? [],
+            };
+        const expectedDamage = damage.reduce(
+          (sum, d) => sum + d.amount * (failChance + (1 - failChance) * successFactor) * defenseMultiplier(d.type, defenses),
+          0,
+        );
+        // Inmunidades: las del propio bando se conocen; las de los enemigos, no.
+        const applicable = conditionIds.filter((c) => known || !(target.definition.conditionImmunities ?? []).includes(c));
+        return {
+          targetId,
+          ally: target.side === actor.side,
+          saveFailChance: failChance,
+          expectedDamage,
+          conditionChance: applicable.length > 0 ? failChance : 0,
+        };
+      });
+    },
     distanceFeet(state, a, b) {
       const ra = state.combatants[a];
       const rb = state.combatants[b];
