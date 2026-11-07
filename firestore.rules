@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// Reglas PROPUESTAS para Cloud Firestore (no desplegadas por el proyecto).
+// Cada usuario (anónimo por ahora) solo puede leer y escribir sus encuentros.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/encounters/{encounterId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'label', 'snapshot', 'updatedAt'])
+        && request.resource.data.schemaVersion is int
+        && request.resource.data.label is string
+        && request.resource.data.snapshot is string
+        && request.resource.data.snapshot.size() < 500000;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
