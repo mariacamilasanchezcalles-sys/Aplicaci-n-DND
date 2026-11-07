@@ -110,8 +110,8 @@
 ## Cerebro táctico (propuesta 2026-11-07, ver `TACTICAL_BRAIN_DESIGN.md`)
 69. **Arquitectura:** nuevo módulo `combat-controller`; `perception` podrá importar `rules` (visibilidad); el cerebro simula consecuencias con un puerto de simulación sobre un estado creído.
 70. **Factores:** sustituir los 4 factores del brief por la lista de la especificación, medida en unidades naturales.
-71. **Pesos:** calibración con escenarios aprobados por la jugadora; perfiles de personalidad como datos (JSON).
-72. **Inteligencia y memoria:** cómo influyen INT y SAB en lo que aprende y recuerda una criatura.
-73. **Suposición inicial de CA y PG desconocidos** antes de observar nada.
-74. **Comunicación entre aliados:** si comparten conocimiento e intenciones sin restricción.
+71. ~~**Pesos**~~ → CONFIRMADO: calibración con escenarios aprobados por la jugadora; perfiles de personalidad como datos (JSON).
+72. **Inteligencia y memoria:** CONFIRMADO que de momento todas aprenden de lo que perciben; queda pendiente cómo influyen INT y SAB.
+73. ~~**Suposición inicial de CA y PG**~~ → CONFIRMADO: valor típico configurable fijado por la jugadora y corregido con lo observado (falta decidir el valor).
+74. ~~**Comunicación entre aliados**~~ → CONFIRMADO: los monstruos de un bando comparten todo (conocimiento e intenciones).
 75. **Variación con semilla** del cerebro (opcional, separada de los dados).

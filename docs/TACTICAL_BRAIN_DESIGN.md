@@ -1,5 +1,15 @@
 # Diseño del cerebro táctico (PROPUESTA, pendiente de aprobación)
 
+> **Decisiones confirmadas por la jugadora (2026-11-07):**
+> - **Pesos:** se calibran con escenarios que ella aprueba (decisión 71).
+> - **Memoria:** todas las criaturas aprenden de lo que perciben; la influencia de INT y SAB se
+>   definirá más adelante (decisión 72).
+> - **Aliados:** los monstruos de un mismo bando **comparten todo**, conocimiento e intenciones
+>   (mente colectiva del bando; decisión 74). Esto sustituye la propuesta del §3 ("no comparten
+>   mente") y del §7.
+> - **Suposición inicial** de CA y PG no observados: un valor típico configurable que fija ella
+>   (por ejemplo, por nivel de los personajes) y que se corrige con lo observado (decisión 73).
+
 Desarrolla `TACTICAL_BRAIN_SPEC.md`. **No hay código todavía.** Etiquetas: DECISIÓN CONFIRMADA
 (de la especificación de la jugadora), PROPUESTA (mía) y PENDIENTE.
 
