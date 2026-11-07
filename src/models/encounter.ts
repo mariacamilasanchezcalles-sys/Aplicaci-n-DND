@@ -39,6 +39,29 @@ export interface TableRules {
   readonly diagonal: DiagonalRule;
   readonly movementThroughCreatures: MovementThroughCreaturesRule;
   readonly areaTemplate: AreaTemplateRule;
+  /** REGLA CASERA (guía DM 2014, "Flanquear"): Ventaja cuerpo a cuerpo al flanquear. */
+  readonly flanking: boolean;
+  /** REGLA CASERA (guía DM 2014, "Marcar"): ataques de oportunidad con Ventaja contra el marcado. */
+  readonly mark: boolean;
+  /** REGLA CASERA (guía DM 2014, "Daño masivo"): salvación de CON 15 y tabla de shock. */
+  readonly massiveDamage: boolean;
+  /** REGLA CASERA (guía DM 2014, "Moral"): monstruos que huyen o se rinden. */
+  readonly morale: boolean;
+}
+
+/** Cómo se juzga una oposición "abrumadora" para la Moral (lo decide el DM por bando). */
+export type OverwhelmingOpposition = "none" | "disadvantage" | "autoFail";
+
+/** Datos de Moral por bando (solo monstruos). */
+export interface SideMorale {
+  /** Líder del grupo (opcional). */
+  readonly leaderId: CreatureId | null;
+  /** Miembros al empezar el combate. */
+  readonly startingMembers: number;
+  readonly overwhelming: OverwhelmingOpposition;
+  /** Disparadores de grupo ya usados (cada uno una vez por combate). */
+  readonly leaderTriggered: boolean;
+  readonly halvedTriggered: boolean;
 }
 
 /**
@@ -60,4 +83,6 @@ export interface Encounter {
   readonly round: number;
   /** Posición en `initiativeOrder` de quien tiene el turno; -1 fuera de combate. */
   readonly turnIndex: number;
+  /** Moral por bando (regla casera). */
+  readonly sideMorale: Readonly<Record<string, SideMorale>>;
 }

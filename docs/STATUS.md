@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 20 archivos de prueba, 266 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 21 archivos de prueba, 286 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,10 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Bandos y reglas caseras (2026-11-07)
+- **Bandos**: `CombatantRecord.side` (por defecto monstruos contra jugadores), `isEnemy`; Desventaja a distancia con un enemigo a 5 pies (regla oficial verificada); ataques de oportunidad solo de enemigos.
+- **Reglas caseras** de la guía 2014 como interruptores (`rules/houseRules.ts`): Flanquear, Marcar, Daño masivo (salvaciones pendientes de jugadores con `resolvePendingSave`) y Moral (disparadores, huida, rendición). Guardado v9. Detalle en `HOUSE_RULES.md`.
 
 ## Iniciativa, reacciones y ataques de oportunidad (2026-11-07)
 - `rules/initiative.ts`: `rollMonsterInitiative` (grupos idénticos, sorpresa, Invisible e Incapacitado), `startCombat` (totales anotados de los jugadores; empates decididos por la persona), `advanceTurn` (orden, asaltos, salta monstruos muertos; al inicio del turno: reacción, Esquivar, caducidad, Recarga y asaltos de las condiciones) y `currentCreature`.

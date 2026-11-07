@@ -18,6 +18,10 @@ describe("creación de un encuentro", () => {
       diagonal: "alternating-1-2",
       movementThroughCreatures: "houseSmallOrMedium",
       areaTemplate: "halfSquareDmg2014",
+      flanking: false,
+      mark: false,
+      massiveDamage: false,
+      morale: false,
     });
     expect(encounter.occupancyPolicy).toBe("one-creature-per-space");
     expect(Object.keys(encounter.combatants)).toHaveLength(0);

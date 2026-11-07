@@ -26,12 +26,22 @@ import {
   expireConditionsAtTurnBoundary,
   fearSources,
   hasCondition,
+  isEnemy,
   removeCondition,
   speedCannotIncrease,
 } from "./conditions";
 import { rollRechargesAtTurnStart } from "./resources";
 import type { RechargeRoll } from "./resources";
 import { dealDamage } from "./vitality";
+import {
+  hasMarked,
+  isFlanking,
+  markTarget,
+  massiveDamageApplies,
+  resolveMassiveDamage,
+  runStateMoraleChecks,
+} from "./houseRules";
+import type { MoraleCheck, ShockResult } from "./houseRules";
 import type { EffectOperation, EffectTargetResult, PlayerSaveInput, RolledAmount } from "./effects";
 import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
@@ -108,6 +118,17 @@ export type TurnLogEntry =
       readonly attack: AttackOutcomeLog;
     }
   | { readonly kind: "reactionDeclined"; readonly reactorId: CreatureId }
+  | {
+      readonly kind: "massiveDamage";
+      readonly creatureId: CreatureId;
+      readonly saveTotal: number | null;
+      readonly saveSucceeded: boolean;
+      readonly shockRoll: number | null;
+      readonly shock: ShockResult | null;
+    }
+  | { readonly kind: "massiveDamageUnresolved"; readonly creatureId: CreatureId }
+  | { readonly kind: "moraleCheck"; readonly check: MoraleCheck }
+  | { readonly kind: "surrendered" }
   /** El movimiento interrumpido no pudo seguir (p. ej. quedó inconsciente o sin Velocidad). */
   | { readonly kind: "movementStopped"; readonly remainingPath: readonly GridPosition[] }
   | { readonly kind: "turnEnded" };
@@ -151,6 +172,13 @@ export interface TurnState {
   readonly pendingPath: readonly GridPosition[];
   /** Quienes ya decidieron su reacción para el primer paso de `pendingPath` (no se les vuelve a preguntar). */
   readonly pendingStepReactorIds: readonly CreatureId[];
+  /** Salvaciones de jugadores pendientes (regla casera Daño masivo); hay que resolverlas antes de terminar el turno. */
+  readonly pendingSaves: readonly PendingSave[];
+}
+
+export interface PendingSave {
+  readonly kind: "massiveDamage";
+  readonly creatureId: CreatureId;
 }
 
 /**
@@ -165,6 +193,8 @@ export interface ReactionOpportunity {
   readonly moverId: CreatureId;
   /** Ataques cuerpo a cuerpo del que reacciona que alcanzan al que se mueve. */
   readonly attackIds: readonly AttackId[];
+  /** Regla casera Marcar: con Ventaja y sin gastar la reacción. */
+  readonly viaMark: boolean;
 }
 
 /** Datos de un ataque que completa quien lo hace. */
@@ -234,6 +264,10 @@ export type TurnCommand =
   | { readonly kind: "forfeitRemaining" }
   /** Levantarse de Derribado: cuesta la mitad de la Velocidad (redondeando abajo). */
   | { readonly kind: "standUp" }
+  /** Regla casera Moral: un monstruo que huye y no puede escapar se rinde. */
+  | { readonly kind: "surrender" }
+  /** Salvación anotada de un jugador para una tirada pendiente (Daño masivo). */
+  | { readonly kind: "resolvePendingSave"; readonly creatureId: CreatureId; readonly playerSave: PlayerSaveInput }
   | { readonly kind: "endTurn" };
 
 /** Datos que completa quien elige una opción de efecto. */
@@ -281,7 +315,10 @@ export type TurnCommandError =
   | "reactionNotAvailable"
   | "playerAttackRequired"
   | "invalidPlayerRoll"
-  | "playerDamageRequired";
+  | "playerDamageRequired"
+  | "savesPending"
+  | "noPendingSave"
+  | "notFleeing";
 
 export type TurnCommandResult =
   | { readonly ok: true; readonly encounter: Encounter; readonly turn: TurnState }
@@ -589,6 +626,8 @@ function concreteOptions(
     if (atom === null) {
       push({ choice: { kind: "finish" }, rest: [] });
     } else if (atom.op === "attack") {
+      // Regla casera Moral: quien huye solo se aleja (no ataca).
+      if (actor.state.morale.fleeing) continue;
       for (const targetId of targets) {
         const check = checkAttackTarget(encounter, actor, actor.state.position, atom.attackRef, targetId);
         if (!check.ok) continue;
@@ -596,7 +635,15 @@ function concreteOptions(
         if (check.target.state.lifeState === "dead") continue;
         // Encantado: no puede atacar a quien lo encantó (verificado).
         if (cannotHarm(actor, targetId)) continue;
-        const rolled = attackConditions(encounter, actor, check.target, check.distanceFeet, check.beyondNormalRange);
+        const rolled = attackConditions(
+          encounter,
+          actor,
+          check.target,
+          check.distanceFeet,
+          check.beyondNormalRange,
+          check.attack.mode,
+          check.attack.mode === "melee" && isFlanking(encounter, actor, check.target),
+        );
         push({
           choice: {
             kind: "attack",
@@ -608,11 +655,16 @@ function concreteOptions(
         });
       }
     } else if (atom.op === "effect") {
+      if (actor.state.morale.fleeing) continue;
       const targeting = atom.targeting.kind;
       // Con objetivos elegidos, tiene que haber al menos uno al alcance.
       if (targeting === "creatures" && creatureCandidates(encounter, actor, atom).length === 0) continue;
       push({ choice: { kind: "effect", targeting, operation: atom }, rest });
-    } else if (isExecutableStandard(atom.action) && atom.action !== "attack") {
+    } else if (
+      isExecutableStandard(atom.action) &&
+      atom.action !== "attack" &&
+      (!actor.state.morale.fleeing || atom.action === "dash" || atom.action === "disengage")
+    ) {
       // Las ramas con acciones no modeladas (Esconderse…) no se ofrecen.
       push({ choice: { kind: "standardAction", action: atom.action }, rest });
     }
@@ -729,6 +781,7 @@ export function startTurn(encounter: Encounter, actorId: CreatureId): TurnState 
     pendingReactions: [],
     pendingPath: [],
     pendingStepReactorIds: [],
+    pendingSaves: [],
   };
 }
 
@@ -754,7 +807,13 @@ function canMoveNow(turn: TurnState, actor: CombatantRecord): boolean {
  */
 function approachesFearSource(encounter: Encounter, actor: CombatantRecord, path: readonly GridPosition[]): boolean {
   const rule = encounter.tableRules.diagonal;
-  for (const sourceId of fearSources(actor)) {
+  // Regla casera Moral: quien huye no se acerca a ningún enemigo que vea.
+  const fleeingFrom = actor.state.morale.fleeing
+    ? Object.values(encounter.combatants)
+        .filter((o) => isEnemy(actor, o) && o.state.lifeState === "alive")
+        .map((o) => o.definition.id)
+    : [];
+  for (const sourceId of [...fearSources(actor), ...fleeingFrom]) {
     const source = encounter.combatants[sourceId];
     if (!source || !canSee(actor, source)) continue;
     const distanceFrom = (position: GridPosition): number =>
@@ -874,6 +933,59 @@ export function applyTurnCommand(
   command: TurnCommand,
   dice: RandomSource,
 ): TurnCommandResult {
+  const result = applyTurnCommandCore(encounter, turn, command, dice);
+  return result.ok ? applyHouseRuleHooks(result.encounter, result.turn, turn.log.length, dice) : result;
+}
+
+/**
+ * Reglas caseras que reaccionan a lo que acaba de pasar: Daño masivo (por
+ * cada criatura que recibió daño de un único origen) y Moral (disparadores
+ * por estado). Se ejecutan tras cada orden aceptada, en ese orden.
+ */
+function applyHouseRuleHooks(encounter: Encounter, turn: TurnState, fromLog: number, dice: RandomSource): TurnCommandResult {
+  let updated = encounter;
+  const entries: TurnLogEntry[] = [];
+  const pending: PendingSave[] = [...turn.pendingSaves];
+  const events: { targetId: CreatureId; amount: number }[] = [];
+  for (const entry of turn.log.slice(fromLog)) {
+    const sum = (instances: readonly ModifiedDamage[]): number => instances.reduce((t, i) => t + i.final, 0);
+    if (entry.kind === "attackResolved") events.push({ targetId: entry.targetId, amount: sum(entry.damageAfterDefenses) });
+    if (entry.kind === "opportunityAttack") events.push({ targetId: entry.attack.targetId, amount: sum(entry.attack.damageAfterDefenses) });
+    if (entry.kind === "effectResolved") {
+      for (const t of entry.targets) events.push({ targetId: t.targetId, amount: sum(t.damageAfterDefenses) });
+    }
+  }
+  for (const event of events) {
+    if (!massiveDamageApplies(updated, event.targetId, event.amount)) continue;
+    const outcome = resolveMassiveDamage(updated, event.targetId, dice, null, event.targetId === turn.actorId);
+    if ("error" in outcome) {
+      if (outcome.error === "playerSaveRequired") pending.push({ kind: "massiveDamage", creatureId: event.targetId });
+      else entries.push({ kind: "massiveDamageUnresolved", creatureId: event.targetId });
+      continue;
+    }
+    updated = outcome.encounter;
+    entries.push({
+      kind: "massiveDamage",
+      creatureId: event.targetId,
+      saveTotal: outcome.save.total,
+      saveSucceeded: outcome.save.success,
+      shockRoll: outcome.shockRoll,
+      shock: outcome.shock,
+    });
+  }
+  const morale = runStateMoraleChecks(updated, dice);
+  updated = morale.encounter;
+  for (const check of morale.checks) entries.push({ kind: "moraleCheck", check });
+  if (entries.length === 0 && pending.length === turn.pendingSaves.length) return { ok: true, encounter, turn };
+  return { ok: true, encounter: updated, turn: { ...turn, pendingSaves: pending, log: [...turn.log, ...entries] } };
+}
+
+function applyTurnCommandCore(
+  encounter: Encounter,
+  turn: TurnState,
+  command: TurnCommand,
+  dice: RandomSource,
+): TurnCommandResult {
   const actor = encounter.combatants[turn.actorId];
   if (!actor) return fail("unknownActor");
   if (turn.ended) return fail("turnEnded");
@@ -884,6 +996,32 @@ export function applyTurnCommand(
     log: [...turn.log, ...entries],
   });
 
+  if (command.kind === "resolvePendingSave") {
+    const pendingSave = turn.pendingSaves.find((p) => p.creatureId === command.creatureId);
+    if (!pendingSave) return fail("noPendingSave");
+    const outcome = resolveMassiveDamage(encounter, command.creatureId, dice, command.playerSave, command.creatureId === turn.actorId);
+    if ("error" in outcome) return fail(outcome.error === "playerSaveRequired" ? "playerSavesRequired" : "saveBonusUnknown");
+    return {
+      ok: true,
+      encounter: outcome.encounter,
+      turn: {
+        ...turn,
+        serial: turn.serial + 1,
+        pendingSaves: turn.pendingSaves.filter((p) => p !== pendingSave),
+        log: [
+          ...turn.log,
+          {
+            kind: "massiveDamage",
+            creatureId: command.creatureId,
+            saveTotal: outcome.save.total,
+            saveSucceeded: outcome.save.success,
+            shockRoll: outcome.shockRoll,
+            shock: outcome.shock,
+          },
+        ],
+      },
+    };
+  }
   if (turn.pendingReactions.length > 0 && command.kind !== "resolveReaction") return fail("reactionsPending");
 
   switch (command.kind) {
@@ -962,8 +1100,24 @@ export function applyTurnCommand(
       };
     }
 
+    case "surrender": {
+      if (!actor.state.morale.fleeing) return fail("notFleeing");
+      return {
+        ok: true,
+        encounter: {
+          ...encounter,
+          combatants: {
+            ...encounter.combatants,
+            [actor.definition.id]: { ...actor, state: { ...actor.state, morale: { ...actor.state.morale, surrendered: true } } },
+          },
+        },
+        turn: next({ execution: null }, [{ kind: "surrendered" }]),
+      };
+    }
+
     case "endTurn": {
       if (turn.execution !== null) return fail("executionInProgress");
+      if (turn.pendingSaves.length > 0) return fail("savesPending");
       // El turno no puede terminar en un espacio ocupado por otra criatura.
       const placement = validatePlacement(encounter, actor.state.position, actor.definition.size, {
         ignoreCreatureId: turn.actorId,
@@ -1117,12 +1271,21 @@ function performAttack(
   rollMode: RollMode,
   dice: RandomSource,
   input: AttackInput,
+  context: { readonly duringOwnTurn: boolean; readonly extraAdvantage?: boolean } = { duringOwnTurn: true },
 ): { ok: true; encounter: Encounter; log: AttackOutcomeLog } | { ok: false; reasonCode: TurnCommandError } {
   const check = checkAttackTarget(encounter, attacker, attacker.state.position, attackId, targetId);
   if (!check.ok) return { ok: false, reasonCode: "unknownOption" };
   // REGLA OFICIAL VERIFICADA: dejar inconsciente solo con un ataque cuerpo a cuerpo.
   if (input.knockOut && check.attack.mode !== "melee") return { ok: false, reasonCode: "knockOutNotAllowed" };
-  const rolled = attackConditions(encounter, attacker, check.target, check.distanceFeet, check.beyondNormalRange);
+  const rolled = attackConditions(
+    encounter,
+    attacker,
+    check.target,
+    check.distanceFeet,
+    check.beyondNormalRange,
+    check.attack.mode,
+    context.extraAdvantage === true || (check.attack.mode === "melee" && isFlanking(encounter, attacker, check.target)),
+  );
 
   let resolution: AttackResolution;
   if (attacker.definition.kind === "playerCharacter") {
@@ -1159,9 +1322,12 @@ function performAttack(
     critical: resolution.outcome === "criticalHit",
     knockOut: input.knockOut === true,
   });
+  // Regla casera Marcar: todo ataque cuerpo a cuerpo marca a su objetivo.
+  const marked =
+    check.attack.mode === "melee" ? markTarget(damage.encounter, attacker.definition.id, targetId, context.duringOwnTurn) : damage.encounter;
   return {
     ok: true,
-    encounter: damage.encounter,
+    encounter: marked,
     log: {
       attackId,
       targetId,
@@ -1204,14 +1370,23 @@ function opportunityReactors(
   return (Object.keys(encounter.combatants).sort() as CreatureId[]).flatMap((id) => {
     const reactor = encounter.combatants[id];
     if (!reactor || id === mover.definition.id) return [];
-    if (!reactor.state.reactionAvailable || cannotAct(reactor) || !canSee(reactor, mover)) return [];
+    // DECISIÓN CONFIRMADA: solo se ofrece a los enemigos del que se mueve.
+    if (!isEnemy(reactor, mover)) return [];
+    if (cannotAct(reactor) || !canSee(reactor, mover)) return [];
+    // Regla casera Daño masivo: el shock impide reaccionar.
+    if (reactor.state.shock !== null) return [];
+    // Regla casera Marcar: contra quien marcó, sin gastar la reacción, una vez por turno.
+    const turnKey = `${encounter.round}:${encounter.turnIndex}:${mover.definition.id}`;
+    const viaMark =
+      encounter.tableRules.mark && hasMarked(reactor, mover.definition.id) && reactor.state.markOpportunityTurnKey !== turnKey;
+    if (!reactor.state.reactionAvailable && !viaMark) return [];
     if (cannotHarm(reactor, mover.definition.id)) return [];
     const before = meleeAttacksReaching(encounter, reactor, mover, from);
     if (before.length === 0) return [];
     const reachAfter = meleeAttacksReaching(encounter, reactor, mover, to);
     // "Leaves your reach": sale del alcance (del mayor de sus ataques cuerpo a cuerpo).
     if (reachAfter.length > 0) return [];
-    return [{ kind: "opportunityAttack" as const, reactorId: id, moverId: mover.definition.id, attackIds: before }];
+    return [{ kind: "opportunityAttack" as const, reactorId: id, moverId: mover.definition.id, attackIds: before, viaMark }];
   });
 }
 
@@ -1283,22 +1458,39 @@ function resolveReaction(
   const entries: TurnLogEntry[] = [];
   if (command.take) {
     const reactor = encounter.combatants[pending.reactorId];
-    if (!reactor || !reactor.state.reactionAvailable || cannotAct(reactor)) return fail("reactionNotAvailable");
+    if (!reactor || cannotAct(reactor) || (!pending.viaMark && !reactor.state.reactionAvailable)) return fail("reactionNotAvailable");
     const attackId = command.attackId ?? pending.attackIds[0];
     if (attackId === undefined || !pending.attackIds.includes(attackId)) return fail("unknownOption");
     const mover = encounter.combatants[pending.moverId];
     if (!mover) return fail("unknownActor");
     const check = checkAttackTarget(encounter, reactor, reactor.state.position, attackId, pending.moverId);
     if (!check.ok) return fail("unknownOption");
-    const mode = attackConditions(encounter, reactor, mover, check.distanceFeet, check.beyondNormalRange).mode;
-    const performed = performAttack(encounter, reactor, attackId, pending.moverId, mode, dice, command.attackInput ?? {});
+    const mode = attackConditions(
+      encounter,
+      reactor,
+      mover,
+      check.distanceFeet,
+      check.beyondNormalRange,
+      check.attack.mode,
+      pending.viaMark || isFlanking(encounter, reactor, mover),
+    ).mode;
+    const performed = performAttack(encounter, reactor, attackId, pending.moverId, mode, dice, command.attackInput ?? {}, {
+      duringOwnTurn: false,
+      extraAdvantage: pending.viaMark,
+    });
     if (!performed.ok) return fail(performed.reasonCode);
     const after = performed.encounter.combatants[pending.reactorId]!;
+    const turnKey = `${encounter.round}:${encounter.turnIndex}:${pending.moverId}`;
     updated = {
       ...performed.encounter,
       combatants: {
         ...performed.encounter.combatants,
-        [pending.reactorId]: { ...after, state: { ...after.state, reactionAvailable: false } },
+        [pending.reactorId]: {
+          ...after,
+          state: pending.viaMark
+            ? { ...after.state, markOpportunityTurnKey: turnKey }
+            : { ...after.state, reactionAvailable: false },
+        },
       },
     };
     entries.push({ kind: "opportunityAttack", reactorId: pending.reactorId, attack: performed.log });

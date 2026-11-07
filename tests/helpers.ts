@@ -16,6 +16,20 @@ import {
 
 export const engine = createRulesEngine();
 
+/**
+ * Mesa de la jugadora sin las reglas caseras de la guía 2014 que añaden
+ * tiradas o Ventaja (Flanquear, Marcar, Daño masivo, Moral), para que las
+ * pruebas del motor base no dependan de ellas. Cada regla casera tiene sus
+ * propias pruebas.
+ */
+export const CORE_TEST_TABLE_RULES = {
+  ...TABLE_RULES_OF_THE_PLAYERS_TABLE,
+  flanking: false,
+  mark: false,
+  massiveDamage: false,
+  morale: false,
+} as const;
+
 export function emptyEncounter(columns = 16, rows = 16, id = "e-test"): Encounter {
   return engine.createEncounter({
     id: id as never,
@@ -26,7 +40,7 @@ export function emptyEncounter(columns = 16, rows = 16, id = "e-test"): Encounte
       dimensions: { columns, rows },
     },
     occupancyPolicy: "one-creature-per-space",
-    tableRules: TABLE_RULES_OF_THE_PLAYERS_TABLE,
+    tableRules: CORE_TEST_TABLE_RULES,
   });
 }
 

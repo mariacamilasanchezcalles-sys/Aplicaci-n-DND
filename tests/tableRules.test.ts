@@ -56,6 +56,10 @@ describe("configuración de mesa: interruptor de diagonal", () => {
       diagonal: "alternating-1-2",
       movementThroughCreatures: "houseSmallOrMedium",
       areaTemplate: "halfSquareDmg2014",
+      flanking: false,
+      mark: false,
+      massiveDamage: false,
+      morale: false,
     });
     expect(goblin.id).toBe(GOBLIN);
   });

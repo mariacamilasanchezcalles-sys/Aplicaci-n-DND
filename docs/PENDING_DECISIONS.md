@@ -19,7 +19,7 @@
 
 ## Reglas: confirmar suposiciones
 3. Las suposiciones de implementación listadas en `RULES_VERIFICATION.md` (cuenta de diagonales por turno, medida entre espacios, ancla de criaturas grandes, quién bloquea el paso, no atacarse a uno mismo, sin Velocidad, impacto con "total >= CA").
-4. **Bandos (aliados/enemigos).** Necesarios para la desventaja de disparar con un enemigo cerca y para el cerebro táctico.
+4. ~~**Bandos**~~ → Implementados: por defecto monstruos contra personajes jugadores, cambiable por criatura (`addCombatant(..., { side })`).
 5. **Criaturas Diminutas:** el manual permite 4 por casilla; hoy ocupan una casilla exclusiva.
 
 ## Reglas: sin implementar
@@ -96,6 +96,13 @@
 58. **Turnos de monstruos muertos** (PROPUESTA): se saltan. Los personajes a 0 PG sí tienen turno (salvaciones contra la muerte).
 59. **Reacciones de ficha** (`activation: "reaction"` con desencadenante): el sistema de reacciones pendientes ya existe, pero solo para ataques de oportunidad. Hay que conectar los desencadenantes de las fichas.
 60. **Ataque sin armas**: el ataque de oportunidad también puede hacerse con un Ataque sin armas, que aún no existe. Hoy solo reacciona quien tiene un ataque cuerpo a cuerpo registrado; los personajes sin ataques registrados no reaccionan.
-61. **Quién reacciona**: sin bandos (decisión 4), se ofrece a cualquier criatura que cumpla las condiciones, aliada o no; decidir si la toma es tarea de la persona o del cerebro. Con varias a la vez se ofrecen todas (por id) y se resuelven en el orden que se elija.
+61. ~~**Quién reacciona**~~ → DECISIÓN CONFIRMADA: solo los enemigos del que se mueve.
 62. **Validación del total del jugador**: la app no comprueba que el total anotado sea coherente con el d20 (el jugador suma sus modificadores, incluidas Ventaja/Desventaja y Cansancio).
-63. **Regla casera Marcar**: ya se puede implementar sobre los ataques de oportunidad. ¿La añadimos como interruptor de mesa?
+63. ~~**Marcar**~~ → Implementada (ver `HOUSE_RULES.md`).
+
+## Bandos y reglas caseras (etapa 2026-11-07)
+64. **Moral, "no puede dañar a sus oponentes"** (PROPUESTA): al inicio de su turno, ningún enemigo en pie está a su Velocidad más el mayor alcance de sus ataques y efectos de daño (o no tiene ninguno). Aproxima el juicio del DM.
+65. **Huyendo** (PROPUESTA): no ataca ni usa efectos; solo Correr y Destrabarse (también como acción adicional) y moverse sin acercarse a ningún enemigo que vea. Si no puede escapar, la persona o el cerebro ordena `surrender`.
+66. **Shock "hasta el final de su siguiente turno"** (PROPUESTA): si ocurre durante su propio turno, dura también todo el siguiente.
+67. **Escenario base de pruebas**: las pruebas del motor usan la mesa de la jugadora **sin** Flanquear, Marcar, Daño masivo ni Moral (`CORE_TEST_TABLE_RULES`); cada regla casera tiene sus propias pruebas.
+68. **Encaramarse a una criatura más grande** (regla casera confirmada): sin implementar; necesita agarrar y pruebas de característica enfrentadas.

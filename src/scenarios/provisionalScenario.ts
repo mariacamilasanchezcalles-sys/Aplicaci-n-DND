@@ -123,13 +123,18 @@ export const PROVISIONAL_GRID_DIMENSIONS = { columns: 15, rows: 21 } as const;
 /**
  * Configuración de la mesa de la jugadora (DECISIONES CONFIRMADAS): diagonal
  * alternada 1-2-1-2, atravesar criaturas Diminutas, Pequeñas y Medianas y
- * áreas por "mitad de la casilla" (guía DM 2014).
+ * áreas por "mitad de la casilla", Flanquear, Marcar, Daño masivo y Moral
+ * (guía DM 2014).
  * Ver docs/HOUSE_RULES.md.
  */
 export const TABLE_RULES_OF_THE_PLAYERS_TABLE = {
   diagonal: "alternating-1-2",
   movementThroughCreatures: "houseSmallOrMedium",
   areaTemplate: "halfSquareDmg2014",
+  flanking: true,
+  mark: true,
+  massiveDamage: true,
+  morale: true,
 } as const satisfies TableRules;
 
 export const PROVISIONAL_SCENARIO = {

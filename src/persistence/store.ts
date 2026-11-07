@@ -8,8 +8,9 @@ import type { Encounter, EncounterId } from "../models";
  * v6: `tableRules.areaTemplate`; criaturas con `abilities` y `savingThrows`.
  * v7: condiciones activas, Cansancio, estado vital y salvaciones contra la muerte.
  * v8: iniciativa (totales, turno actual), reacción disponible y Esquivar persistente.
+ * v9: bandos; reglas caseras Flanquear, Marcar, Daño masivo y Moral.
  */
-export const SNAPSHOT_SCHEMA_VERSION = 8 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 9 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

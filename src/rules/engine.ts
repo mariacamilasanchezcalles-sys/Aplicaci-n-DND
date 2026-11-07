@@ -7,10 +7,11 @@ import type {
   GridPosition,
   LegalActionSet,
   OccupancyPolicy,
+  SideId,
   TableRules,
   TurnPlan,
 } from "../models";
-import { PendingImplementationError, asResourceId } from "../models";
+import { MONSTERS_SIDE, PLAYERS_SIDE, PendingImplementationError, asResourceId } from "../models";
 import { PlacementError, validatePlacement } from "./placement";
 import { validateTurnPlan } from "./turnPlan";
 import type { LegalityResult } from "./turnPlan";
@@ -41,6 +42,7 @@ export interface RulesEngine {
     encounter: Encounter,
     definition: CombatantDefinition,
     position: GridPosition,
+    options?: { readonly side?: SideId },
   ): Encounter;
   /**
    * PENDIENTE de diseño: ¿el cerebro elige pasos sueltos o turnos completos?
@@ -74,10 +76,11 @@ export function createRulesEngine(): RulesEngine {
         initiativeTotals: {},
         round: 0,
         turnIndex: -1,
+        sideMorale: {},
       };
     },
 
-    addCombatant(encounter, definition, position) {
+    addCombatant(encounter, definition, position, options = {}) {
       if (Object.hasOwn(encounter.combatants, definition.id)) {
         throw new Error(`La criatura ya está registrada: ${definition.id}`);
       }
@@ -90,6 +93,7 @@ export function createRulesEngine(): RulesEngine {
           ...encounter.combatants,
           [definition.id]: {
             definition,
+            side: options.side ?? (definition.kind === "monster" ? MONSTERS_SIDE : PLAYERS_SIDE),
             state: {
               position,
               currentHitPoints: definition.stats.maxHitPoints ?? null,
@@ -101,6 +105,10 @@ export function createRulesEngine(): RulesEngine {
               deathSaves: { successes: 0, failures: 0 },
               reactionAvailable: true,
               dodging: false,
+              marks: [],
+              markOpportunityTurnKey: null,
+              shock: null,
+              morale: { fleeing: false, surrendered: false, belowHalfTriggered: false },
             },
           },
         },

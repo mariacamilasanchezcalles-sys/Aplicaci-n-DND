@@ -65,3 +65,13 @@ Estado: `Encounter.tableRules` existe con `diagonal` (`standard` / `alternating-
    origen.
 3. Si la jugadora tiene la **Guía del DM 2024**, sustituiría a esta como referencia de reglas
    opcionales, para no mezclar ediciones.
+
+## Implementadas el 2026-11-07 (interruptores en `tableRules`; activas en `TABLE_RULES_OF_THE_PLAYERS_TABLE`)
+| Regla | Interruptor | Cómo se aplica | Adaptación a 2024 / PROPUESTAS |
+|---|---|---|---|
+| **Flanquear** | `flanking` | Ventaja en ataques cuerpo a cuerpo si el atacante y un aliado son adyacentes al enemigo y la línea entre los centros de sus casillas cruza su espacio por lados (o esquinas) opuestos. Ambos deben verlo y no estar Incapacitados. Grandes o mayores: vale cualquier casilla de su espacio | "Aliado" = mismo bando |
+| **Marcar** | `mark` | Todo ataque cuerpo a cuerpo marca a su objetivo hasta el final del siguiente turno del atacante. Contra el marcado, el ataque de oportunidad tiene Ventaja y no gasta la reacción; no si está Incapacitado; uno por turno | El ataque de oportunidad también marca |
+| **Daño masivo** | `massiveDamage` | Daño de un único origen ≥ mitad de los PG máximos (tras defensas) y sigue en pie → salvación de CON CD 15 (los jugadores la anotan: `resolvePendingSave`); si falla, la app tira 1d10 en la tabla de shock | Confirmado: se aplica a todos. A 0 PG un monstruo muere (2024); "0 PG y estable" → personaje Estable, monstruo muerto. "Hasta el final de su siguiente turno": si ocurre durante su propio turno, dura también el siguiente |
+| **Moral** | `morale` | Disparadores (cada uno una vez por combate): sorprendido; baja de la mitad de PG por primera vez; no puede dañar a nadie en su turno; grupo sorprendido; cae el líder; grupo reducido a la mitad sin que caiga ningún rival. Salvación de SAB CD 10 (el líder por el grupo; si no puede, el de mayor Carisma). Si falla: **huyendo** (solo Correr, Destrabarse y alejarse; no se acerca a ningún enemigo). `surrender` lo rinde; `resumeFighting` lo devuelve al combate (lo decide el DM) | Solo monstruos. Grupo = monstruos del mismo bando. El DM fija por bando la oposición abrumadora: ninguna, Desventaja o fallo automático. "No puede dañar": PROPUESTA de cálculo (decisión 64) |
+
+Sin implementar: **Encaramarse a una criatura más grande** (necesita agarrar y pruebas enfrentadas).

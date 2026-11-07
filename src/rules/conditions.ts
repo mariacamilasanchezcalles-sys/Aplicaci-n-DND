@@ -9,6 +9,7 @@ import type {
   Encounter,
 } from "../models";
 import type { RollMode } from "./resolution";
+import { footprintDistanceSquares } from "./distance";
 
 /**
  * CONDICIONES COMO EFECTOS MECÁNICOS.
@@ -50,7 +51,8 @@ const anyOf = (record: CombatantRecord, set: ReadonlySet<StoredCondition>): bool
 
 /** No puede realizar acciones, acciones adicionales ni reacciones. */
 export function cannotAct(record: CombatantRecord): boolean {
-  return record.state.lifeState !== "alive" || hasCondition(record, "incapacitated");
+  // Rendido (regla casera Moral): no actúa.
+  return record.state.lifeState !== "alive" || hasCondition(record, "incapacitated") || record.state.morale.surrendered;
 }
 
 /**
@@ -61,7 +63,7 @@ export function cannotAct(record: CombatantRecord): boolean {
 export function effectiveSpeed(record: CombatantRecord): number | null {
   const base = record.definition.stats.speedFeet;
   if (base === undefined) return null;
-  if (record.state.lifeState !== "alive" || anyOf(record, SPEED_ZERO)) return 0;
+  if (record.state.lifeState !== "alive" || anyOf(record, SPEED_ZERO) || record.state.morale.surrendered) return 0;
   return Math.max(0, base - 5 * record.state.exhaustionLevel);
 }
 
@@ -76,6 +78,11 @@ export function speedCannotIncrease(record: CombatantRecord): boolean {
  */
 export function canSee(observer: CombatantRecord, target: CombatantRecord): boolean {
   return !hasCondition(observer, "blinded") && !hasCondition(target, "invisible");
+}
+
+/** Enemigos: criaturas de otro bando (REGLA OFICIAL VERIFICADA, Glosario 2024). */
+export function isEnemy(a: CombatantRecord, b: CombatantRecord): boolean {
+  return a.side !== b.side;
 }
 
 /** Orígenes de miedo de una criatura Asustada. */
@@ -116,13 +123,36 @@ export function attackConditions(
   target: CombatantRecord,
   distanceFeet: number,
   beyondNormalRange: boolean,
+  attackMode: "melee" | "ranged" = "melee",
+  /** Ventaja que aporta otra regla (Flanquear, Marcar…), calculada por quien llama. */
+  extraAdvantage = false,
 ): AttackConditionsResult {
-  let advantage = false;
+  let advantage = extraAdvantage;
   let disadvantage = beyondNormalRange;
   const within5 = distanceFeet <= 5;
 
+  // REGLA OFICIAL VERIFICADA ("Ranged Attacks in Close Combat"): a distancia,
+  // Desventaja si hay a 5 pies un enemigo que te ve y no está Incapacitado.
+  if (attackMode === "ranged") {
+    for (const other of Object.values(encounter.combatants)) {
+      if (other.definition.id === attacker.definition.id || !isEnemy(attacker, other)) continue;
+      if (other.state.lifeState !== "alive" || hasCondition(other, "incapacitated") || !canSee(other, attacker)) continue;
+      const distance =
+        footprintDistanceSquares(
+          attacker.state.position,
+          attacker.definition.size,
+          other.state.position,
+          other.definition.size,
+          encounter.tableRules.diagonal,
+        ) * encounter.grid.feetPerSquare;
+      if (distance <= 5) disadvantage = true;
+    }
+  }
+
   // Atacante.
   if (hasCondition(attacker, "blinded") || hasCondition(attacker, "poisoned")) disadvantage = true;
+  // Tabla de shock (regla casera Daño masivo).
+  if (attacker.state.shock?.kind === "noReactionsAndDisadvantage") disadvantage = true;
   if (hasCondition(attacker, "prone") || hasCondition(attacker, "restrained")) disadvantage = true;
   for (const sourceId of fearSources(attacker)) {
     const source = encounter.combatants[sourceId];
@@ -282,8 +312,29 @@ export function expireConditionsAtTurnBoundary(
       }
       return [c];
     });
+    let conditions = kept;
+    let state = record.state;
+    if (boundary === "end" && id === creatureId) {
+      // "Hasta el final de su siguiente turno": condiciones con contador, shock y marcas.
+      conditions = kept.flatMap((c): ActiveCondition[] => {
+        if (c.turnEndsRemaining === undefined) return [c];
+        touched = true;
+        return c.turnEndsRemaining <= 1 ? [] : [{ ...c, turnEndsRemaining: c.turnEndsRemaining - 1 }];
+      });
+      if (state.shock) {
+        touched = true;
+        state = { ...state, shock: state.shock.turnEndsRemaining <= 1 ? null : { ...state.shock, turnEndsRemaining: state.shock.turnEndsRemaining - 1 } };
+      }
+      if (state.marks.length > 0) {
+        touched = true;
+        state = {
+          ...state,
+          marks: state.marks.flatMap((m) => (m.turnEndsRemaining <= 1 ? [] : [{ ...m, turnEndsRemaining: m.turnEndsRemaining - 1 }])),
+        };
+      }
+    }
     if (touched) changed = true;
-    combatants[id] = touched ? { ...record, state: { ...record.state, conditions: kept } } : record;
+    combatants[id] = touched ? { ...record, state: { ...state, conditions } } : record;
   }
   return changed ? { ...encounter, combatants } : encounter;
 }

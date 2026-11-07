@@ -165,6 +165,28 @@ export interface ActiveCondition {
    * o del afectado si no hay origen) para que termine. PROPUESTA (decisión 57).
    */
   readonly turnStartsRemaining?: number;
+  /** "Hasta el final de su siguiente turno": finales de turno del afectado que faltan. */
+  readonly turnEndsRemaining?: number;
+}
+
+/** Marca (regla casera Marcar): objetivo marcado y finales de turno del atacante que faltan. */
+export interface Mark {
+  readonly targetId: CreatureId;
+  readonly turnEndsRemaining: number;
+}
+
+/** Efecto de la tabla de shock (regla casera Daño masivo) que dura hasta el final de su siguiente turno. */
+export interface ShockEffect {
+  readonly kind: "noReactionsAndDisadvantage" | "noReactions";
+  readonly turnEndsRemaining: number;
+}
+
+/** Estado de Moral (regla casera; solo monstruos). */
+export interface MoraleState {
+  readonly fleeing: boolean;
+  readonly surrendered: boolean;
+  /** Ya bajó de la mitad de PG una vez en este combate. */
+  readonly belowHalfTriggered: boolean;
 }
 
 /**
@@ -195,9 +217,27 @@ export interface CombatantState {
   readonly reactionAvailable: boolean;
   /** Esquivar: activo hasta el inicio de su siguiente turno (REGLA OFICIAL VERIFICADA). */
   readonly dodging: boolean;
+  /** Marcas que ha puesto (regla casera Marcar). */
+  readonly marks: readonly Mark[];
+  /** Turno en que usó su ataque de oportunidad gratuito por Marcar (uno por turno). */
+  readonly markOpportunityTurnKey: string | null;
+  readonly shock: ShockEffect | null;
+  readonly morale: MoraleState;
 }
+
+/**
+ * Bando en combate. REGLA OFICIAL VERIFICADA (Glosario 2024): aliado es quien
+ * está de tu lado en combate (o el DM lo designa); enemigo, quien lucha contra
+ * ti. DECISIÓN CONFIRMADA: por defecto los monstruos son un bando y los
+ * personajes jugadores otro; se puede cambiar criatura por criatura.
+ */
+export type SideId = string;
+
+export const MONSTERS_SIDE: SideId = "monsters";
+export const PLAYERS_SIDE: SideId = "players";
 
 export interface CombatantRecord {
   readonly definition: CombatantDefinition;
+  readonly side: SideId;
   readonly state: CombatantState;
 }

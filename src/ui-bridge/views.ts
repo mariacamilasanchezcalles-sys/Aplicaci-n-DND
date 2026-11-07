@@ -20,6 +20,8 @@ export interface CreatureView {
   readonly id: CreatureId;
   readonly label: string;
   readonly kind: CombatantDefinition["kind"];
+  /** Bando en combate (aliados = mismo bando). */
+  readonly side: string;
   readonly size: CreatureSize;
   /** Esquina superior izquierda de su espacio (coordenadas desde 0). */
   readonly position: GridPosition;
@@ -47,10 +49,11 @@ export function buildMapView(encounter: Encounter): MapView {
     columns: encounter.grid.dimensions.columns,
     rows: encounter.grid.dimensions.rows,
     feetPerSquare: encounter.grid.feetPerSquare,
-    creatures: Object.values(encounter.combatants).map(({ definition, state }) => ({
+    creatures: Object.values(encounter.combatants).map(({ definition, side, state }) => ({
       id: definition.id,
       label: definition.label,
       kind: definition.kind,
+      side,
       size: definition.size,
       position: state.position,
       squares: squaresOf(state.position, definition.size),

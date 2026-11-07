@@ -1,4 +1,6 @@
-import type { CombatantRecord, CreatureId, Encounter } from "../models";
+import type { CombatantRecord, CreatureId, Encounter, OverwhelmingOpposition } from "../models";
+import { initSideMorale, runTurnStartMoraleCheck } from "./houseRules";
+import type { MoraleCheck } from "./houseRules";
 import { hasCondition } from "./conditions";
 import { rollDie } from "./dice";
 import type { RandomSource } from "./dice";
@@ -94,6 +96,11 @@ export function startCombat(
   encounter: Encounter,
   totals: Readonly<Record<string, number>>,
   tieOrder: readonly CreatureId[] = [],
+  /** Regla casera Moral: líder de cada bando y si el DM juzga la oposición abrumadora. */
+  morale: {
+    readonly leaders?: Readonly<Record<string, CreatureId>>;
+    readonly overwhelming?: Readonly<Record<string, OverwhelmingOpposition>>;
+  } = {},
 ): StartCombatResult {
   const ids = Object.keys(encounter.combatants) as CreatureId[];
   const missing = ids.filter((id) => typeof totals[id] !== "number" || !Number.isInteger(totals[id]));
@@ -110,7 +117,11 @@ export function startCombat(
   for (const id of ids) initiativeTotals[id] = totals[id]!;
   return {
     ok: true,
-    encounter: { ...encounter, initiativeOrder: order, initiativeTotals, round: 0, turnIndex: -1 },
+    encounter: initSideMorale(
+      { ...encounter, initiativeOrder: order, initiativeTotals, round: 0, turnIndex: -1 },
+      morale.leaders,
+      morale.overwhelming,
+    ),
   };
 }
 
@@ -127,6 +138,8 @@ export type AdvanceTurnResult =
       readonly rechargeRolls: readonly RechargeRoll[];
       /** Monstruos muertos cuyo turno se saltó (PROPUESTA, decisión 58). */
       readonly skipped: readonly CreatureId[];
+      /** Regla casera Moral: comprobación al inicio del turno ("no puede dañar a sus oponentes"). */
+      readonly moraleChecks: readonly MoraleCheck[];
     }
   | { readonly ok: false; readonly reason: "combatNotStarted" | "turnNotEnded" | "noActiveCombatants" };
 
@@ -169,7 +182,15 @@ export function advanceTurn(
         },
       };
       const begun = beginCreatureTurn(restored, id, dice);
-      return { ok: true, encounter: begun.encounter, turn: begun.turn, rechargeRolls: begun.rechargeRolls, skipped };
+      const morale = runTurnStartMoraleCheck(begun.encounter, id, dice);
+      return {
+        ok: true,
+        encounter: morale.encounter,
+        turn: begun.turn,
+        rechargeRolls: begun.rechargeRolls,
+        skipped,
+        moraleChecks: morale.checks,
+      };
     }
     skipped.push(id);
   }

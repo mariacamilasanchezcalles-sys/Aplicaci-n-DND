@@ -222,9 +222,8 @@ describe("ejecutor: Multiataque (capacidad compuesta)", () => {
     // Se puede mover entre ataques de la acción de Atacar (regla verificada).
     expect(getTurnOptions(state.encounter, state.turn).canMove).toBe(true);
     state = run(state, { kind: "move", path: [at(10, 6), at(10, 7)] });
-    // Al salir del alcance de "near" (Cimitarra) se ofrece su ataque de oportunidad; lo deja pasar.
-    expect(state.turn.pendingReactions.map((r) => r.reactorId)).toEqual(["near"]);
-    state = run(state, { kind: "resolveReaction", reactorId: asCreatureId("near"), take: false });
+    // "near" es del mismo bando (monstruos): no se le ofrece ataque de oportunidad.
+    expect(state.turn.pendingReactions).toEqual([]);
     expect(state.encounter.combatants["skirmisher"]?.state.position).toEqual(at(10, 7));
 
     // Revalidación: desde la nueva casilla "near" ya no está al alcance de la Garra.

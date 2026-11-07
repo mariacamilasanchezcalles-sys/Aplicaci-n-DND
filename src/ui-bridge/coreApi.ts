@@ -28,6 +28,7 @@ export interface CombatCoreApi {
     encounterId: EncounterId,
     definition: CombatantDefinition,
     position: GridPosition,
+    options?: { readonly side?: string },
   ): Encounter;
   getEncounter(encounterId: EncounterId): Encounter;
   /**
@@ -66,8 +67,8 @@ export function createCombatCoreApi(
       encounters.set(input.id, encounter);
       return encounter;
     },
-    registerCombatant(encounterId, definition, position) {
-      const updated = engine.addCombatant(require(encounterId), definition, position);
+    registerCombatant(encounterId, definition, position, options) {
+      const updated = engine.addCombatant(require(encounterId), definition, position, options);
       encounters.set(encounterId, updated);
       return updated;
     },

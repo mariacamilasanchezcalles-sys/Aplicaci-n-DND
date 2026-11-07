@@ -33,8 +33,12 @@ function run(state: State, command: TurnCommand, dice = scriptedDice([])): State
   if (!result.ok) throw new Error(JSON.stringify(result));
   return { encounter: result.encounter, turn: result.turn };
 }
+/** "guard" se coloca en el bando de los jugadores para que sea enemigo de los monstruos. */
 function scene(...entries: readonly (readonly [CombatantDefinition, number, number])[]): Encounter {
-  return entries.reduce((e, [d, c, r]) => engine.addCombatant(e, d, { column: c, row: r }), emptyEncounter(20, 20));
+  return entries.reduce(
+    (e, [d, c, r]) => engine.addCombatant(e, d, { column: c, row: r }, d.id === "guard" ? { side: "players" } : {}),
+    emptyEncounter(20, 20),
+  );
 }
 const start = (e: Encounter, who: string): State => ({ encounter: e, turn: startTurn(e, id(who)) });
 
@@ -45,7 +49,7 @@ describe("ataques de oportunidad (REGLA OFICIAL VERIFICADA)", () => {
     // Sigue en (5, 5): el paso a (4, 5) le saca del alcance de "guard".
     expect(s.encounter.combatants["mover"]?.state.position).toEqual(at(5, 5));
     expect(s.turn.pendingReactions).toEqual([
-      { kind: "opportunityAttack", reactorId: "guard", moverId: "mover", attackIds: ["scimitar"] },
+      { kind: "opportunityAttack", reactorId: "guard", moverId: "mover", attackIds: ["scimitar"], viaMark: false },
     ]);
     // Mientras tanto no se acepta otra cosa.
     expect(applyTurnCommand(s.encounter, s.turn, { kind: "endTurn" }, scriptedDice([]))).toEqual({ ok: false, reasonCode: "reactionsPending" });
@@ -132,6 +136,30 @@ describe("ataques de personajes jugadores en su turno (dados físicos)", () => {
     expect(miss.ok && miss.turn.log.find((x) => x.kind === "attackResolved")).toMatchObject({ resolution: { outcome: "miss" }, damageApplied: 0 });
     expect(crit.ok && crit.turn.log.find((x) => x.kind === "attackResolved")).toMatchObject({ resolution: { outcome: "criticalHit" }, damageApplied: 8 });
     expect(lowHit.ok && lowHit.turn.log.find((x) => x.kind === "attackResolved")).toMatchObject({ resolution: { outcome: "hit" } });
+  });
+});
+
+describe("bandos", () => {
+  it("un aliado que sale del alcance no provoca ataque de oportunidad", () => {
+    const e = [monster("mover"), monster("friend")].reduce((acc, d, i) => engine.addCombatant(acc, d, { column: 5 + i, row: 5 }), emptyEncounter(20, 20));
+    const s = run(start(e, "mover"), { kind: "move", path: [at(4, 5)] });
+    expect(s.turn.pendingReactions).toEqual([]);
+  });
+
+  it("ataque a distancia con un enemigo a 5 pies que lo ve: Desventaja (regla verificada)", () => {
+    const e = scene([monster("archer"), 5, 5], [monster("guard"), 6, 5], [monster("far"), 15, 5]);
+    const a = e.combatants["archer"]!;
+    expect(attackConditions(e, a, e.combatants["far"]!, 50, false, "ranged").mode).toBe("disadvantage");
+    // Un aliado al lado no molesta.
+    const allies = [monster("archer"), monster("friend"), monster("far")].reduce(
+      (acc, d, i) => engine.addCombatant(acc, d, { column: [5, 6, 15][i]!, row: 5 }),
+      emptyEncounter(20, 20),
+    );
+    expect(attackConditions(allies, allies.combatants["archer"]!, allies.combatants["far"]!, 50, false, "ranged").mode).toBe("normal");
+    // Si el enemigo adyacente está Incapacitado, tampoco.
+    const stunned = applyCondition(e, id("guard"), "stunned", null, { kind: "indefinite" });
+    if (!stunned.applied) throw new Error(stunned.reason);
+    expect(attackConditions(stunned.encounter, stunned.encounter.combatants["archer"]!, stunned.encounter.combatants["far"]!, 50, false, "ranged").mode).toBe("normal");
   });
 });
 
