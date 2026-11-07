@@ -1,7 +1,7 @@
 import type { AttackId, BonusActionId, CreatureId, ResourceId, TraitId } from "./ids";
 import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
-import type { AbilityId, Capability, ConditionId, DurationSpec, ResourceDefinition } from "./sheet";
+import type { AbilityId, Capability, ConditionId, DurationSpec, ResourceDefinition, SkillId } from "./sheet";
 
 /**
  * Personalidades iniciales (DECISIÓN CONFIRMADA, TACTICAL_BRAIN_SPEC.md §4):
@@ -70,6 +70,20 @@ export interface AttackDefinition {
   readonly rangeFeet: RangeFeet;
   readonly toHitBonus: number;
   readonly damage: readonly DamageSpec[];
+  /**
+   * Condiciones que aplica al impactar (p. ej. "the target has the Grappled
+   * condition (escape DC 13)"). Con Agarrado, el alcance del agarre es el del
+   * ataque y quien agarra es el atacante.
+   */
+  readonly onHitConditions?: readonly AttackConditionEffect[];
+}
+
+/** Condición que un ataque aplica al impactar. */
+export interface AttackConditionEffect {
+  readonly condition: ConditionId;
+  readonly duration: DurationSpec;
+  /** Solo si el objetivo es de este tamaño o menor ("if it's Large or smaller"). */
+  readonly targetMaxSize?: CreatureSize;
 }
 
 /** Acción adicional que la criatura puede realizar (datos, sin lógica). */
@@ -134,6 +148,8 @@ interface CombatantBase {
   readonly abilities?: Partial<Record<AbilityId, number>>;
   /** Bonificador total de salvación cuando difiere del modificador. */
   readonly savingThrows?: Partial<Record<AbilityId, number>>;
+  /** Bonificadores totales de habilidad del perfil (p. ej. Atletismo). */
+  readonly skills?: Partial<Record<SkillId, number>>;
   readonly conditionImmunities?: readonly ConditionId[];
   /** Bonificador de iniciativa del perfil; si falta, el modificador de Destreza. */
   readonly initiativeBonus?: number;
@@ -164,6 +180,12 @@ export interface ActiveCondition {
   /** Quién la causó (Asustado y Encantado dependen de su origen). */
   readonly sourceId: CreatureId | null;
   readonly duration: DurationSpec;
+  /**
+   * Agarrado causado por un ataque: con qué ataque (la "parte" que agarra) y
+   * su alcance (el agarre termina si la distancia lo supera).
+   */
+  readonly viaAttackId?: AttackId;
+  readonly rangeFeet?: number;
   /**
    * Duraciones en asaltos o minutos: inicios de turno que faltan (del origen,
    * o del afectado si no hay origen) para que termine. PROPUESTA (decisión 57).

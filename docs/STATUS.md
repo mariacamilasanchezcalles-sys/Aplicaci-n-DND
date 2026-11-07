@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 27 archivos de prueba, 355 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 27 archivos de prueba, 364 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,12 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Condiciones al impactar y Agarrado (2026-11-07)
+- Ataques con condiciones al impactar (`onHitConditions`, tamaño máximo opcional); fichas en formato 2 (las de formato 1 se migran).
+- Agarrado completo salvo arrastrar: escapar con la acción (`escapeGrapple`), fin por distancia o Incapacitado, una criatura por parte.
+- El cerebro cuenta la probabilidad de imponer la condición y considera escapar para moverse.
+- Persistencia versión 11.
 
 ## Cerebro táctico, etapa 4: planificador (2026-11-07)
 - `tactical-brain/plan.ts`: simulación incremental (`startSimulation`, `continueSimulation`) y pasos `forfeit`, `standUp` y `surrender`; `simulatePlan` puede continuar un turno empezado.

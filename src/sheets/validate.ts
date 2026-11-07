@@ -20,8 +20,9 @@ export type SheetValidationResult =
  * Los avisos (`warning`) no impiden cargar la ficha: señalan mecánicas
  * declaradas que todavía no tienen representación.
  */
-export function validateCreatureSheet(value: unknown): SheetValidationResult {
+export function validateCreatureSheet(input: unknown): SheetValidationResult {
   const issues: SheetIssue[] = [];
+  const value = migrateSheet(input);
 
   // La versión de formato se comprueba primero: con otra versión el resto no tiene sentido.
   if (isPlainObject(value) && "sheetFormat" in value && value["sheetFormat"] !== SHEET_FORMAT_VERSION) {
@@ -34,6 +35,16 @@ export function validateCreatureSheet(value: unknown): SheetValidationResult {
   const sheet = value as CreatureSheet;
   checkCoherence(sheet, issues);
   return split(issues, true, sheet);
+}
+
+/**
+ * Migradores explícitos entre versiones de formato:
+ * - 1 → 2: el formato 2 solo añade campos opcionales (`targetMaxSize` en
+ *   `applyCondition`); una ficha 1 es una ficha 2 válida tal cual.
+ */
+function migrateSheet(value: unknown): unknown {
+  if (isPlainObject(value) && value["sheetFormat"] === 1) return { ...value, sheetFormat: 2 };
+  return value;
 }
 
 function issue(code: SheetIssueCode, path: string, severity: SheetIssue["severity"] = "error"): SheetIssue {

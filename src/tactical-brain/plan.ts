@@ -26,6 +26,8 @@ export type PlanStep =
   | { readonly kind: "standUp" }
   /** Regla casera Moral: rendirse cuando huye. */
   | { readonly kind: "surrender" }
+  /** Escapar de un agarre (gasta la acción). */
+  | { readonly kind: "escape"; readonly grapplerId: CreatureId }
   | { readonly kind: "end" };
 
 export interface Plan {
@@ -83,6 +85,8 @@ function commandFor(port: SimulationPort, state: Encounter, turn: TurnState, ste
       return { kind: "standUp" };
     case "surrender":
       return { kind: "surrender" };
+    case "escape":
+      return { kind: "escapeGrapple", grapplerId: step.grapplerId };
     case "effect": {
       const option = port.getOptions(state, turn).executionOptions.find((o) => o.choice.kind === "effect");
       return option ? { kind: "chooseOption", key: option.key, effectInput: effectInputOf(step) } : null;

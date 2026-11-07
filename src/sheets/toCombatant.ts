@@ -1,5 +1,6 @@
 import { asAttackId, asBonusActionId, asCreatureId, asTraitId } from "../models";
 import type {
+  AttackConditionEffect,
   AttackDefinition,
   BonusActionActionType,
   BonusActionDefinition,
@@ -68,13 +69,14 @@ export function combatantFromSheet(
 ): CombatantFromSheet {
   const gaps: AdapterGap[] = [];
 
-  // Un ataque con efectos que el modelo no puede representar (condición,
-  // empujón, efectos al fallar…) NO se incluye: ejecutarlo solo con su daño
+  // Un ataque con efectos que el modelo no puede representar (empujón, PG
+  // temporales, efectos al fallar…) NO se incluye. Las condiciones al
+  // impactar (con duración) sí: ejecutarlo solo con su daño
   // sería aproximarlo. Las capacidades que lo usen quedan no ejecutables.
   const attacks: AttackDefinition[] = [];
   (sheet.attacks ?? []).forEach((attack, index) => {
     const unsupported =
-      attack.onHit.some((effect) => effect.kind !== "damage") ||
+      attack.onHit.some((effect) => effect.kind !== "damage" && !(effect.kind === "applyCondition" && effect.duration.kind !== "instantaneous")) ||
       attack.onMiss !== undefined ||
       attack.onHitOrMiss !== undefined;
     if (unsupported) {
@@ -94,6 +96,11 @@ export function combatantFromSheet(
           ]
         : [],
     );
+    const conditions: AttackConditionEffect[] = attack.onHit.flatMap((effect) =>
+      effect.kind === "applyCondition"
+        ? [{ condition: effect.condition, duration: effect.duration, ...(effect.targetMaxSize ? { targetMaxSize: effect.targetMaxSize } : {}) }]
+        : [],
+    );
     attacks.push({
       id: asAttackId(attack.id),
       label: attack.label,
@@ -101,6 +108,7 @@ export function combatantFromSheet(
       rangeFeet: attack.rangeFeet,
       toHitBonus: attack.toHitBonus,
       damage,
+      ...(conditions.length > 0 ? { onHitConditions: conditions } : {}),
     });
   });
 
@@ -151,6 +159,7 @@ export function combatantFromSheet(
       ...(sheet.damageVulnerabilities?.length ? { damageVulnerabilities: sheet.damageVulnerabilities } : {}),
       ...(sheet.abilities ? { abilities: sheet.abilities } : {}),
       ...(sheet.savingThrows ? { savingThrows: sheet.savingThrows } : {}),
+      ...(sheet.skills ? { skills: sheet.skills } : {}),
       ...(sheet.conditionImmunities?.length ? { conditionImmunities: sheet.conditionImmunities } : {}),
       ...(sheet.initiativeBonus !== undefined ? { initiativeBonus: sheet.initiativeBonus } : {}),
     },

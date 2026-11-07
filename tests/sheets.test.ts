@@ -44,7 +44,7 @@ describe("fichas: carga de fichas válidas", () => {
 
   it("acepta una ficha mínima sin estructuras opcionales", () => {
     const minimal = {
-      sheetFormat: 1,
+      sheetFormat: 2,
       id: "minimal",
       label: "Mínima",
       source: { kind: "testFixture" },
@@ -66,7 +66,9 @@ describe("fichas: errores de estructura", () => {
   });
 
   it("versión de formato no soportada", () => {
-    expect(errorsOf({ ...brute(), sheetFormat: 2 })).toEqual([
+    // Formato 1: se migra (solo añadía campos opcionales).
+    expect(errorsOf({ ...brute(), sheetFormat: 1 })).toEqual([]);
+    expect(errorsOf({ ...brute(), sheetFormat: 99 })).toEqual([
       { code: "unsupportedFormatVersion", path: "sheetFormat" },
     ]);
   });
@@ -222,15 +224,15 @@ describe("fichas: puente con el modelo actual del motor", () => {
       personality: "pragmatic",
     });
     expect(gaps.map((g) => `${g.path}:${g.reason}`)).toEqual([
-      "attacks[1]:attackEffectNotSupported",
       "traits[0]:traitEffectNotSupported",
     ]);
     expect(definition.conditionImmunities).toEqual(["frightened"]);
     // Recursos y defensas contra el daño pasan a la criatura.
     expect(definition.resources?.map((r) => r.id)).toEqual(["fire-breath"]);
     expect(definition.damageResistances).toEqual(["cold"]);
-    // El Mordisco (agarra al impactar) no entra en la criatura: no se aproxima.
-    expect(definition.attacks.map((a) => a.id)).toEqual(["claw", "rock"]);
+    // El Mordisco agarra al impactar (formato 2): la condición pasa al ataque.
+    expect(definition.attacks.map((a) => a.id)).toEqual(["claw", "bite", "rock"]);
+    expect(definition.attacks[1]!.onHitConditions).toEqual([{ condition: "grappled", duration: { kind: "untilEscape", escapeDc: 14 } }]);
     // Las capacidades pasan tal cual; qué se puede ejecutar lo decide el motor.
     expect(definition.capabilities?.map((c) => c.id)).toEqual(["multiattack", "breath", "rampage", "snap-back"]);
     // El Multiataque NO se convierte en "varios ataques por acción de Atacar".

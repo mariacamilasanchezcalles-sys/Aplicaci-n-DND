@@ -185,7 +185,7 @@ export const effectSchema: Schema<EffectSpec> = tagged("kind", {
   ),
   heal: obj({ bonus }, { dice: diceExpression }),
   tempHitPoints: obj({ bonus }, { dice: diceExpression }),
-  applyCondition: obj({ condition, duration: durationSchema }),
+  applyCondition: obj({ condition, duration: durationSchema }, { targetMaxSize: oneOf(SIZES) }),
   removeCondition: obj({ condition }),
   forcedMovement: obj({ direction: oneOf(["push", "pull"]), distanceFeet: feet }),
 });

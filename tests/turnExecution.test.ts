@@ -327,12 +327,12 @@ describe("ejecutor: requisitos y mecánicas no modeladas", () => {
     expect(getTurnOptions(encounter, turn).capabilities).not.toContainEqual(sheetCapability("howl"));
   });
 
-  it("la ficha compleja: el Multiataque con un ataque omitido y la reacción no son ejecutables", () => {
+  it("la ficha compleja: el Multiataque (con un ataque que agarra) es ejecutable; la reacción aún no", () => {
     const json = readFileSync(join(__dirname, "fixtures/sheets/test-brute.json"), "utf8");
     const loaded = loadCreatureSheet(json);
     if (!loaded.valid) throw new Error("ficha no válida");
     const { definition } = combatantFromSheet(loaded.sheet, { creatureId: "brute", personality: "pragmatic" });
-    expect(capabilitySupport(definition, sheetCapability("multiattack"))).toEqual(["unknownReference"]);
+    expect(capabilitySupport(definition, sheetCapability("multiattack"))).toEqual([]);
     // Coste (carga del aliento), salvación y área ya están modelados.
     expect(capabilitySupport(definition, sheetCapability("breath"))).toEqual([]);
     expect(capabilitySupport(definition, sheetCapability("snap-back"))).toEqual(["reactionsNotModeled"]);

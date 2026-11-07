@@ -14,7 +14,7 @@ import type { StandardActionType } from "./actions";
  */
 
 /** Versión del formato de ficha. Cambia cuando cambie la forma del JSON. */
-export const SHEET_FORMAT_VERSION = 1 as const;
+export const SHEET_FORMAT_VERSION = 2 as const;
 
 // ---------------------------------------------------------------------------
 // Vocabulario cerrado (PENDIENTE DE VALIDAR contra SRD 5.2.1)
@@ -194,7 +194,13 @@ export type EffectSpec =
     }
   | { readonly kind: "heal"; readonly dice?: DiceExpression; readonly bonus: number }
   | { readonly kind: "tempHitPoints"; readonly dice?: DiceExpression; readonly bonus: number }
-  | { readonly kind: "applyCondition"; readonly condition: ConditionId; readonly duration: DurationSpec }
+  | {
+      readonly kind: "applyCondition";
+      readonly condition: ConditionId;
+      readonly duration: DurationSpec;
+      /** Solo si el objetivo es de este tamaño o menor (formato 2). */
+      readonly targetMaxSize?: CreatureSize;
+    }
   | { readonly kind: "removeCondition"; readonly condition: ConditionId }
   | { readonly kind: "forcedMovement"; readonly direction: "push" | "pull"; readonly distanceFeet: number };
 

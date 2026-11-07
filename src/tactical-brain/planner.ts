@@ -234,6 +234,13 @@ export function planTurn(
             open.push(...moveVariants(done));
           }
         }
+        // Escapar de un agarre gasta la acción; vale por el movimiento que permite después.
+        if (moved === base) {
+          for (const grapplerId of port.getOptions(moved.state, moved.turn).escapeFrom) {
+            const escaped = extend(moved, [{ kind: "escape", grapplerId }]);
+            if (escaped) open.push(...moveVariants(escaped));
+          }
+        }
       }
     }
     return { open };

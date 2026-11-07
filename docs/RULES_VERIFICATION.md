@@ -111,7 +111,7 @@ Se leyó el texto completo de las 15 condiciones y de "Dropping to 0 Hit Points"
 | **Ensordecido** | (sin efecto en combate modelado) | Pruebas de oído |
 | **Cansancio** | Acumulativo; −2 × nivel a pruebas d20 (ataques y salvaciones); −5 pies × nivel de Velocidad; muere con 6 | Descanso largo |
 | **Asustado** | Desventaja al atacar si ve el origen; no puede acercarse a él (casilla a casilla) | Pruebas de característica; línea de visión real |
-| **Agarrado** | Velocidad 0; Desventaja contra quien no lo agarra | Arrastrar (coste extra), escapar |
+| **Agarrado** | Velocidad 0; Desventaja contra quien no lo agarra; escapar (acción); fin por distancia o por Incapacitado; una criatura por parte | Arrastrar (coste extra) |
 | **Incapacitado** | Sin acciones, acciones adicionales ni reacciones; **puede moverse** | Concentración, sorpresa |
 | **Invisible** | Ventaja al atacar y Desventaja contra ella si no la ven | Sorpresa, "Concealed" |
 | **Paralizado** | Incapacitado, Velocidad 0, falla FUE/DES, Ventaja contra ella, crítico a 5 pies | — |
@@ -127,6 +127,19 @@ Se leyó el texto completo de las 15 condiciones y de "Dropping to 0 Hit Points"
 | **Daño a 0 PG** | Un fallo (dos si es crítico); si iguala o supera el máximo, muere; un Estable vuelve a hacer salvaciones | — |
 | **Dejar inconsciente** | Ataque cuerpo a cuerpo que lo dejaría a 0: queda a 1 PG e Inconsciente hasta recuperar PG | Descanso corto, primeros auxilios |
 | **Curación** | No supera el máximo; desde 0 PG vuelve en sí | — |
+
+## Agarrado y condiciones al impactar (verificado el 2026-11-07, Glosario 2024)
+Texto leído directamente de la página del glosario de las Basic Rules 2024.
+
+| Regla | Texto (resumen fiel) | Fuente | Implementación |
+|---|---|---|---|
+| **Agarrado** | Velocidad 0 y no puede aumentar; Desventaja al atacar a cualquiera que no sea quien lo agarra; quien agarra puede arrastrarlo (1 pie extra por pie, salvo Diminuto o dos tamaños menor) | "Grappled [Condition]" | Velocidad 0 y Desventaja; arrastrar PENDIENTE |
+| **Escapar** | El agarrado puede usar su acción para una prueba de FUE (Atletismo) o DES (Acrobacias) contra la CD de escape; con éxito termina la condición | "Grappling", "Ending a Grapple" | Orden `escapeGrapple`: los monstruos eligen la mejor (habilidad del perfil o modificador); los jugadores anotan su prueba |
+| **Fin del agarre** | Termina si quien agarra tiene Incapacitado o si la distancia supera el alcance del agarre; quien agarra puede soltar en cualquier momento (sin acción) | "Ending a Grapple" | `endBrokenGrapples` tras cada orden; alcance = alcance del ataque que agarró |
+| **Una por parte** | Con la parte que agarra solo agarra a una criatura y no puede usarla contra otra salvo que termine el agarre | "Grappling", "One Grapple per Hand" | Atacar a otra con ese ataque suelta antes el agarre (`releaseGrapples`) |
+| **Pruebas de característica** | Envenenado: Desventaja; Asustado: Desventaja con el origen a la vista; Cansancio: −2 × nivel a toda prueba d20 | "Poisoned", "Frightened", "Exhaustion" | `abilityCheckConditions` |
+| **Velocidad tras escapar** | La Velocidad es "la distancia que la criatura puede recorrer cuando se mueve en su turno"; Correr usa la Velocidad "tras aplicar modificadores" | "Speed", "Dash" | PENDIENTE DE VALIDAR (interpretación): al escapar recupera el movimiento del turno = Velocidad × (1 + veces que usó Correr) |
+| **Condiciones al impactar** | Las fichas de monstruo dicen lo que pasa al impactar (p. ej. "the target has the Grappled condition (escape DC 13)") | "Monsters", "Attack Notation" | `AttackDefinition.onHitConditions`, con tamaño máximo opcional |
 
 ## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
 | Regla | Texto oficial (resumen fiel) | Dónde se aplica |

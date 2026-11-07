@@ -1,6 +1,7 @@
 import type {
   AbilityId,
   ActiveCondition,
+  AttackId,
   CombatantRecord,
   ConditionId,
   CreatureId,
@@ -198,6 +199,20 @@ export function saveConditions(record: CombatantRecord, ability: AbilityId): Sav
   };
 }
 
+/**
+ * Pruebas de característica. REGLAS OFICIALES VERIFICADAS (glosario 2024):
+ * Envenenado → Desventaja; Asustado → Desventaja mientras el origen esté a la
+ * vista; Cansancio → −2 por nivel a toda prueba d20.
+ */
+export function abilityCheckConditions(encounter: Encounter, record: CombatantRecord): { readonly mode: RollMode; readonly d20Penalty: number } {
+  let disadvantage = hasCondition(record, "poisoned");
+  for (const sourceId of fearSources(record)) {
+    const source = encounter.combatants[sourceId];
+    if (source && canSee(record, source)) disadvantage = true;
+  }
+  return { mode: disadvantage ? "disadvantage" : "normal", d20Penalty: 2 * record.state.exhaustionLevel };
+}
+
 /** Defensas añadidas por condiciones: Petrificado tiene Resistencia a todo el daño. */
 export function conditionResistances(record: CombatantRecord): readonly DamageType[] | "all" {
   return hasCondition(record, "petrified") ? "all" : [];
@@ -231,6 +246,8 @@ export function applyCondition(
   condition: ConditionId,
   sourceId: CreatureId | null,
   duration: DurationSpec,
+  /** Agarrado por un ataque: la "parte" que agarra y su alcance. */
+  grapple?: { readonly viaAttackId: AttackId; readonly rangeFeet: number },
 ): ApplyConditionResult {
   const record = encounter.combatants[targetId];
   if (!record) return { applied: false, reason: "unknownCreature" };
@@ -254,15 +271,67 @@ export function applyCondition(
     duration.kind === "rounds" ? duration.count : duration.kind === "minutes" ? duration.count * 10 : undefined;
   const add = (list: readonly ActiveCondition[], c: StoredCondition): ActiveCondition[] => [
     ...list.filter((x) => !(x.condition === c && x.sourceId === sourceId)),
-    turnStarts === undefined
-      ? { condition: c, sourceId, duration }
-      : { condition: c, sourceId, duration, turnStartsRemaining: turnStarts },
+    {
+      condition: c,
+      sourceId,
+      duration,
+      ...(turnStarts === undefined ? {} : { turnStartsRemaining: turnStarts }),
+      ...(grapple && c === "grappled" ? { viaAttackId: grapple.viaAttackId, rangeFeet: grapple.rangeFeet } : {}),
+    },
   ];
   let conditions = add(record.state.conditions, condition);
   if (condition === "unconscious" && !isImmune(record, "prone")) {
     conditions = add(conditions, "prone");
   }
   return { applied: true, encounter: withState(encounter, record, { ...record.state, conditions }) };
+}
+
+/**
+ * Suelta los agarres que `grapplerId` mantiene con `viaAttackId` sobre
+ * criaturas distintas de `keepTargetId`. REGLA OFICIAL VERIFICADA (glosario
+ * 2024, "Grappling"): con la parte que agarra solo puede agarrar a una
+ * criatura y no puede usarla contra otra salvo que termine el agarre; puede
+ * soltar en cualquier momento sin gastar acción.
+ */
+export function releaseGrapples(encounter: Encounter, grapplerId: CreatureId, viaAttackId: AttackId, keepTargetId: CreatureId | null): Encounter {
+  let updated = encounter;
+  for (const record of Object.values(encounter.combatants)) {
+    if (record.definition.id === keepTargetId) continue;
+    const kept = record.state.conditions.filter(
+      (c) => !(c.condition === "grappled" && c.sourceId === grapplerId && c.viaAttackId === viaAttackId),
+    );
+    if (kept.length !== record.state.conditions.length) updated = withState(updated, record, { ...record.state, conditions: kept });
+  }
+  return updated;
+}
+
+/**
+ * Termina los agarres rotos. REGLA OFICIAL VERIFICADA (glosario 2024,
+ * "Grappling", "Ending a Grapple"): la condición termina si quien agarra
+ * tiene la condición Incapacitado o si la distancia supera el alcance del
+ * agarre. PENDIENTE: arrastrar al agarrado al moverse.
+ */
+export function endBrokenGrapples(encounter: Encounter): Encounter {
+  let updated = encounter;
+  for (const record of Object.values(encounter.combatants)) {
+    const kept = record.state.conditions.filter((c) => {
+      if (c.condition !== "grappled" || c.sourceId === null) return true;
+      const grappler = updated.combatants[c.sourceId];
+      if (!grappler || grappler.state.lifeState === "dead" || hasCondition(grappler, "incapacitated")) return false;
+      if (c.rangeFeet === undefined) return true;
+      const gap =
+        footprintDistanceSquares(
+          grappler.state.position,
+          grappler.definition.size,
+          record.state.position,
+          record.definition.size,
+          encounter.tableRules.diagonal,
+        ) * encounter.grid.feetPerSquare;
+      return gap <= c.rangeFeet;
+    });
+    if (kept.length !== record.state.conditions.length) updated = withState(updated, record, { ...record.state, conditions: kept });
+  }
+  return updated;
 }
 
 /** Quita todas las instancias de una condición (Cansancio: baja un nivel). */

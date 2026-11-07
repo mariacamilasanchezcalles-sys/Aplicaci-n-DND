@@ -21,6 +21,8 @@ import { buildKnowledgeView, observeState, priorsForPartyLevel } from "../src/pe
 import { combatantFromSheet, loadCreatureSheet } from "../src/sheets";
 import type { CombatantDefinition } from "../src/models";
 import { emptyEncounter, engine } from "./helpers";
+import { applyCondition } from "../src/rules";
+import { goblin } from "../src/scenarios/provisionalScenario";
 
 /**
  * Planificador (etapa 4). Solo se comprueba el MECANISMO: legalidad,
@@ -121,13 +123,10 @@ describe("decideOpportunityAttack", () => {
 });
 
 describe("planTurn con fichas (Multiataque)", () => {
-  /** Bruto de prueba sin la roca: solo garra (5 pies) y mordisco (10 pies, sin Agarrar). */
+  /** Bruto de prueba sin la roca: solo garra (5 pies) y mordisco (10 pies, agarra). */
   function bruteWithoutRock(): CombatantDefinition {
     const raw = JSON.parse(readFileSync(join(__dirname, "fixtures/sheets/test-brute.json"), "utf8"));
     raw.attacks = raw.attacks.filter((a: { id: string }) => a.id !== "rock");
-    // Agarrar al impactar aún no está modelado (el puente omite ese ataque): solo daño.
-    const bite = raw.attacks.find((a: { id: string }) => a.id === "bite");
-    bite.onHit = bite.onHit.filter((e: { kind: string }) => e.kind === "damage");
     const multiattack = raw.capabilities.find((c: { id: string }) => c.id === "multiattack");
     multiattack.body.steps[0].body = { op: "attack", attackRef: "claw" };
     raw.capabilities = raw.capabilities.filter((c: { id: string }) => c.id === "multiattack");
@@ -168,3 +167,41 @@ describe("planTurn con fichas (Multiataque)", () => {
     expect(steps.slice(firstAttack, lastAttack).some((step) => step.kind === "move")).toBe(true);
   });
 });
+
+describe("planTurn con Agarrado", () => {
+  it("considera escapar del agarre para poder alejarse", () => {
+    const grab = asAttackId("grab");
+    const grappler: CombatantDefinition = {
+      ...bruteLikeGoblin("grappler"),
+      attacks: [
+        {
+          id: grab,
+          label: "Agarrar",
+          mode: "melee",
+          rangeFeet: { normal: 5 },
+          toHitBonus: 5,
+          damage: [{ dice: { count: 1, sides: 4 }, bonus: 0, type: "bludgeoning" }],
+          onHitConditions: [{ condition: "grappled", duration: { kind: "untilEscape", escapeDc: 5 } }],
+        },
+      ],
+    };
+    let e = engine.addCombatant(emptyEncounter(16, 16), bruteLikeGoblin("victim"), { column: 5, row: 5 });
+    e = engine.addCombatant(e, grappler, { column: 6, row: 5 }, { side: "others" });
+    const victim = asCreatureId("victim");
+    const applied = applyCondition(e, victim, "grappled", asCreatureId("grappler"), { kind: "untilEscape", escapeDc: 5 }, { viaAttackId: grab, rangeFeet: 5 });
+    if (!applied.applied) throw new Error("no aplicada");
+    e = observeState(applied.encounter);
+    const view = buildKnowledgeView(e, victim, priorsForPartyLevel(1));
+    const port = createSimulationPort(e, view);
+    // Solo cuenta no tener enemigos al lado.
+    const decision = planTurn(port, view, victim, { ...zero, adjacentEnemies: -1 }, FULL)!;
+    const steps = decision.best.plan.steps;
+    expect(steps[0]).toEqual({ kind: "escape", grapplerId: "grappler" });
+    expect(steps.some((step) => step.kind === "move")).toBe(true);
+    expect(decision.best.features.adjacentEnemies).toBe(0);
+  });
+});
+
+function bruteLikeGoblin(id: string): CombatantDefinition {
+  return { ...goblin, id: asCreatureId(id), label: id, stats: { ...goblin.stats, maxHitPoints: 20 } };
+}

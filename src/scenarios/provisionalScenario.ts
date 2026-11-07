@@ -27,6 +27,7 @@ export const goblin: MonsterDefinition = {
   stats: { maxHitPoints: 7, armorClass: 15, speedFeet: 30 },
   // Verificadas en la ficha oficial (MM 2024, p. 142); salvaciones = modificadores.
   abilities: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 },
+  skills: { stealth: 6 },
   initiativeBonus: 2,
   attacks: [
     {

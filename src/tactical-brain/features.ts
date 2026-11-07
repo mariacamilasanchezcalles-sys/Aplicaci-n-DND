@@ -86,6 +86,7 @@ export function computeFeatures(
   const immediateShare = new Map(startThreats.map((t) => [t.enemyId, totalStartThreat > 0 ? t.expectedDamage / totalStartThreat : 0] as const));
 
   let damageDealt = 0;
+  let conditionsInflicted = 0;
   let threatReduction = 0;
   let immediateThreatReduction = 0;
   const damageByTarget = new Map<CreatureId, number>();
@@ -94,10 +95,10 @@ export function computeFeatures(
     damageByTarget.set(attack.targetId, (damageByTarget.get(attack.targetId) ?? 0) + attack.odds.expectedDamage);
     if (totalSeen > 0) threatReduction += attack.odds.expectedDamage * ((seen.get(attack.targetId) ?? 0) / totalSeen);
     immediateThreatReduction += attack.odds.expectedDamage * (immediateShare.get(attack.targetId) ?? 0);
+    if (final.combatants[attack.targetId]?.side !== side) conditionsInflicted += attack.odds.conditionChance;
   }
   // Efectos (alientos, derribar…): daño y condiciones esperados por objetivo.
   let friendlyDamage = 0;
-  let conditionsInflicted = 0;
   for (const effect of simulation.effects) {
     for (const t of effect.targets) {
       if (t.ally) {

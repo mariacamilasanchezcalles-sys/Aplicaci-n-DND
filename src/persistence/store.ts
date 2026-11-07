@@ -10,8 +10,10 @@ import type { Encounter, EncounterId } from "../models";
  * v8: iniciativa (totales, turno actual), reacción disponible y Esquivar persistente.
  * v9: bandos; reglas caseras Flanquear, Marcar, Daño masivo y Moral.
  * v10: conocimiento compartido por bando (`sideKnowledge`).
+ * v11: ataques con condiciones al impactar (`onHitConditions`), habilidades
+ *      (`skills`) y Agarrado con la parte que agarra y su alcance.
  */
-export const SNAPSHOT_SCHEMA_VERSION = 10 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 11 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

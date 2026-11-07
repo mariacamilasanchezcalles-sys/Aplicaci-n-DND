@@ -3,7 +3,9 @@ import type {
   Capability,
   CombatantDefinition,
   CombatantRecord,
+  ConditionId,
   CreatureId,
+  CreatureSize,
   Encounter,
   GridPosition,
   LifeState,
@@ -25,11 +27,16 @@ import {
   effectiveSpeed,
   expireConditionsAtTurnBoundary,
   fearSources,
+  abilityCheckConditions,
+  applyCondition,
+  endBrokenGrapples,
   hasCondition,
   isEnemy,
+  releaseGrapples,
   removeCondition,
   speedCannotIncrease,
 } from "./conditions";
+import { rollDie } from "./dice";
 import { rollRechargesAtTurnStart } from "./resources";
 import type { RechargeRoll } from "./resources";
 import { dealDamage } from "./vitality";
@@ -131,7 +138,23 @@ export type TurnLogEntry =
   | { readonly kind: "surrendered" }
   /** El movimiento interrumpido no pudo seguir (p. ej. quedó inconsciente o sin Velocidad). */
   | { readonly kind: "movementStopped"; readonly remainingPath: readonly GridPosition[] }
+  /** Intento de escapar de un agarre (gasta la acción). */
+  | { readonly kind: "escapeAttempt"; readonly grapplerId: CreatureId; readonly check: EscapeCheck }
   | { readonly kind: "turnEnded" };
+
+/** Prueba de escape: tirada virtual (monstruos) o anotada (jugadores). */
+export type EscapeCheck =
+  | {
+      readonly source: "virtual";
+      readonly ability: "str" | "dex";
+      readonly d20: number;
+      readonly bonus: number;
+      readonly penalty: number;
+      readonly total: number;
+      readonly dc: number;
+      readonly success: boolean;
+    }
+  | { readonly source: "player"; readonly total: number | null; readonly dc: number; readonly success: boolean };
 
 /** Resultado registrado de un ataque (del turno o de una reacción). */
 export interface AttackOutcomeLog {
@@ -144,6 +167,8 @@ export interface AttackOutcomeLog {
   readonly damageApplied: number;
   readonly knockedOut: boolean;
   readonly targetLifeStateAfter: LifeState;
+  /** Condiciones aplicadas al impactar (p. ej. Agarrado). */
+  readonly conditionsApplied?: readonly ConditionId[];
 }
 
 export interface TurnState {
@@ -242,6 +267,8 @@ export interface TurnOptions {
   readonly executionOptions: readonly ExecutionOption[];
   readonly canForfeit: boolean;
   readonly canEndTurn: boolean;
+  /** Criaturas que la agarran y de las que puede intentar escapar (con su acción). */
+  readonly escapeFrom: readonly CreatureId[];
 }
 
 export type TurnCommand =
@@ -268,6 +295,11 @@ export type TurnCommand =
   | { readonly kind: "surrender" }
   /** Salvación anotada de un jugador para una tirada pendiente (Daño masivo). */
   | { readonly kind: "resolvePendingSave"; readonly creatureId: CreatureId; readonly playerSave: PlayerSaveInput }
+  /**
+   * Escapar de un agarre: usa la acción (REGLA OFICIAL VERIFICADA). Los
+   * jugadores anotan su prueba física (`playerCheck`).
+   */
+  | { readonly kind: "escapeGrapple"; readonly grapplerId: CreatureId; readonly playerCheck?: PlayerSaveInput }
   | { readonly kind: "endTurn" };
 
 /** Datos que completa quien elige una opción de efecto. */
@@ -318,7 +350,10 @@ export type TurnCommandError =
   | "playerDamageRequired"
   | "savesPending"
   | "noPendingSave"
-  | "notFleeing";
+  | "notFleeing"
+  | "notGrappled"
+  | "actionAlreadyUsed"
+  | "playerCheckRequired";
 
 export type TurnCommandResult =
   | { readonly ok: true; readonly encounter: Encounter; readonly turn: TurnState }
@@ -901,7 +936,7 @@ function tryBegin(
 export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptions {
   const actor = encounter.combatants[turn.actorId];
   if (!actor || turn.ended) {
-    return { canMove: false, capabilities: [], executionOptions: [], canForfeit: false, canEndTurn: false };
+    return { canMove: false, capabilities: [], executionOptions: [], canForfeit: false, canEndTurn: false, escapeFrom: [] };
   }
   if (turn.execution !== null) {
     return {
@@ -913,6 +948,7 @@ export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptio
       })),
       canForfeit: true,
       canEndTurn: false,
+      escapeFrom: [],
     };
   }
   return {
@@ -921,7 +957,32 @@ export function getTurnOptions(encounter: Encounter, turn: TurnState): TurnOptio
     executionOptions: [],
     canForfeit: false,
     canEndTurn: true,
+    escapeFrom: turn.actionUsed || cannotAct(actor) ? [] : grapplersOf(actor),
   };
+}
+
+const SIZE_ORDER: readonly CreatureSize[] = ["tiny", "small", "medium", "large", "huge", "gargantuan"];
+
+function withConditions(encounter: Encounter, record: CombatantRecord, conditions: CombatantRecord["state"]["conditions"]): Encounter {
+  return {
+    ...encounter,
+    combatants: { ...encounter.combatants, [record.definition.id]: { ...record, state: { ...record.state, conditions } } },
+  };
+}
+
+/** Quienes agarran a la criatura (sin repetir, en orden estable). */
+function grapplersOf(record: CombatantRecord): CreatureId[] {
+  return [
+    ...new Set(record.state.conditions.flatMap((c) => (c.condition === "grappled" && c.sourceId !== null ? [c.sourceId] : []))),
+  ].sort();
+}
+
+/** CD de escape del agarre de `grapplerId` sobre la criatura (la mayor si hay varias). */
+function escapeDcOf(record: CombatantRecord, grapplerId: CreatureId): number | null {
+  const dcs = record.state.conditions.flatMap((c) =>
+    c.condition === "grappled" && c.sourceId === grapplerId && c.duration.kind === "untilEscape" ? [c.duration.escapeDc] : [],
+  );
+  return dcs.length === 0 ? null : Math.max(...dcs);
 }
 
 function withPosition(encounter: Encounter, actorId: CreatureId, position: GridPosition): Encounter {
@@ -949,7 +1010,9 @@ export function applyTurnCommand(
   dice: RandomSource,
 ): TurnCommandResult {
   const result = applyTurnCommandCore(encounter, turn, command, dice);
-  return result.ok ? applyHouseRuleHooks(result.encounter, result.turn, turn.log.length, dice) : result;
+  if (!result.ok) return result;
+  // Agarres que terminan por distancia o porque quien agarra quedó Incapacitado.
+  return applyHouseRuleHooks(endBrokenGrapples(result.encounter), result.turn, turn.log.length, dice);
 }
 
 /**
@@ -1112,6 +1175,56 @@ function applyTurnCommandCore(
         turn: next({ movement: { ...turn.movement, spentFeet: turn.movement.spentFeet + cost } }, [
           { kind: "stoodUp", spentFeet: cost },
         ]),
+      };
+    }
+
+    case "escapeGrapple": {
+      if (turn.execution !== null) return fail("executionInProgress");
+      if (cannotAct(actor)) return fail("cannotAct");
+      if (turn.actionUsed) return fail("actionAlreadyUsed");
+      const dc = escapeDcOf(actor, command.grapplerId);
+      if (dc === null) return fail("notGrappled");
+      let check: EscapeCheck;
+      if (actor.definition.kind === "playerCharacter") {
+        if (!command.playerCheck) return fail("playerCheckRequired");
+        check =
+          "total" in command.playerCheck
+            ? { source: "player", total: command.playerCheck.total, dc, success: command.playerCheck.total >= dc }
+            : { source: "player", total: null, dc, success: command.playerCheck.outcome === "success" };
+      } else {
+        // Elige la mejor: FUE (Atletismo) o DES (Acrobacias). Sin datos, modificador 0.
+        const modifier = (ability: "str" | "dex"): number => {
+          const score = actor.definition.abilities?.[ability];
+          return score === undefined ? 0 : Math.floor((score - 10) / 2);
+        };
+        const str = actor.definition.skills?.athletics ?? modifier("str");
+        const dex = actor.definition.skills?.acrobatics ?? modifier("dex");
+        const ability = dex > str ? "dex" : "str";
+        const bonus = Math.max(str, dex);
+        const adjust = abilityCheckConditions(encounter, actor);
+        const first = rollDie(20, dice);
+        const d20 = adjust.mode === "disadvantage" ? Math.min(first, rollDie(20, dice)) : first;
+        const total = d20 + bonus - adjust.d20Penalty;
+        check = { source: "virtual", ability, d20, bonus, penalty: adjust.d20Penalty, total, dc, success: total >= dc };
+      }
+      const escaped = check.success
+        ? withConditions(
+            encounter,
+            actor,
+            actor.state.conditions.filter((c) => !(c.condition === "grappled" && c.sourceId === command.grapplerId)),
+          )
+        : encounter;
+      // La Velocidad es la distancia que puede recorrer en su turno: al recuperar
+      // la Velocidad (deja de estar agarrada) recupera el movimiento del turno,
+      // contando cada Correr (PENDIENTE DE VALIDAR, ver RULES_VERIFICATION.md).
+      const freed = escaped.combatants[actor.definition.id]!;
+      const speed = effectiveSpeed(freed);
+      const dashes = turn.log.filter((e) => e.kind === "standardActionTaken" && e.action === "dash").length;
+      const budgetFeet = speed === null || turn.budgetFeet === null ? turn.budgetFeet : Math.max(turn.budgetFeet, speed * (1 + dashes));
+      return {
+        ok: true,
+        encounter: escaped,
+        turn: next({ actionUsed: true, budgetFeet }, [{ kind: "escapeAttempt", grapplerId: command.grapplerId, check }]),
       };
     }
 
@@ -1333,13 +1446,31 @@ function performAttack(
     resolution.damage.map((part) => ({ type: part.type, amount: part.total })),
     { resistAll: conditionResistances(check.target) === "all" },
   );
-  const damage = dealDamage(encounter, targetId, defended.total, {
+  // Atacar a otra criatura con la parte que agarra suelta ese agarre (soltar es gratis).
+  const released = releaseGrapples(encounter, attacker.definition.id, attackId, targetId);
+  const damage = dealDamage(released, targetId, defended.total, {
     critical: resolution.outcome === "criticalHit",
     knockOut: input.knockOut === true,
   });
   // Regla casera Marcar: todo ataque cuerpo a cuerpo marca a su objetivo.
+  let afterHit = damage.encounter;
+  const conditionsApplied: ConditionId[] = [];
+  if (resolution.outcome !== "miss") {
+    for (const effect of check.attack.onHitConditions ?? []) {
+      const target = afterHit.combatants[targetId];
+      if (!target || (effect.targetMaxSize !== undefined && SIZE_ORDER.indexOf(target.definition.size) > SIZE_ORDER.indexOf(effect.targetMaxSize))) continue;
+      const applied = applyCondition(afterHit, targetId, effect.condition, attacker.definition.id, effect.duration, {
+        viaAttackId: attackId,
+        rangeFeet: check.attack.rangeFeet.normal,
+      });
+      if (applied.applied) {
+        afterHit = applied.encounter;
+        conditionsApplied.push(effect.condition);
+      }
+    }
+  }
   const marked =
-    check.attack.mode === "melee" ? markTarget(damage.encounter, attacker.definition.id, targetId, context.duringOwnTurn) : damage.encounter;
+    check.attack.mode === "melee" ? markTarget(afterHit, attacker.definition.id, targetId, context.duringOwnTurn) : afterHit;
   return {
     ok: true,
     encounter: marked,
@@ -1351,6 +1482,7 @@ function performAttack(
       damageApplied: damage.hitPointsLost,
       knockedOut: damage.knockedOut,
       targetLifeStateAfter: damage.lifeStateAfter,
+      ...(conditionsApplied.length > 0 ? { conditionsApplied } : {}),
     },
   };
 }

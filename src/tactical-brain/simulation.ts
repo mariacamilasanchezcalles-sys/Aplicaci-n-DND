@@ -18,6 +18,8 @@ export interface EstimatedAttackOdds {
   readonly expectedDamage: number;
   /** Cuántas CA posibles se promediaron (0 = CA desconocida y sin supuesto: no se puede estimar). */
   readonly armorClassSamples: number;
+  /** Probabilidad de imponer alguna condición al impactar (p. ej. Agarrado). */
+  readonly conditionChance: number;
 }
 
 /**

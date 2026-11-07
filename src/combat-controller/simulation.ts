@@ -72,7 +72,7 @@ export function createSimulationPort(publicEncounter: Encounter, view: Knowledge
       attack.mode === "melee" && isFlanking(state, attacker, target),
     );
     const armorClasses = armorClassesOf(target);
-    if (armorClasses.length === 0) return { hitChance: 0, critChance: 0, expectedDamage: 0, armorClassSamples: 0 };
+    if (armorClasses.length === 0) return { hitChance: 0, critChance: 0, expectedDamage: 0, armorClassSamples: 0, conditionChance: 0 };
     const defenses = knownEnemies.has(target.definition.id)
       ? {}
       : {
@@ -92,7 +92,15 @@ export function createSimulationPort(publicEncounter: Encounter, view: Knowledge
       }
     }
     const n = armorClasses.length;
-    return { hitChance: hit / n, critChance: crit / n, expectedDamage: damage / n, armorClassSamples: n };
+    // Condiciones al impactar: tamaño visible; inmunidades solo las del propio bando.
+    const sizes = ["tiny", "small", "medium", "large", "huge", "gargantuan"];
+    const known = knownEnemies.has(target.definition.id);
+    const imposes = (attack.onHitConditions ?? []).some(
+      (c) =>
+        (c.targetMaxSize === undefined || sizes.indexOf(target.definition.size) <= sizes.indexOf(c.targetMaxSize)) &&
+        (known || !(target.definition.conditionImmunities ?? []).includes(c.condition)),
+    );
+    return { hitChance: hit / n, critChance: crit / n, expectedDamage: damage / n, armorClassSamples: n, conditionChance: imposes ? hit / n : 0 };
   };
 
   return {

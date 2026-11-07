@@ -35,7 +35,7 @@ estructuras vacías.
 
 | Campo | Contenido |
 |---|---|
-| `sheetFormat` | Versión del formato (hoy 1). Otra versión se rechaza con `unsupportedFormatVersion`. |
+| `sheetFormat` | Versión del formato (hoy 2; las fichas 1 se migran tal cual). Otra versión se rechaza con `unsupportedFormatVersion`. |
 | `id`, `label`, `source` | Identificador (kebab-case), etiqueta para personas, origen: `official` / `homebrew` / `testFixture` + referencia. |
 | `size`, `creatureType` | Tamaño (decide la huella, ver `rules/size.ts`) y tipo de criatura. |
 | `armorClass`, `hitPoints` | CA; PG medios y fórmula opcional. |
@@ -75,8 +75,12 @@ Así hay un único ejecutor para todo.
 
 ## 3. Catálogo de efectos (`EffectSpec`)
 `damage` (dados opcionales, bonificador, tipo, condición `attackRollHadAdvantage`), `heal`,
-`tempHitPoints`, `applyCondition` (con `DurationSpec`), `removeCondition` y `forcedMovement`
-(empujar o atraer).
+`tempHitPoints`, `applyCondition` (con `DurationSpec` y, desde el formato 2, `targetMaxSize`
+opcional: "si es Grande o menor"), `removeCondition` y `forcedMovement` (empujar o atraer).
+
+En un ataque (`onHit`), el motor ejecuta el daño y las condiciones con duración (p. ej. Agarrado con
+CD de escape). Los ataques con otros efectos (empujón, PG temporales, efectos al fallar) se omiten de
+la criatura como hueco (`attackEffectNotSupported`).
 
 Duraciones: `instantaneous`, `rounds`, `minutes`, `untilTurnBoundary` (inicio o fin del turno de
 la fuente o del objetivo) y `untilEscape` (con CD).
