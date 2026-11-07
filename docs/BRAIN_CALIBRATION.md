@@ -53,6 +53,15 @@ automáticas, y los pesos se ajustan hasta cumplirlas (decisión 71).
 | E1 | **(b)** Cimitarra a Cata y Escapismo Ágil (Destrabarse) para alejarse. |
 | E2 | **(a)** Disparar a Caín. |
 | E3 | **(c)** Esquivar. |
-| E4 | Pendiente. |
+| E4 | **(a)** Los dos rodean a Cata (flanqueo). |
 
-Faltan las respuestas para las personalidades **agresiva** y **pacifista**.
+### Respuestas de la jugadora (personalidades **agresiva** y **pacifista**, 2026-11-07)
+| # | Agresivo | Pacifista |
+|---|---|---|
+| E1 | **(a)** Cimitarra a Cata y quedarse. | Pendiente |
+| E2 | Pendiente | Pendiente |
+| E3 | **(a)** Atacar a Cata. | **(b)** Destrabarse y huir. |
+| E4 | Pendiente | Pendiente |
+
+Con estos 8 casos se puede empezar a calibrar. Los casos pendientes se añadirán como pruebas cuando
+la jugadora los decida.
