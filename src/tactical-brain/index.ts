@@ -5,3 +5,4 @@ export * from "./features";
 export * from "./calibration";
 export * from "./personalities";
 export * from "./planner";
+export * from "./difficulty";

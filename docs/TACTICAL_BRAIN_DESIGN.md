@@ -160,6 +160,9 @@ Parámetros configurables (nombres PROPUESTOS; valores por nivel a calibrar cont
 
 Nunca da información extra ni dados mejores.
 
+Implementado (2026-11-07): `tactical-brain/difficulty.ts` con los niveles Fácil, Normal y Difícil
+(valores PROPUESTOS, decisión 96).
+
 ## 7. Cooperación (PROPUESTA)
 - Cada monstruo publica su **intención** (objetivo y posición prevista) en una pizarra del bando.
 - Los demás la consideran según su nivel de `coordination`. Por ejemplo, no perseguir todos al

@@ -2,7 +2,7 @@ import type { AttackId, CreatureId, Encounter } from "../models";
 import type { KnowledgeView } from "../perception";
 import type { ExecutionOption, ReactionOpportunity, TurnState } from "../rules";
 import { computeFeatures, scoreFeatures } from "./features";
-import type { FeatureVector, FeatureWeights } from "./features";
+import type { FeatureName, FeatureVector, FeatureWeights } from "./features";
 import { asPlanSimulation, continueSimulation, startSimulation } from "./plan";
 import type { PartialSimulation, Plan, PlanStep } from "./plan";
 import type { SimulationPort } from "./simulation";
@@ -41,6 +41,10 @@ export interface SearchParameters {
   readonly maxAreaPlacements: number | null;
   /** Combinaciones de objetivos por efecto con varios objetivos (null = todas). */
   readonly maxTargetCombinations: number | null;
+  /** Explorar moverse entre ataques de Atacar o Multiataque (por defecto sí). */
+  readonly movesBetweenAttacks?: boolean;
+  /** Rasgos que no calcula (calidad de evaluación): cuentan como 0. */
+  readonly ignoredFeatures?: readonly FeatureName[];
 }
 
 export interface ScoredPlan {
@@ -85,6 +89,11 @@ export function planTurn(
 ): PlanDecision | null {
   let evaluated = 0;
   let best: ScoredPlan | null = null;
+  // Rasgos que esta dificultad no calcula: peso 0.
+  const effectiveWeights: FeatureWeights =
+    (params.ignoredFeatures ?? []).length === 0
+      ? weights
+      : (Object.fromEntries(Object.entries(weights).map(([name, w]) => [name, params.ignoredFeatures!.includes(name as FeatureName) ? 0 : w])) as FeatureWeights);
 
   /** Puntúa una simulación parcial terminando el turno ahí (null si no puede terminar). */
   const evaluate = (partial: PartialSimulation): ScoredPlan | null => {
@@ -92,7 +101,7 @@ export function planTurn(
     if (!ended.ok) return null;
     evaluated++;
     const features = computeFeatures(port, view, actorId, asPlanSimulation(ended.partial));
-    const scored = { plan: { steps: ended.partial.steps }, score: scoreFeatures(features, weights), features };
+    const scored = { plan: { steps: ended.partial.steps }, score: scoreFeatures(features, effectiveWeights), features };
     // Desempate determinista: gana el primero generado.
     if (best === null || scored.score > best.score) best = scored;
     return scored;
@@ -136,6 +145,7 @@ export function planTurn(
    * más barata desde la que alcanza a cada objetivo que no alcanza ya.
    */
   const movesBetweenAttacks = (partial: PartialSimulation): PartialSimulation[] => {
+    if (params.movesBetweenAttacks === false) return [];
     if (partial.steps.at(-1)?.kind !== "attack" || !port.getOptions(partial.state, partial.turn).canMove) return [];
     const reachableNow = new Set(attackTargets(partial));
     const nearest = new Map<CreatureId, PartialSimulation>();

@@ -140,7 +140,20 @@
 92. **Efectos en la simulación** (PROPUESTA): el bonificador de salvación supuesto de un enemigo es la media de las seis salvaciones de la matriz estándar (+0,83 de característica y 2 de 6 con competencia; nivel 1 → +1,5). Un personaje que salva contra un efecto toma en la simulación el resultado más probable (falla si la probabilidad de fallo pasa de 0,5); el daño y la condición se valoran por su esperanza.
 93. **Rasgo `friendlyDamage`** (PROPUESTA): daño esperado que el plan causa a aliados (p. ej. un aliento que los alcanza). Signo ≤ 0 en las tres personalidades; ningún escenario lo pone a prueba aún (peso 0).
 95. **Estructura de la búsqueda** (PROPUESTA): fases [levantarse?] [mover?] [capacidad completa], o mover y terminar; poda por haz con la puntuación de "terminar aquí"; Destrabarse y Correr se exploran con su movimiento en la misma fase; no se explora moverse entre ataques de la acción de Atacar; no se prueban áreas que no alcanzan a nadie ni casillas donde no puede terminar el turno.
-96. **Valores de dificultad** (PENDIENTE de decidir con la jugadora): `beamWidth`, `maxPhases`, `maxMoveCandidates`, `maxAreaPlacements`, `maxTargetCombinations` por nivel. Referencia medida: con haz 4, 3 fases y sin límites, un goblin evalúa unos 1.000–2.000 planes (20–190 ms en el ordenador de desarrollo) y el Draco unos 900 (≈ 650 ms). En el teléfono hay que medir.
+96. **Valores de dificultad** (PROPUESTA, pendiente de aprobación; `tactical-brain/difficulty.ts`). Traducción de la tabla de la especificación §5:
+
+    | Parámetro | Fácil | Normal | Difícil |
+    |---|---|---|---|
+    | Planes que pasan a la fase siguiente (`beamWidth`) | 1 | 2 | 4 |
+    | Fases del turno (`maxPhases`) | 2 | 3 | 3 |
+    | Casillas examinadas por movimiento | 4 | 12 | todas |
+    | Colocaciones de área / combinaciones de objetivos | 4 / 2 | 12 / 6 | todas |
+    | Moverse entre ataques | no | sí | sí |
+    | Rasgos que no calcula | flanqueos | — | — |
+    | Replanificar tras cada operación (etapa 6) | no | no | sí |
+    | Coordinación (etapa 5) | limitada | considera aliados | planifica cooperación |
+
+    Medido en los 18 casos de calibración (ordenador de desarrollo): Fácil 701 planes de media, 47 ms (máx. 132) y elige lo decidido en 15 de 18; Normal 872, 49 ms (máx. 85), 15 de 18; Difícil 1.311, 171 ms (máx. 671), 18 de 18. Falta medir en el teléfono. La dificultad se guardará en el encuentro en la etapa 6.
 97. **Ataque de oportunidad** (PROPUESTA): se hace si "atacar" puntúa más que "dejarlo pasar" con los mismos pesos (solo cambian los rasgos de daño causado). Aún no se cuenta el valor de guardar la reacción (no hay otras reacciones).
 98. ~~**Recalibrar con la búsqueda**~~ → HECHO el 2026-11-07 (rondas 1 y 2, `BRAIN_CALIBRATION.md` §6). Texto original (PROPUESTA): mostrar a la jugadora el plan que elige la búsqueda en cada escenario cuando no coincide con su respuesta; si lo rechaza, se añade como alternativa peor y se recalculan los pesos; repetir hasta que la búsqueda elija planes aceptados. Si algún caso no cuadra con los signos, se pregunta.
 99. **Riesgo de morir** (PROPUESTA): `deathRisk` pasa a ser la probabilidad de caer a 0 PG antes de su próximo turno (cada amenaza impacta con su probabilidad y hace su daño medio por impacto). Antes era min(1, daño esperado / PG) y no distinguía Esquivar con 2 PG.

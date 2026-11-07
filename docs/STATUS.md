@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 28 archivos de prueba, 370 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 29 archivos de prueba, 373 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,9 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Niveles de dificultad (2026-11-07)
+- `tactical-brain/difficulty.ts`: Fácil, Normal y Difícil como parámetros de búsqueda (valores PROPUESTOS, decisión 96); la calibración usa Difícil.
 
 ## Reacciones de ficha (2026-11-07)
 - Reacciones con desencadenante "le impactan" o "recibe daño" y cuerpo de ataque: el motor las ofrece al terminar el ataque o efecto (`SheetReactionOpportunity`) y las resuelve con `resolveReaction` (objetivo elegido, costes, reacción gastada).
