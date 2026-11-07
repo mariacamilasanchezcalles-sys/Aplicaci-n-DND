@@ -14,7 +14,7 @@
 - **Siguiente etapa:** verificar en SRD 5.2.1 el vocabulario (decisión 26), Recharge y si se puede mover entre ataques de Multiataque (24); después, ejecutor de capacidades solo para ataques y acciones estándar, con pruebas de invariantes.
 
 ## Mapa y movimiento
-1. **Subirse a una criatura.** Atravesar no es terreno difícil "a menos que quiera subir en la criatura". No está modelado: ¿qué significa subir, cuánto cuesta y se puede subir a criaturas Grandes o mayores (hoy bloquean el paso)?
+1. ~~**Subirse a una criatura.**~~ → Resuelta (decisión 38): "Encaramarse a una criatura más grande", guía 2014. Sin implementar. Atravesar no es terreno difícil "a menos que quiera subir en la criatura". No está modelado: ¿qué significa subir, cuánto cuesta y se puede subir a criaturas Grandes o mayores (hoy bloquean el paso)?
 2. **Terreno difícil del mapa** (cada casilla cuesta el doble): hoy el terreno es siempre abierto.
 
 ## Reglas: confirmar suposiciones
@@ -66,7 +66,5 @@
 36. **Ataques de personajes jugadores y criaturas sin CA**: un ataque contra una criatura sin CA no se resuelve (`targetArmorClassUnknown`). Relacionado con la decisión 28 (dados físicos).
 
 ## Guía del DM 2014 (ver `HOUSE_RULES.md`)
-37. **Qué reglas opcionales usa la mesa** (flanquear, encaramiento, iniciativa por bandos, moral, daño masivo, marcar…). La guía es de 2014: solo vale como origen de reglas caseras, nunca como regla oficial.
-38. **Decisión 1 ("subirse a una criatura")**: ¿es la opción "Encaramarse a una criatura más grande" de la guía 2014 (p. 271)?
-39. **Configuración de mesa (`TableRules`)** para activar o desactivar reglas caseras por encuentro o campaña.
-40. **¿Hay Guía del DM 2024?** Sería la referencia preferible para las reglas opcionales.
+- **Resueltas el 2026-11-07:** solo hay guía de 2014 (decisión 40). La mesa usa Flanquear, Moral, Daño masivo, Marcar y Encaramarse a una criatura más grande, como reglas caseras (37). La decisión 1 ("subirse a una criatura") es "Encaramarse a una criatura más grande" (38). La configuración de mesa por interruptores queda aprobada (39).
+41. **Adaptar cada regla de 2014 a 2024** al implementarla: por ejemplo, Moral y Daño masivo usan estados y salvaciones que hay que mapear a las condiciones 2024; Marcar depende de los ataques de oportunidad (decisión 7). Se preguntará regla por regla.

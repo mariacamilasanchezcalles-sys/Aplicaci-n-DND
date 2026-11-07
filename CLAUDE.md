@@ -58,6 +58,7 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 
 **Tomadas con la jugadora**
 - **Fichas y ejecución (2026-11-07):** personalidad y dificultad se asignan en el encuentro; turno planeado completo y ejecutado operación por operación con reevaluación y revalidación; acciones estándar y ataque de oportunidad como capacidades integradas; costes una vez al iniciar (sin devolución), `capability` gasta recursos pero no activación; se puede renunciar a pasos restantes. Guardado local con Firebase opcional.
+- **Reglas caseras de la guía DM 2014 (2026-11-07):** la mesa usa Flanquear, Moral, Daño masivo, Marcar y Encaramarse a una criatura más grande (todas sin implementar). Irán en una configuración de mesa con interruptores que el motor lee y el cerebro nunca cambia. Ver `docs/HOUSE_RULES.md`.
 - Coordenadas desde 0. Casillas de 5 pies. Mapa de **15 columnas x 21 filas**; el área **visible** en pantalla es de 5 x 9 (requisito de interfaz, no del núcleo).
 - **Diagonal alternada 1, 2, 1, 2** (`alternating-1-2`): regla de mesa impuesta por su DM; no es la regla base 2024 (diagonal = 1). La cuenta de diagonales continúa entre pasos rectos y entre pasos de movimiento del mismo turno y se reinicia cada turno.
 - **Ocupación por tamaño:** Pequeña y Mediana 1x1, Grande 2x2, Enorme 3x3, Gargantuesca 4x4; la posición es la esquina superior izquierda. Diminuta, provisionalmente, ocupa 1 casilla exclusiva.

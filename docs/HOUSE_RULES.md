@@ -18,8 +18,16 @@ Mearls, Crawford, Perkins y Wyatt). Es la guía de **2014**, no la de 2024.
 | **Diagonal alternada 1-2-1-2** (`alternating-1-2`) | Guía DM 2014, cap. 8, "Regla opcional: Diagonales" (p. 251-252 del PDF) | **Total.** La 1.ª diagonal cuenta 5 pies y la 2.ª 10, y el patrón se repite. La cuenta **sigue aunque haya pasos rectos entre diagonales**, y se aplica también **al medir alcances** (`squareDistance`). La guía no dice cuándo se reinicia la cuenta; el proyecto la reinicia cada turno (suposición 1 de `RULES_VERIFICATION.md`). |
 | **Atravesar criaturas Diminutas, Pequeñas y Medianas** | No aparece en la guía. Es propia del DM | La guía trae otras opciones para pasar por el espacio de un enemigo ("Abrirse paso" y "Rodar", ver abajo) que **no** coinciden con esta regla. |
 
-## Reglas opcionales de la guía 2014 relacionadas con el simulador (candidatas)
-Ninguna está implementada. Para cada una hay que saber si la mesa de la jugadora la usa.
+## Confirmado por la jugadora (2026-11-07)
+- Solo tiene la guía de **2014**: es la referencia de las reglas caseras de su mesa.
+- **Su mesa usa** (REGLA CASERA, origen: guía 2014; **sin implementar**): **Flanquear**, **Moral**, **Daño masivo**, **Marcar** y **Encaramarse a una criatura más grande** (esta última resuelve la decisión 1, "subirse a una criatura").
+- **Configuración de mesa aprobada:** cada regla casera es un interruptor por campaña o encuentro. El motor la lee y el cerebro nunca la cambia.
+- Las demás opciones de la tabla (encaramiento, iniciativa por bandos, factor de velocidad, abrirse paso, desarmar, echar a un lado, rodar, impactar a la cobertura, golpear a varias criaturas, heridas) se consideran **no usadas** salvo que la jugadora diga lo contrario.
+
+Antes de implementar cada una: leer su texto completo en la guía, anotar qué partes son reglas 2014 que chocan con las de 2024 (por ejemplo, condiciones o acciones con otro nombre o efecto) y preguntar cómo las adapta su DM.
+
+## Reglas opcionales de la guía 2014 relacionadas con el simulador
+
 
 | Regla opcional | Página PDF | Resumen | Qué afectaría |
 |---|---|---|---|
@@ -44,7 +52,7 @@ Una regla de moral convierte esa decisión en una **tirada** que obliga a huir. 
 iría en el motor como regla casera que **restringe** las opciones legales (por ejemplo, "debe
 huir"). El cerebro nunca la evaluaría como un peso más.
 
-## Propuesta de integración (pendiente de aprobación)
+## Integración (configuración de mesa: DECISIÓN CONFIRMADA; sin implementar)
 1. **Configuración de mesa** (`TableRules`) por encuentro o campaña, con cada regla casera u
    opcional como un interruptor con identificador, por ejemplo `diagonal: "alternating-1-2"` o
    `flanking: false`. El motor la lee; el cerebro nunca la cambia. Hoy solo existe
