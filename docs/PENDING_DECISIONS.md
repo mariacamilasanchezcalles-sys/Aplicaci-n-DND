@@ -128,3 +128,12 @@
 82. **Lo que el estado creído no sabe de un enemigo**: Velocidad, ataques, defensas y recursos. Hoy aparecen vacíos; habrá que estimarlos con lo observado para prever su respuesta (etapa 3).
 83. **Ajuste técnico**: `tactical-brain` puede importar **solo tipos** de `rules` (lo comprueba `tests/architecture.test.ts`), para nombrar órdenes y opciones sin poder ejecutar reglas.
 84. **Monstruo o personaje se distingue a simple vista** (PROPUESTA): la memoria guarda si una criatura es monstruo o personaje jugador.
+
+## Etapa 3 del cerebro: evaluación y calibración (2026-11-07)
+85. **Ataque y Velocidad supuestos de los personajes** (PROPUESTA, derivado del SRD): +(bonificador por competencia + 3), 1d8 + 3 a 5 pies y Velocidad 30, hasta que se observen sus ataques reales.
+86. **Quién amenaza** (PROPUESTA): un enemigo amenaza si puede llegar con su Velocidad más el alcance de su mejor ataque; se cuenta un ataque por enemigo (sin Ataque extra ni Multiataque supuestos).
+87. **Salvaciones de jugadores en la simulación** (PROPUESTA): se supone que superan las de Daño masivo (el cerebro no cuenta con el shock).
+88. **Signos de los pesos por personalidad** (PROPUESTA, sacados del texto de la especificación): ver `PERSONALITY_SIGNS` en `tactical-brain/calibration.ts`.
+89. **Aprobar los pesos calculados** (tabla en `BRAIN_CALIBRATION.md` §4).
+90. **Más escenarios**: faltan casos de E1, E2 y E4 para agresivo y pacifista, y casos que pongan a prueba recursos, condiciones, riesgo para el agresivo y defensa propia para el pacifista (hoy su peso de amenaza inmediata es negativo: evita atacar incluso a quien le amenaza).
+91. **E3 "Destrabarse y huir"** se modeló sin Correr (Escapismo Ágil y mover 30 pies). Con Correr también, huir dejaría al goblin fuera del alcance de Cata y cambiaría las comparaciones. ¿Huir incluye Correr?

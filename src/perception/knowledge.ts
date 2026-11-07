@@ -10,6 +10,7 @@ import type {
   SideId,
 } from "../models";
 import { sidePerceives } from "./memory";
+import type { PresumedAttack } from "./priors";
 
 /**
  * VISTA DE CONOCIMIENTO (`KnowledgeView`): lo único que recibe el cerebro.
@@ -24,16 +25,30 @@ import { sidePerceives } from "./memory";
  */
 export interface KnowledgePriors {
   readonly armorClass: number | null;
+  /** Intervalo plausible de CA antes de observar (para promediar probabilidades). */
+  readonly armorClassRange: { readonly min: number; readonly max: number } | null;
   readonly maxHitPoints: number | null;
+  /** Velocidad supuesta de un enemigo cuya Velocidad no se conoce. */
+  readonly speedFeet: number | null;
+  /** Ataque supuesto de un enemigo al que aún no se le conocen ataques. */
+  readonly presumedAttack: PresumedAttack | null;
 }
 
-export const NO_PRIORS: KnowledgePriors = { armorClass: null, maxHitPoints: null };
+export const NO_PRIORS: KnowledgePriors = {
+  armorClass: null,
+  armorClassRange: null,
+  maxHitPoints: null,
+  speedFeet: null,
+  presumedAttack: null,
+};
 
 /** Estimación con incertidumbre: cotas observadas y supuesto inicial. */
 export interface Estimate {
   readonly atLeast: number | null;
   readonly atMost: number | null;
   readonly prior: number | null;
+  /** Intervalo plausible supuesto (solo CA). */
+  readonly priorRange?: { readonly min: number; readonly max: number } | null;
 }
 
 /** Lo que el bando sabe de sí mismo y de sus aliados: todo (comparten mente). */
@@ -76,6 +91,8 @@ export interface KnowledgeView {
   readonly side: SideId;
   readonly round: number;
   readonly knownCreatures: readonly KnownCreature[];
+  /** Supuestos con los que se construyó (por nivel del grupo). */
+  readonly priors: KnowledgePriors;
 }
 
 /**
@@ -113,7 +130,12 @@ export function buildKnowledgeView(
       positionAgeRounds: visibleNow ? 0 : m.lastSeenRound === null ? null : encounter.round - m.lastSeenRound,
       lifeStateSeen: m.lifeStateSeen,
       conditionsSeen: m.conditionsSeen,
-      armorClass: { atLeast: m.armorClassAtLeast, atMost: m.armorClassAtMost, prior: priors.armorClass },
+      armorClass: {
+        atLeast: m.armorClassAtLeast,
+        atMost: m.armorClassAtMost,
+        prior: priors.armorClass,
+        priorRange: priors.armorClassRange,
+      },
       maxHitPoints: {
         atLeast: m.netDamageSeenWhileNotBloodied === null ? null : 2 * m.netDamageSeenWhileNotBloodied + 1,
         atMost: m.netDamageSeenWhileBloodied === null ? null : 2 * m.netDamageSeenWhileBloodied,
@@ -126,7 +148,7 @@ export function buildKnowledgeView(
       damageDealtSeen: m.damageDealtSeen,
     });
   }
-  return { observerId, side, round: encounter.round, knownCreatures: known };
+  return { observerId, side, round: encounter.round, knownCreatures: known, priors };
 }
 
 /** Punto de integración para el controlador. */

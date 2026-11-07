@@ -1,3 +1,4 @@
+import { NO_PRIORS } from "../src/perception";
 import { describe, expect, it } from "vitest";
 import { asCreatureId, asOptionId, PendingImplementationError } from "../src/models";
 import type { LegalActionSet } from "../src/models";
@@ -85,7 +86,7 @@ describe("contrato del cerebro táctico", () => {
     actorId,
     personality: "pragmatic",
     legalActions,
-    knowledge: { observerId: actorId, side: "monsters", round: 0, knownCreatures: [] },
+    knowledge: { observerId: actorId, side: "monsters", round: 0, knownCreatures: [], priors: NO_PRIORS },
   };
 
   it("el punto de integración vacío no decide nada", () => {

@@ -65,3 +65,43 @@ automáticas, y los pesos se ajustan hasta cumplirlas (decisión 71).
 
 Con estos 8 casos se puede empezar a calibrar. Los casos pendientes se añadirán como pruebas cuando
 la jugadora los decida.
+
+## 3. Rasgos que se miden (etapa 3, `tactical-brain/features.ts`)
+Todos en unidades naturales, calculados sobre el estado creído (sin datos ocultos):
+
+| Rasgo | Qué mide |
+|---|---|
+| `damageDealt` | Daño esperado que causa el plan (PG) |
+| `threatReduction` | Daño esperado × parte del daño que se le ha **visto** causar a ese objetivo |
+| `immediateThreatReduction` | Daño esperado × parte de la amenaza **inmediata** de ese objetivo (quién puede atacarle antes de su próximo turno) |
+| `finishingChance` | min(1, daño esperado / PG estimados) por objetivo |
+| `damageTaken` | Daño esperado que recibirá hasta su próximo turno (con los ataques de oportunidad que provoque) |
+| `deathRisk` | min(1, daño recibido / PG actuales) |
+| `adjacentEnemies` | Enemigos a 5 pies al terminar |
+| `flankingPairs` | Flanqueos de su bando al terminar (regla casera) |
+| `resourcesSpent` | Usos limitados gastados |
+| `conditionsInflicted` | Condiciones nuevas en enemigos |
+
+Supuestos para medir el riesgo (PROPUESTA, decisión 85; derivados del SRD): un enemigo del que no
+se conocen ataques ataca con +(bonificador por competencia + 3) y 1d8 + 3 a 5 pies, con Velocidad 30.
+
+## 4. Pesos calculados (2026-11-07) — PENDIENTES DE APROBACIÓN
+Obtenidos con `npm run calibrate` a partir de los 8 casos decididos y de los signos que exige la
+descripción de cada personalidad (decisión 88). Guardados en `src/tactical-brain/personalities.json`.
+
+| Rasgo | Pragmático | Agresivo | Pacifista |
+|---|---|---|---|
+| damageDealt | 0 | 1,466 | −3,062 |
+| threatReduction | 9,188 | 0 | 0 |
+| immediateThreatReduction | 1,1 | 3,063 | −3,062 |
+| finishingChance | 0 | 0,147 | −0,306 |
+| damageTaken | −4,14 | 0 | 0 |
+| deathRisk | 0 | 0 | 0 |
+| adjacentEnemies | −1 | 1 | −1 |
+| flankingPairs | 8 | 0 | 0 |
+| resourcesSpent | 0 | 0 | 0 |
+| conditionsInflicted | 0 | 0 | 0 |
+
+Lectura: con solo 8 casos, muchos pesos valen 0 porque **ningún escenario los ha puesto a prueba**
+todavía (por ejemplo, el agresivo aún no tiene ningún caso en el que deba evitar el peligro, y nadie
+tiene un caso con recursos o condiciones). Hacen falta más escenarios para que generalicen bien.

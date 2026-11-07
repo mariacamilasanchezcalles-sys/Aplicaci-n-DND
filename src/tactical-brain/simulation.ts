@@ -35,4 +35,21 @@ export interface SimulationPort {
   apply(state: Encounter, turn: TurnState, command: TurnCommand): TurnCommandResult;
   /** Probabilidades de un ataque con la CA estimada (promediando el intervalo conocido). */
   attackOdds(state: Encounter, attackerId: CreatureId, attackId: AttackId, targetId: CreatureId): EstimatedAttackOdds | null;
+  /** Empieza el turno de una criatura en un estado creído (sin dados). */
+  startTurn(state: Encounter, actorId: CreatureId): TurnState;
+  /**
+   * Enemigos que podrán atacar a `targetId` en su próximo turno (con su
+   * Velocidad conocida o supuesta) y el daño esperado de su mejor ataque.
+   */
+  incomingThreats(state: Encounter, targetId: CreatureId): readonly IncomingThreat[];
+  /** Distancia en pies entre dos criaturas (regla diagonal de la mesa). */
+  distanceFeet(state: Encounter, a: CreatureId, b: CreatureId): number | null;
+  /** ¿`attackerId` flanquea a `targetId`? (regla casera de la mesa, si está activa). */
+  flanks(state: Encounter, attackerId: CreatureId, targetId: CreatureId): boolean;
+}
+
+export interface IncomingThreat {
+  readonly enemyId: CreatureId;
+  readonly expectedDamage: number;
+  readonly hitChance: number;
 }

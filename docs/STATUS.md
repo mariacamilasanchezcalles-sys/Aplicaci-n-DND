@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 23 archivos de prueba, 310 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 24 archivos de prueba, 318 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,13 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Cerebro táctico, etapa 3: evaluación y calibración (2026-11-07)
+- Supuestos por nivel aprobados (`perception/priors.ts`) y ataque y Velocidad supuestos de los enemigos en el estado creído.
+- `tactical-brain/plan.ts`: planes completos como pasos de intención; `simulatePlan` sobre el estado creído (ataques con sus probabilidades, ataques de oportunidad provocados).
+- `tactical-brain/features.ts`: 10 rasgos medidos y `scoreFeatures`.
+- `tactical-brain/calibration.ts`: solucionador determinista con signos por personalidad; `personalities.json` con los pesos (pendientes de aprobación).
+- `tests/calibration/`: escenarios E1–E4 de la jugadora y prueba de regresión de sus 8 decisiones.
 
 ## Cerebro táctico, etapa 2: candidatos y simulación (2026-11-07)
 - `rules/candidates.ts`: `reachableSquares` (ruta de menor coste con la diagonal de la mesa, paso entre criaturas, arrastrarse, Asustado y huida; marca dónde puede terminar el turno), `areaPlacementCandidates` (con quién queda dentro) y `effectTargetCandidates`.

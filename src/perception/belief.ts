@@ -1,5 +1,22 @@
 import type { ActiveCondition, CombatantRecord, Encounter } from "../models";
-import type { Estimate, KnowledgeView, KnownOther } from "./knowledge";
+import { asAttackId } from "../models";
+import type { AttackDefinition } from "../models";
+import type { Estimate, KnowledgePriors, KnowledgeView, KnownOther } from "./knowledge";
+import type { PresumedAttack } from "./priors";
+
+/** Id del ataque supuesto en el estado creído (no existe en la ficha real). */
+export const PRESUMED_ATTACK_ID = asAttackId("presumed-attack");
+
+function presumedAttackDefinition(presumed: PresumedAttack): AttackDefinition {
+  return {
+    id: PRESUMED_ATTACK_ID,
+    label: "Ataque supuesto",
+    mode: "melee",
+    rangeFeet: { normal: presumed.reachFeet },
+    toHitBonus: presumed.toHitBonus,
+    damage: [{ dice: presumed.dice, bonus: presumed.damageBonus, type: "slashing" }],
+  };
+}
 
 /**
  * ESTADO CREÍDO: un `Encounter` construido SOLO con la `KnowledgeView` (y los
@@ -24,9 +41,11 @@ export function pointEstimate(estimate: Estimate): number | null {
 
 /** Valores posibles de una estimación para promediar probabilidades (todas las CA del intervalo, o el punto). */
 export function plausibleValues(estimate: Estimate): number[] {
-  const { atLeast, atMost } = estimate;
-  if (atLeast !== null && atMost !== null && atMost >= atLeast) {
-    return Array.from({ length: atMost - atLeast + 1 }, (_, i) => atLeast + i);
+  // Cotas observadas, completadas con el intervalo supuesto si falta alguna.
+  const low = estimate.atLeast ?? estimate.priorRange?.min ?? null;
+  const high = estimate.atMost ?? estimate.priorRange?.max ?? null;
+  if (low !== null && high !== null && high >= low) {
+    return Array.from({ length: high - low + 1 }, (_, i) => low + i);
   }
   const point = pointEstimate(estimate);
   return point === null ? [] : [point];
@@ -40,7 +59,7 @@ export function estimatedCurrentHitPoints(known: KnownOther): number | null {
   return Math.max(1, max - (known.damageSeen - known.healingSeen));
 }
 
-function beliefRecord(known: KnownOther): CombatantRecord | null {
+function beliefRecord(known: KnownOther, priors: KnowledgePriors): CombatantRecord | null {
   if (known.position === null) return null;
   const maxHitPoints = pointEstimate(known.maxHitPoints);
   const armorClass = pointEstimate(known.armorClass);
@@ -51,12 +70,13 @@ function beliefRecord(known: KnownOther): CombatantRecord | null {
     id: known.creatureId,
     label: known.creatureId,
     size: known.size,
-    // Velocidad, ataques y defensas de los enemigos: desconocidos (PENDIENTE: estimarlos de lo observado).
+    // Velocidad y ataques: supuestos por nivel (PROPUESTA, decisión 85); defensas: desconocidas.
     stats: {
       ...(maxHitPoints === null ? {} : { maxHitPoints }),
       ...(armorClass === null ? {} : { armorClass }),
+      ...(priors.speedFeet === null ? {} : { speedFeet: priors.speedFeet }),
     },
-    attacks: [],
+    attacks: priors.presumedAttack === null ? [] : [presumedAttackDefinition(priors.presumedAttack)],
     bonusActions: [],
     traits: [],
   };
@@ -94,7 +114,7 @@ export function buildBeliefEncounter(publicEncounter: Encounter, view: Knowledge
   const combatants: Record<string, CombatantRecord> = {};
   for (const known of view.knownCreatures) {
     if (known.relation === "enemy") {
-      const record = beliefRecord(known);
+      const record = beliefRecord(known, view.priors);
       if (record) combatants[known.creatureId] = record;
     } else {
       combatants[known.creatureId] = known.record;

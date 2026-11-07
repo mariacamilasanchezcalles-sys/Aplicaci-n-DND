@@ -192,7 +192,7 @@ opciones sin rehacerlo.
    Con pruebas como "no conoce la CA exacta" o "aprende de sus fallos".
 2. **[HECHA 2026-11-07] Candidatos y simulación:** `reachableSquares`, generadores de candidatos, estado creído y
    puerto de simulación con valores esperados.
-3. **Evaluación y calibración:** rasgos medidos, escenarios contigo, perfiles en JSON y pesos
+3. **[HECHA 2026-11-07, pesos pendientes de aprobación] Evaluación y calibración:** rasgos medidos, escenarios contigo, perfiles en JSON y pesos
    aprobados.
 4. **Planificador:** búsqueda por niveles de dificultad, replanificación por eventos y reacciones.
 5. **Cooperación:** pizarra de intenciones del bando.

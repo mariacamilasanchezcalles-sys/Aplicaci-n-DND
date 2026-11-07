@@ -3,8 +3,12 @@ import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
 import type { AbilityId, Capability, ConditionId, DurationSpec, ResourceDefinition } from "./sheet";
 
-/** PENDIENTE: catálogo de personalidades. Por ahora solo existe la de prueba. */
-export type PersonalityId = "pragmatic";
+/**
+ * Personalidades iniciales (DECISIÓN CONFIRMADA, TACTICAL_BRAIN_SPEC.md §4):
+ * pragmática, agresiva y pacifista. Ampliable: cada una es un perfil de
+ * pesos en `tactical-brain/personalities.json`.
+ */
+export type PersonalityId = "pragmatic" | "aggressive" | "pacifist";
 
 /** Categorías de tamaño del manual. La huella en casillas la calcula `rules`. */
 export type CreatureSize =

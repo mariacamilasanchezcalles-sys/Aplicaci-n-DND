@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asAttackId, asCreatureId } from "../src/models";
 import type { CombatantDefinition, Encounter } from "../src/models";
-import { buildKnowledgeView, observeLogEntries, observeState } from "../src/perception";
+import { NO_PRIORS, buildKnowledgeView, observeLogEntries, observeState, priorsForPartyLevel } from "../src/perception";
 import type { KnownOther } from "../src/perception";
 import { applyCondition, applyTurnCommand, getTurnOptions, startTurn } from "../src/rules";
 import type { TurnCommand, TurnState } from "../src/rules";
@@ -69,8 +69,8 @@ describe("percepción: lo que el bando sabe de un enemigo", () => {
   });
 
   it("supuesto inicial por nivel (aún sin tabla): se pasa como dato aparte", () => {
-    const k = buildKnowledgeView(scene(), id("g1"), { armorClass: 15, maxHitPoints: 25 }).knownCreatures.find((c) => c.creatureId === "cata");
-    expect(k?.relation === "enemy" && k.armorClass).toEqual({ atLeast: null, atMost: null, prior: 15 });
+    const k = buildKnowledgeView(scene(), id("g1"), { ...NO_PRIORS, armorClass: 15, maxHitPoints: 25 }).knownCreatures.find((c) => c.creatureId === "cata");
+    expect(k?.relation === "enemy" && k.armorClass).toEqual({ atLeast: null, atMost: null, prior: 15, priorRange: null });
   });
 });
 
@@ -126,5 +126,19 @@ describe("lo que se ve hacer y lo que no se ve", () => {
     if (!hidden.applied) throw new Error(hidden.reason);
     const view = buildKnowledgeView(observeState(hidden.encounter), id("g1"));
     expect(view.knownCreatures.map((c) => c.creatureId)).toEqual(["g1"]);
+  });
+});
+
+describe("supuestos por nivel del grupo (tabla aprobada, SRD 5.2.1)", () => {
+  it("PG, intervalo de CA, Velocidad y ataque presunto", () => {
+    expect(priorsForPartyLevel(1)).toEqual({
+      armorClass: 14,
+      armorClassRange: { min: 11, max: 18 },
+      maxHitPoints: 10,
+      speedFeet: 30,
+      presumedAttack: { toHitBonus: 5, dice: { count: 1, sides: 8 }, damageBonus: 3, reachFeet: 5 },
+    });
+    expect(priorsForPartyLevel(3).maxHitPoints).toBe(23);
+    expect(priorsForPartyLevel(5)).toMatchObject({ maxHitPoints: 36, presumedAttack: { toHitBonus: 6 } });
   });
 });
