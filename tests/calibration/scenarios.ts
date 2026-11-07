@@ -105,7 +105,7 @@ export const SCENARIOS: readonly Scenario[] = [
       },
       d: { steps: [begin("attack"), { kind: "attack", attackId: shortbow, targetId: CAIN }, end] },
     },
-    answers: { pragmatic: "b", aggressive: "a" },
+    answers: { pragmatic: "b", aggressive: "a", pacifist: "b" },
   },
   {
     id: "E2",
@@ -125,7 +125,7 @@ export const SCENARIOS: readonly Scenario[] = [
       b: { steps: [{ kind: "move", path: line({ column: 5, row: 10 }, 1, 0, 3) }, begin("attack"), { kind: "attack", attackId: scimitar, targetId: CATA }, end] },
       c: { steps: [{ kind: "move", path: line({ column: 5, row: 10 }, 0, 1, 6) }, begin("dodge"), { kind: "standardAction", action: "dodge" }, end] },
     },
-    answers: { pragmatic: "a" },
+    answers: { pragmatic: "a", aggressive: "a", pacifist: "c" },
   },
   {
     id: "E3",
@@ -166,7 +166,43 @@ export const SCENARIOS: readonly Scenario[] = [
       },
       b: { steps: [{ kind: "move", path: line({ column: 10, row: 8 }, 0, 1, 3) }, begin("attack"), { kind: "attack", attackId: shortbow, targetId: CAIN }, end] },
     },
-    answers: { pragmatic: "a" },
+    answers: { pragmatic: "a", aggressive: "a", pacifist: "b" },
+  },
+  {
+    // Agresivo en peligro serio: 3 PG y Cata y Caín pegados a él.
+    id: "E5",
+    actorId: G,
+    encounter: withHp(
+      encounter([
+        [goblinDef(G), 5, 10],
+        [pc("cata", "melee-fighter", 16, 20), 6, 10],
+        [pc("cain", "ranged-spellcaster", 12, 14), 4, 10],
+      ]),
+      G,
+      3,
+    ),
+    options: {
+      a: { steps: [begin("attack"), { kind: "attack", attackId: scimitar, targetId: CAIN }, end] },
+      b: { steps: [nimble, { kind: "standardAction", action: "disengage" }, { kind: "move", path: line({ column: 5, row: 10 }, 0, 1, 6) }, end] },
+      c: { steps: [begin("dodge"), { kind: "standardAction", action: "dodge" }, end] },
+    },
+    answers: { aggressive: "a" },
+  },
+  {
+    // Pacifista que debe defenderse: sano, arrinconado, Cata pegada a él.
+    id: "E6",
+    actorId: G,
+    encounter: encounter([
+      [goblinDef(G), 0, 0],
+      [pc("cata", "melee-fighter", 16, 20), 1, 0],
+      [pc("cain", "ranged-spellcaster", 12, 14), 14, 20],
+    ]),
+    options: {
+      a: { steps: [begin("attack"), { kind: "attack", attackId: scimitar, targetId: CATA }, end] },
+      b: { steps: [begin("dodge"), { kind: "standardAction", action: "dodge" }, end] },
+      c: { steps: [nimble, { kind: "standardAction", action: "disengage" }, { kind: "move", path: line({ column: 0, row: 0 }, 0, 1, 6) }, end] },
+    },
+    answers: { pacifist: "b" },
   },
 ];
 

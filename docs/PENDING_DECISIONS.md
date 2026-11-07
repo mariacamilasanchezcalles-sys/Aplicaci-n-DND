@@ -134,6 +134,6 @@
 86. **Quién amenaza** (PROPUESTA): un enemigo amenaza si puede llegar con su Velocidad más el alcance de su mejor ataque; se cuenta un ataque por enemigo (sin Ataque extra ni Multiataque supuestos).
 87. **Salvaciones de jugadores en la simulación** (PROPUESTA): se supone que superan las de Daño masivo (el cerebro no cuenta con el shock).
 88. **Signos de los pesos por personalidad** (PROPUESTA, sacados del texto de la especificación): ver `PERSONALITY_SIGNS` en `tactical-brain/calibration.ts`.
-89. **Aprobar los pesos calculados** (tabla en `BRAIN_CALIBRATION.md` §4).
-90. **Más escenarios**: faltan casos de E1, E2 y E4 para agresivo y pacifista, y casos que pongan a prueba recursos, condiciones, riesgo para el agresivo y defensa propia para el pacifista (hoy su peso de amenaza inmediata es negativo: evita atacar incluso a quien le amenaza).
-91. **E3 "Destrabarse y huir"** se modeló sin Correr (Escapismo Ágil y mover 30 pies). Con Correr también, huir dejaría al goblin fuera del alcance de Cata y cambiaría las comparaciones. ¿Huir incluye Correr?
+89. **Aprobar los pesos calculados** (tabla en `BRAIN_CALIBRATION.md` §4, recalculada con 15 decisiones).
+90. **Más escenarios** (parcialmente resuelto: E1–E4 completos, E5 y E6 añadidos; quedan recursos, condiciones y un caso en que el agresivo deba evitar un riesgo inútil). Texto original: faltan casos de E1, E2 y E4 para agresivo y pacifista, y casos que pongan a prueba recursos, condiciones, riesgo para el agresivo y defensa propia para el pacifista (hoy su peso de amenaza inmediata es negativo: evita atacar incluso a quien le amenaza).
+91. ~~**E3 "Destrabarse y huir"**~~ → CONFIRMADO: sin Correr.

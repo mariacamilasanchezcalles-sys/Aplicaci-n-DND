@@ -47,24 +47,24 @@ automáticas, y los pesos se ajustan hasta cumplirlas (decisión 71).
 | E3 | Goblin con 2 PG (Maltrecho), Cata a su lado. | (a) Atacar a Cata. (b) Destrabarse y huir. (c) Esquivar. |
 | E4 | Dos goblins contra Cata sola; Caín lejos. | (a) Los dos rodean a Cata (flanqueo, Ventaja). (b) Uno va por Caín. |
 
-### Respuestas de la jugadora (personalidad **pragmática**, 2026-11-07)
-| # | Decisión correcta |
-|---|---|
-| E1 | **(b)** Cimitarra a Cata y Escapismo Ágil (Destrabarse) para alejarse. |
-| E2 | **(a)** Disparar a Caín. |
-| E3 | **(c)** Esquivar. |
-| E4 | **(a)** Los dos rodean a Cata (flanqueo). |
+Escenarios añadidos (2026-11-07):
 
-### Respuestas de la jugadora (personalidades **agresiva** y **pacifista**, 2026-11-07)
-| # | Agresivo | Pacifista |
+| # | Situación | Opciones |
 |---|---|---|
-| E1 | **(a)** Cimitarra a Cata y quedarse. | Pendiente |
-| E2 | Pendiente | Pendiente |
-| E3 | **(a)** Atacar a Cata. | **(b)** Destrabarse y huir. |
-| E4 | Pendiente | Pendiente |
+| E5 | Goblin con 3 PG, Cata y Caín pegados a él. | (a) Atacar (a Caín). (b) Destrabarse y alejarse 30 pies. (c) Esquivar. |
+| E6 | Goblin sano arrinconado en una esquina, Cata pegada a él. | (a) Atacar a Cata. (b) Esquivar. (c) Destrabarse y moverse lo que pueda. |
 
-Con estos 8 casos se puede empezar a calibrar. Los casos pendientes se añadirán como pruebas cuando
-la jugadora los decida.
+"Destrabarse y huir" (E3, E5, E6) = Escapismo Ágil y mover 30 pies, **sin Correr** (respuesta de la jugadora).
+
+### Decisiones de la jugadora (2026-11-07)
+| # | Pragmático | Agresivo | Pacifista |
+|---|---|---|---|
+| E1 | (b) Cimitarra a Cata y alejarse | (a) Cimitarra a Cata y quedarse | (b) Cimitarra a Cata y alejarse |
+| E2 | (a) Disparar a Caín | (a) Disparar a Caín | (c) Ponerse a salvo |
+| E3 | (c) Esquivar | (a) Atacar a Cata | (b) Destrabarse y huir |
+| E4 | (a) Rodear a Cata (flanqueo) | (a) Rodear a Cata (flanqueo) | (b) Ir por Caín |
+| E5 | — | (a) Atacar igualmente | — |
+| E6 | — | — | (b) Esquivar |
 
 ## 3. Rasgos que se miden (etapa 3, `tactical-brain/features.ts`)
 Todos en unidades naturales, calculados sobre el estado creído (sin datos ocultos):
@@ -85,23 +85,29 @@ Todos en unidades naturales, calculados sobre el estado creído (sin datos ocult
 Supuestos para medir el riesgo (PROPUESTA, decisión 85; derivados del SRD): un enemigo del que no
 se conocen ataques ataca con +(bonificador por competencia + 3) y 1d8 + 3 a 5 pies, con Velocidad 30.
 
-## 4. Pesos calculados (2026-11-07) — PENDIENTES DE APROBACIÓN
-Obtenidos con `npm run calibrate` a partir de los 8 casos decididos y de los signos que exige la
-descripción de cada personalidad (decisión 88). Guardados en `src/tactical-brain/personalities.json`.
+## 4. Pesos calculados (2026-11-07, 15 decisiones) — PENDIENTES DE APROBACIÓN
+Obtenidos con `npm run calibrate` a partir de las 15 decisiones y de los signos que exige la
+descripción de cada personalidad (decisión 88). Guardados en `src/tactical-brain/personalities.json`;
+`tests/calibration/decisions.test.ts` comprueba que cada personalidad elige lo decidido.
 
 | Rasgo | Pragmático | Agresivo | Pacifista |
 |---|---|---|---|
-| damageDealt | 0 | 1,466 | −3,062 |
-| threatReduction | 9,188 | 0 | 0 |
-| immediateThreatReduction | 1,1 | 3,063 | −3,062 |
-| finishingChance | 0 | 0,147 | −0,306 |
-| damageTaken | −4,14 | 0 | 0 |
-| deathRisk | 0 | 0 | 0 |
-| adjacentEnemies | −1 | 1 | −1 |
-| flankingPairs | 8 | 0 | 0 |
+| damageDealt | 0 | 1,466 | −5,209 |
+| threatReduction | 9,188 | 3,063 | −3,062 |
+| immediateThreatReduction | 1,1 | 0 | 2,513 |
+| finishingChance | 0 | 0,147 | −0,521 |
+| damageTaken | −4,14 | 0 | −0,42 |
+| deathRisk | 0 | 0 | −34,611 |
+| adjacentEnemies | −1 | 1 | −7 |
+| flankingPairs | 8 | 0 | −2 |
 | resourcesSpent | 0 | 0 | 0 |
 | conditionsInflicted | 0 | 0 | 0 |
 
-Lectura: con solo 8 casos, muchos pesos valen 0 porque **ningún escenario los ha puesto a prueba**
-todavía (por ejemplo, el agresivo aún no tiene ningún caso en el que deba evitar el peligro, y nadie
-tiene un caso con recursos o condiciones). Hacen falta más escenarios para que generalicen bien.
+Lectura:
+- **Pragmático:** valora sobre todo golpear a quien ha demostrado ser peligroso, evita el daño y
+  coopera (flanqueos).
+- **Agresivo:** valora el daño y castigar a quien hace daño; le gusta estar pegado al enemigo; **hoy
+  ignora el riesgo** (pesos 0) porque ningún caso le pide evitarlo (E5 pide lo contrario).
+- **Pacifista:** evita causar daño y quedarse junto a enemigos, teme mucho morir, y aun así golpea a
+  quien le amenaza de inmediato (defensa propia, E1).
+- Recursos y condiciones siguen sin casos: pesos 0.
