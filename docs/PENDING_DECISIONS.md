@@ -64,3 +64,9 @@
 34. **Turno separado del encuentro**: `TurnState` no se guarda con el encuentro (no hay iniciativa). Al diseñar la iniciativa, decidir si el turno en curso entra en el guardado (subiría el formato a v5).
 35. **Atacar a una criatura con 0 PG**: hoy se permite. Según el SRD, un monstruo muere al llegar a 0 PG; falta modelar la muerte y el estado de los personajes (decisión 8).
 36. **Ataques de personajes jugadores y criaturas sin CA**: un ataque contra una criatura sin CA no se resuelve (`targetArmorClassUnknown`). Relacionado con la decisión 28 (dados físicos).
+
+## Guía del DM 2014 (ver `HOUSE_RULES.md`)
+37. **Qué reglas opcionales usa la mesa** (flanquear, encaramiento, iniciativa por bandos, moral, daño masivo, marcar…). La guía es de 2014: solo vale como origen de reglas caseras, nunca como regla oficial.
+38. **Decisión 1 ("subirse a una criatura")**: ¿es la opción "Encaramarse a una criatura más grande" de la guía 2014 (p. 271)?
+39. **Configuración de mesa (`TableRules`)** para activar o desactivar reglas caseras por encuentro o campaña.
+40. **¿Hay Guía del DM 2024?** Sería la referencia preferible para las reglas opcionales.

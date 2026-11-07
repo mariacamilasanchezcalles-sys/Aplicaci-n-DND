@@ -40,6 +40,7 @@ Cada módulo solo puede importar los permitidos en `docs/ARCHITECTURE.md`; `test
 - [`docs/STATUS.md`](docs/STATUS.md): estado actual y siguiente etapa.
 - [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md): especificación ampliada vigente.
 - [`docs/SHEET_ARCHITECTURE.md`](docs/SHEET_ARCHITECTURE.md): fichas declarativas y acciones compuestas.
+- [`docs/HOUSE_RULES.md`](docs/HOUSE_RULES.md): reglas caseras y reglas opcionales candidatas.
 - [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md): brief original.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): módulos y dependencias.
 - [`docs/RULES_VERIFICATION.md`](docs/RULES_VERIFICATION.md): reglas 2024 verificadas, implementadas y pendientes.

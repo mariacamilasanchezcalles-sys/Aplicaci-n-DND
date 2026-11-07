@@ -2,7 +2,7 @@
 
 Aplicación de simulación de combate para Dungeons & Dragons donde los monstruos deciden de forma **algorítmica** (sin IA generativa). Objetivo: app Android instalable (APK) con Capacitor, sin conexión a internet, en TypeScript. Desarrollo en GitHub Codespaces.
 
-Especificación vigente: `docs/PROJECT_SPEC.md` (amplía el brief original `docs/PROJECT_BRIEF.md`). Estado actual: `docs/STATUS.md`. Fichas declarativas: `docs/SHEET_ARCHITECTURE.md`.
+Especificación vigente: `docs/PROJECT_SPEC.md` (amplía el brief original `docs/PROJECT_BRIEF.md`). Estado actual: `docs/STATUS.md`. Fichas declarativas: `docs/SHEET_ARCHITECTURE.md`. Reglas caseras y opcionales: `docs/HOUSE_RULES.md` (la *Guía del DM* que tiene la jugadora es de **2014**: solo sirve como origen de reglas caseras, nunca como fuente de reglas oficiales; no se copia al repositorio).
 
 ## Cómo trabajar aquí (obligatorio)
 - **Idioma:** español para documentación y comunicación; identificadores de código en inglés, comentarios en español.
