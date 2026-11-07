@@ -178,12 +178,22 @@ export function continueSimulation(
     }
     let result = port.apply(state, turn, effectiveCommand);
     if (!result.ok) return { ok: false, failedStep: index, reason: result.reasonCode };
-    // Reacciones provocadas por el movimiento: se cuentan y se dejan pasar.
+    // Reacciones provocadas (ataques de oportunidad y reacciones de ficha
+    // contra el actor): se supone que el enemigo las hace; se cuentan y se
+    // dejan pasar para seguir.
     while (result.ok && result.turn.pendingReactions.length > 0) {
       const pending = result.turn.pendingReactions[0]!;
-      const attackId = pending.attackIds[0];
-      const odds = attackId === undefined ? null : port.attackOdds(result.encounter, pending.reactorId, attackId, actorId);
-      provoked.push({ reactorId: pending.reactorId, expectedDamage: odds?.expectedDamage ?? 0, hitChance: odds?.hitChance ?? 0 });
+      const state = result.encounter;
+      const candidates =
+        pending.kind === "opportunityAttack"
+          ? pending.attackIds.slice(0, 1)
+          : pending.options.filter((o) => o.targetId === actorId).map((o) => o.attackId);
+      const odds = candidates
+        .map((attackId) => port.attackOdds(state, pending.reactorId, attackId, actorId))
+        .reduce<EstimatedAttackOdds | null>((best, o) => (o !== null && (best === null || o.expectedDamage > best.expectedDamage) ? o : best), null);
+      if (pending.kind === "opportunityAttack" || odds !== null) {
+        provoked.push({ reactorId: pending.reactorId, expectedDamage: odds?.expectedDamage ?? 0, hitChance: odds?.hitChance ?? 0 });
+      }
       result = port.apply(result.encounter, result.turn, { kind: "resolveReaction", reactorId: pending.reactorId, take: false });
     }
     // Salvaciones de jugadores pendientes (Daño masivo): en la simulación se

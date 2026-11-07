@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 27 archivos de prueba, 364 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 28 archivos de prueba, 370 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,11 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Reacciones de ficha (2026-11-07)
+- Reacciones con desencadenante "le impactan" o "recibe daño" y cuerpo de ataque: el motor las ofrece al terminar el ataque o efecto (`SheetReactionOpportunity`) y las resuelve con `resolveReaction` (objetivo elegido, costes, reacción gastada).
+- El cerebro las decide (`decideReaction`, igual que el ataque de oportunidad) y al planear cuenta las que provocaría, solo si su bando ya las ha visto (memoria `reactionTriggersSeen`).
+- Persistencia versión 12.
 
 ## Condiciones al impactar y Agarrado (2026-11-07)
 - Ataques con condiciones al impactar (`onHitConditions`, tamaño máximo opcional); fichas en formato 2 (las de formato 1 se migran).

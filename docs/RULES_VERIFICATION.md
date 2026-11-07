@@ -141,6 +141,12 @@ Texto leído directamente de la página del glosario de las Basic Rules 2024.
 | **Velocidad tras escapar** | La Velocidad es "la distancia que la criatura puede recorrer cuando se mueve en su turno"; Correr usa la Velocidad "tras aplicar modificadores" | "Speed", "Dash" | PENDIENTE DE VALIDAR (interpretación): al escapar recupera el movimiento del turno = Velocidad × (1 + veces que usó Correr) |
 | **Condiciones al impactar** | Las fichas de monstruo dicen lo que pasa al impactar (p. ej. "the target has the Grappled condition (escape DC 13)") | "Monsters", "Attack Notation" | `AttackDefinition.onHitConditions`, con tamaño máximo opcional |
 
+## Reacciones de ficha (verificado el 2026-11-07, Glosario 2024)
+| Regla | Texto (resumen fiel) | Fuente | Implementación |
+|---|---|---|---|
+| **Reacción** | Acción especial en respuesta a un desencadenante definido en su descripción; puede hacerse en el turno de otro; tras usarla no puede usar otra hasta el inicio de su siguiente turno | "Reaction" | `reactionAvailable`; reacciones de ficha con desencadenante "le impactan" o "recibe daño" y cuerpo de ataque |
+| **Momento** | (La regla no fija el instante exacto para cada desencadenante) | — | PROPUESTA (decisión 107): se resuelven al terminar el ataque o el efecto que las provoca |
+
 ## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
 | Regla | Texto oficial (resumen fiel) | Dónde se aplica |
 |---|---|---|

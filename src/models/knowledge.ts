@@ -1,6 +1,6 @@
 import type { AttackId, CreatureId } from "./ids";
 import type { CreatureSize, LifeState, SideId } from "./creature";
-import type { ConditionId } from "./sheet";
+import type { ConditionId, TriggerSpec } from "./sheet";
 import type { GridPosition } from "./position";
 
 /**
@@ -42,6 +42,8 @@ export interface CreatureMemory {
   /** Ataques y capacidades que se le han visto usar. */
   readonly attacksSeen: readonly AttackId[];
   readonly capabilitiesSeen: readonly string[];
+  /** Desencadenantes de las reacciones que se le han visto usar (p. ej. contraatacar al recibir un impacto). */
+  readonly reactionTriggersSeen: readonly TriggerSpec["kind"][];
   /** Daño que se le ha visto causar (amenaza observada). */
   readonly damageDealtSeen: number;
 }

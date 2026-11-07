@@ -12,8 +12,9 @@ import type { Encounter, EncounterId } from "../models";
  * v10: conocimiento compartido por bando (`sideKnowledge`).
  * v11: ataques con condiciones al impactar (`onHitConditions`), habilidades
  *      (`skills`) y Agarrado con la parte que agarra y su alcance.
+ * v12: memoria del bando con los desencadenantes de reacción vistos.
  */
-export const SNAPSHOT_SCHEMA_VERSION = 11 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 12 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

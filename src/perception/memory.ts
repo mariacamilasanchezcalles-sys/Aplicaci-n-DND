@@ -47,6 +47,7 @@ function emptyMemory(target: CombatantRecord): CreatureMemory {
     netDamageSeenWhileBloodied: null,
     attacksSeen: [],
     capabilitiesSeen: [],
+    reactionTriggersSeen: [],
     damageDealtSeen: 0,
   };
 }
@@ -133,9 +134,20 @@ export function observeLogEntries(encounter: Encounter, actorId: CreatureId, ent
   };
 
   for (const entry of entries) {
-    if (entry.kind === "attackResolved" || entry.kind === "opportunityAttack") {
+    if (entry.kind === "attackResolved" || entry.kind === "opportunityAttack" || entry.kind === "sheetReactionTaken") {
       const attackerId = entry.kind === "attackResolved" ? actorId : entry.reactorId;
       const attack = entry.kind === "attackResolved" ? entry : entry.attack;
+      if (entry.kind === "sheetReactionTaken") {
+        for (const side of sides) {
+          if (!perceives(side, attackerId)) continue;
+          const key = `sheet:${entry.capabilityId}`;
+          updated = updateMemory(updated, side, attackerId, (m) => ({
+            ...m,
+            capabilitiesSeen: addUnique(m.capabilitiesSeen, key),
+            reactionTriggersSeen: addUnique(m.reactionTriggersSeen, entry.trigger),
+          }));
+        }
+      }
       const attacker = updated.combatants[attackerId];
       if (!attacker) continue;
       const { resolution } = attack;

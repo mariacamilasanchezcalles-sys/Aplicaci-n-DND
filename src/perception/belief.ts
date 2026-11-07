@@ -1,6 +1,6 @@
 import type { ActiveCondition, CombatantRecord, Encounter } from "../models";
 import { asAttackId } from "../models";
-import type { AttackDefinition } from "../models";
+import type { AttackDefinition, Capability } from "../models";
 import type { Estimate, KnowledgePriors, KnowledgeView, KnownOther } from "./knowledge";
 import type { PresumedAttack } from "./priors";
 
@@ -59,6 +59,23 @@ export function estimatedCurrentHitPoints(known: KnownOther): number | null {
   return Math.max(1, max - (known.damageSeen - known.healingSeen));
 }
 
+/** Reacciones vistas (con desencadenante sin parámetros) como capacidades con el ataque supuesto. */
+function seenReactions(known: KnownOther): Capability[] {
+  return known.reactionTriggersSeen.flatMap((trigger): Capability[] =>
+    trigger === "selfHitByAttack" || trigger === "selfTakesDamage"
+      ? [
+          {
+            id: `seen-reaction-${trigger}`,
+            label: "Reacción vista",
+            activation: "reaction",
+            trigger: { kind: trigger },
+            body: { op: "attack", attackRef: PRESUMED_ATTACK_ID },
+          },
+        ]
+      : [],
+  );
+}
+
 function beliefRecord(known: KnownOther, priors: KnowledgePriors): CombatantRecord | null {
   if (known.position === null) return null;
   const maxHitPoints = pointEstimate(known.maxHitPoints);
@@ -79,6 +96,9 @@ function beliefRecord(known: KnownOther, priors: KnowledgePriors): CombatantReco
     attacks: priors.presumedAttack === null ? [] : [presumedAttackDefinition(priors.presumedAttack)],
     bonusActions: [],
     traits: [],
+    // Reacciones que se le han visto usar: se supone que las repite con su
+    // ataque supuesto (PROPUESTA, decisión 108).
+    ...(priors.presumedAttack === null || seenReactions(known).length === 0 ? {} : { capabilities: seenReactions(known) }),
   };
   return {
     definition:

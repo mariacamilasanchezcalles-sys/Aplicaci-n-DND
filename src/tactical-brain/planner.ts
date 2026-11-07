@@ -1,4 +1,4 @@
-import type { CreatureId, Encounter } from "../models";
+import type { AttackId, CreatureId, Encounter } from "../models";
 import type { KnowledgeView } from "../perception";
 import type { ExecutionOption, ReactionOpportunity, TurnState } from "../rules";
 import { computeFeatures, scoreFeatures } from "./features";
@@ -266,32 +266,53 @@ export function planTurn(
   return chosen === null ? null : { best: chosen, evaluated };
 }
 
+export interface ReactionDecision {
+  readonly attackId: AttackId;
+  readonly targetId: CreatureId;
+  /** Mejora de la puntuación frente a no reaccionar. */
+  readonly score: number;
+}
+
 /**
- * ¿Hace el ataque de oportunidad? (PROPUESTA, decisión 97). Compara el plan
- * "atacar ahora" con "dejarlo pasar" con los mismos rasgos y pesos: solo
- * cambian los rasgos de daño causado. Elige el ataque mejor puntuado si mejora
- * a no atacar; null = dejarlo pasar.
+ * ¿Reacciona? (PROPUESTA, decisión 97). Vale para el ataque de oportunidad y
+ * para las reacciones de ficha: compara cada ataque posible con "no
+ * reaccionar" con los mismos rasgos y pesos (cambian los rasgos de daño y
+ * condiciones causados y, si la reacción cuesta usos, los recursos). Elige la
+ * mejor si mejora a no reaccionar; null = dejarla pasar.
  */
-export function decideOpportunityAttack(
+export function decideReaction(
   port: SimulationPort,
   view: KnowledgeView,
   opportunity: ReactionOpportunity,
   weights: FeatureWeights,
   state: Encounter = port.belief,
-): { readonly attackId: ReactionOpportunity["attackIds"][number]; readonly score: number } | null {
+): ReactionDecision | null {
   const reactorId = opportunity.reactorId;
+  const options =
+    opportunity.kind === "opportunityAttack"
+      ? opportunity.attackIds.map((attackId) => ({ attackId, targetId: opportunity.moverId }))
+      : opportunity.options;
+  const reactor = state.combatants[reactorId];
+  const resourceCost =
+    opportunity.kind === "sheetReaction"
+      ? ((reactor?.definition.capabilities ?? []).find((c) => c.id === opportunity.capabilityId)?.costs ?? []).reduce(
+          (sum, c) => sum + (c.kind === "resource" ? c.amount : 0),
+          0,
+        )
+      : 0;
   const turn = port.startTurn(state, reactorId);
   const base = { ok: true as const, initial: state, final: state, turn, effects: [], provoked: [] };
   const decline = scoreFeatures(computeFeatures(port, view, reactorId, { ...base, attacks: [] }), weights);
-  let chosen: { attackId: ReactionOpportunity["attackIds"][number]; score: number } | null = null;
-  for (const attackId of opportunity.attackIds) {
-    const odds = port.attackOdds(state, reactorId, attackId, opportunity.moverId);
+  let chosen: ReactionDecision | null = null;
+  for (const { attackId, targetId } of options) {
+    const odds = port.attackOdds(state, reactorId, attackId, targetId);
     if (!odds) continue;
-    const take = scoreFeatures(
-      computeFeatures(port, view, reactorId, { ...base, attacks: [{ attackId, targetId: opportunity.moverId, odds }] }),
-      weights,
-    );
-    if (take > decline && (chosen === null || take - decline > chosen.score)) chosen = { attackId, score: take - decline };
+    const features = computeFeatures(port, view, reactorId, { ...base, attacks: [{ attackId, targetId, odds }] });
+    const take = scoreFeatures({ ...features, resourcesSpent: features.resourcesSpent + resourceCost }, weights);
+    if (take > decline && (chosen === null || take - decline > chosen.score)) chosen = { attackId, targetId, score: take - decline };
   }
   return chosen;
 }
+
+/** Atajo para el ataque de oportunidad (misma regla que `decideReaction`). */
+export const decideOpportunityAttack = decideReaction;

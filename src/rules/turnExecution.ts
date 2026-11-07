@@ -138,6 +138,14 @@ export type TurnLogEntry =
   | { readonly kind: "surrendered" }
   /** El movimiento interrumpido no pudo seguir (p. ej. quedó inconsciente o sin Velocidad). */
   | { readonly kind: "movementStopped"; readonly remainingPath: readonly GridPosition[] }
+  /** Reacción de ficha realizada (fuera del turno de quien reacciona). */
+  | {
+      readonly kind: "sheetReactionTaken";
+      readonly reactorId: CreatureId;
+      readonly capabilityId: string;
+      readonly trigger: SupportedReactionTrigger;
+      readonly attack: AttackOutcomeLog;
+    }
   /** Intento de escapar de un agarre (gasta la acción). */
   | { readonly kind: "escapeAttempt"; readonly grapplerId: CreatureId; readonly check: EscapeCheck }
   | { readonly kind: "turnEnded" };
@@ -207,12 +215,36 @@ export interface PendingSave {
 }
 
 /**
- * Oportunidad de reacción. Hoy solo el ataque de oportunidad (REGLA OFICIAL
- * VERIFICADA): una criatura que puede ver al que se mueve, cuando este sale de
- * su alcance con su propio movimiento; un ataque cuerpo a cuerpo justo antes
- * de que salga. Ampliable a reacciones de ficha (decisión 59).
+ * Oportunidad de reacción: el ataque de oportunidad o una reacción de ficha.
  */
-export interface ReactionOpportunity {
+export type ReactionOpportunity = OpportunityAttackOpportunity | SheetReactionOpportunity;
+
+/** Disparadores de reacción de ficha que el motor ya ofrece. */
+export const SUPPORTED_REACTION_TRIGGERS = ["selfHitByAttack", "selfTakesDamage"] as const;
+export type SupportedReactionTrigger = (typeof SUPPORTED_REACTION_TRIGGERS)[number];
+
+/**
+ * Reacción declarada en la ficha cuyo desencadenante acaba de ocurrir
+ * (PROPUESTA, decisión 107): se ofrece cuando termina el ataque o el efecto
+ * que la provoca. Hoy su cuerpo es un ataque (o una elección de ataques) con
+ * el objetivo que elija quien reacciona; `options` son los legales ahora.
+ */
+export interface SheetReactionOpportunity {
+  readonly kind: "sheetReaction";
+  readonly reactorId: CreatureId;
+  readonly capabilityId: string;
+  readonly trigger: SupportedReactionTrigger;
+  /** Quién lo provocó (el atacante o el origen del efecto). */
+  readonly triggeringCreatureId: CreatureId;
+  readonly options: readonly { readonly attackId: AttackId; readonly targetId: CreatureId }[];
+}
+
+/**
+ * Ataque de oportunidad (REGLA OFICIAL VERIFICADA): una criatura que puede
+ * ver al que se mueve, cuando este sale de su alcance con su propio
+ * movimiento; un ataque cuerpo a cuerpo justo antes de que salga.
+ */
+export interface OpportunityAttackOpportunity {
   readonly kind: "opportunityAttack";
   readonly reactorId: CreatureId;
   readonly moverId: CreatureId;
@@ -286,6 +318,8 @@ export type TurnCommand =
       readonly reactorId: CreatureId;
       readonly take: boolean;
       readonly attackId?: AttackId;
+      /** Reacción de ficha: objetivo elegido (uno de sus `options`). */
+      readonly targetId?: CreatureId;
       readonly attackInput?: AttackInput;
     }
   | { readonly kind: "forfeitRemaining" }
@@ -455,6 +489,76 @@ export function capabilitySourcesOf(definition: CombatantDefinition): Capability
   ].filter((source) => resolveCapability(definition, source) !== null);
 }
 
+/**
+ * Ataques de una reacción de ficha que el motor sabe ofrecer: desencadenante
+ * soportado y cuerpo "attack" o "choice" de ataques. null si no.
+ */
+function reactionAttackRefs(definition: CombatantDefinition, capabilityId: string): string[] | null {
+  const capability = (definition.capabilities ?? []).find((c) => c.id === capabilityId);
+  if (!capability || capability.activation !== "reaction" || !capability.trigger) return null;
+  if (!(SUPPORTED_REACTION_TRIGGERS as readonly string[]).includes(capability.trigger.kind)) return null;
+  if ((capability.costs ?? []).some((c) => c.kind !== "resource")) return null;
+  const body = capability.body;
+  if (body.op === "attack") return [body.attackRef];
+  if (body.op === "choice" && body.options.every((o) => o.op === "attack")) {
+    return body.options.flatMap((o) => (o.op === "attack" ? [o.attackRef] : []));
+  }
+  return null;
+}
+
+/**
+ * Reacciones de ficha provocadas por lo que registran `entries` (de la orden
+ * recién aplicada). Una por criatura y capacidad; solo si puede reaccionar,
+ * cumple requisitos, puede pagar y tiene algún ataque legal ahora.
+ */
+function triggeredSheetReactions(encounter: Encounter, actorId: CreatureId, entries: readonly TurnLogEntry[]): SheetReactionOpportunity[] {
+  const events: { targetId: CreatureId; sourceId: CreatureId; trigger: SupportedReactionTrigger }[] = [];
+  const fromAttack = (attackerId: CreatureId, attack: AttackOutcomeLog): void => {
+    if (attack.resolution.outcome !== "miss") events.push({ targetId: attack.targetId, sourceId: attackerId, trigger: "selfHitByAttack" });
+    if (attack.damageApplied > 0) events.push({ targetId: attack.targetId, sourceId: attackerId, trigger: "selfTakesDamage" });
+  };
+  for (const entry of entries) {
+    if (entry.kind === "attackResolved") fromAttack(actorId, entry);
+    else if (entry.kind === "opportunityAttack") fromAttack(entry.reactorId, entry.attack);
+    else if (entry.kind === "sheetReactionTaken") fromAttack(entry.reactorId, entry.attack);
+    else if (entry.kind === "effectResolved") {
+      for (const t of entry.targets) if (t.damageApplied > 0) events.push({ targetId: t.targetId, sourceId: actorId, trigger: "selfTakesDamage" });
+    }
+  }
+  const offered: SheetReactionOpportunity[] = [];
+  for (const event of events) {
+    const reactor = encounter.combatants[event.targetId];
+    if (!reactor || cannotAct(reactor) || !reactor.state.reactionAvailable || reactor.state.shock !== null) continue;
+    for (const capability of reactor.definition.capabilities ?? []) {
+      if (capability.trigger?.kind !== event.trigger) continue;
+      if (offered.some((o) => o.reactorId === event.targetId && o.capabilityId === capability.id)) continue;
+      const refs = reactionAttackRefs(reactor.definition, capability.id);
+      if (refs === null) continue;
+      const context: EvaluationContext = { actor: reactor, lastAttackHit: null };
+      if (!(capability.requirements ?? []).every((p) => evaluatePredicate(p, context))) continue;
+      const resourceCosts = (capability.costs ?? []).flatMap((c) => (c.kind === "resource" ? [c] : []));
+      if (spendResources(encounter, reactor.definition.id, resourceCosts) === null) continue;
+      const options = refs.flatMap((ref) =>
+        (Object.keys(encounter.combatants).sort() as CreatureId[])
+          .filter((id) => id !== reactor.definition.id && checkAttackTarget(encounter, reactor, reactor.state.position, asAttackIdOf(ref), id).ok)
+          .map((targetId) => ({ attackId: asAttackIdOf(ref), targetId })),
+      );
+      if (options.length === 0) continue;
+      offered.push({
+        kind: "sheetReaction",
+        reactorId: reactor.definition.id,
+        capabilityId: capability.id,
+        trigger: event.trigger,
+        triggeringCreatureId: event.sourceId,
+        options,
+      });
+    }
+  }
+  return offered;
+}
+
+const asAttackIdOf = (ref: string): AttackId => ref as AttackId;
+
 function predicateSupported(predicate: SheetPredicate): boolean {
   switch (predicate.kind) {
     case "selfBloodied":
@@ -484,7 +588,9 @@ export function capabilitySupport(
   const resolved = resolveCapability(definition, source);
   if (!resolved) return ["unknownReference"];
   const issues = new Set<CapabilitySupportIssue>();
-  if (resolved.activation === "reaction") issues.add("reactionsNotModeled");
+  if (resolved.activation === "reaction" && (source.kind !== "sheet" || reactionAttackRefs(definition, source.capabilityId) === null)) {
+    issues.add("reactionsNotModeled");
+  }
   for (const cost of resolved.costs) {
     if (cost.kind === "spellSlot") issues.add("costsNotModeled");
     else if (!(definition.resources ?? []).some((r) => r.id === cost.resourceRef)) issues.add("unknownReference");
@@ -1012,7 +1118,12 @@ export function applyTurnCommand(
   const result = applyTurnCommandCore(encounter, turn, command, dice);
   if (!result.ok) return result;
   // Agarres que terminan por distancia o porque quien agarra quedó Incapacitado.
-  return applyHouseRuleHooks(endBrokenGrapples(result.encounter), result.turn, turn.log.length, dice);
+  const updated = endBrokenGrapples(result.encounter);
+  // Reacciones de ficha provocadas por lo que acaba de pasar.
+  const triggered = triggeredSheetReactions(updated, turn.actorId, result.turn.log.slice(turn.log.length));
+  const withReactions =
+    triggered.length === 0 ? result.turn : { ...result.turn, pendingReactions: [...result.turn.pendingReactions, ...triggered] };
+  return applyHouseRuleHooks(updated, withReactions, turn.log.length, dice);
 }
 
 /**
@@ -1028,7 +1139,9 @@ function applyHouseRuleHooks(encounter: Encounter, turn: TurnState, fromLog: num
   for (const entry of turn.log.slice(fromLog)) {
     const sum = (instances: readonly ModifiedDamage[]): number => instances.reduce((t, i) => t + i.final, 0);
     if (entry.kind === "attackResolved") events.push({ targetId: entry.targetId, amount: sum(entry.damageAfterDefenses) });
-    if (entry.kind === "opportunityAttack") events.push({ targetId: entry.attack.targetId, amount: sum(entry.attack.damageAfterDefenses) });
+    if (entry.kind === "opportunityAttack" || entry.kind === "sheetReactionTaken") {
+      events.push({ targetId: entry.attack.targetId, amount: sum(entry.attack.damageAfterDefenses) });
+    }
     if (entry.kind === "effectResolved") {
       for (const t of entry.targets) events.push({ targetId: t.targetId, amount: sum(t.damageAfterDefenses) });
     }
@@ -1512,7 +1625,7 @@ function opportunityReactors(
   from: GridPosition,
   to: GridPosition,
   turn: TurnState,
-): ReactionOpportunity[] {
+): OpportunityAttackOpportunity[] {
   if (turn.disengaged) return [];
   return (Object.keys(encounter.combatants).sort() as CreatureId[]).flatMap((id) => {
     const reactor = encounter.combatants[id];
@@ -1603,7 +1716,49 @@ function resolveReaction(
   if (!pending) return fail("noPendingReaction");
   let updated = encounter;
   const entries: TurnLogEntry[] = [];
-  if (command.take) {
+  if (pending.kind === "sheetReaction") {
+    if (command.take) {
+      const reactor = encounter.combatants[pending.reactorId];
+      if (!reactor || cannotAct(reactor) || !reactor.state.reactionAvailable || reactor.state.shock !== null) return fail("reactionNotAvailable");
+      const choice = pending.options.find(
+        (o) => (command.attackId === undefined || o.attackId === command.attackId) && (command.targetId === undefined || o.targetId === command.targetId),
+      );
+      if (!choice) return fail("unknownOption");
+      const capability = (reactor.definition.capabilities ?? []).find((c) => c.id === pending.capabilityId);
+      if (!capability) return fail("capabilityUnavailable");
+      // Los costes se pagan al realizarla (todos o ninguno).
+      const paid = spendResources(encounter, reactor.definition.id, (capability.costs ?? []).flatMap((c) => (c.kind === "resource" ? [c] : [])));
+      if (paid === null) return fail("resourcesUnavailable");
+      const payer = paid.combatants[pending.reactorId]!;
+      const check = checkAttackTarget(paid, payer, payer.state.position, choice.attackId, choice.targetId);
+      if (!check.ok) return fail("unknownOption");
+      const mode = attackConditions(
+        paid,
+        payer,
+        check.target,
+        check.distanceFeet,
+        check.beyondNormalRange,
+        check.attack.mode,
+        check.attack.mode === "melee" && isFlanking(paid, payer, check.target),
+      ).mode;
+      const performed = performAttack(paid, payer, choice.attackId, choice.targetId, mode, dice, command.attackInput ?? {}, { duringOwnTurn: false });
+      if (!performed.ok) return fail(performed.reasonCode);
+      const after = performed.encounter.combatants[pending.reactorId]!;
+      updated = {
+        ...performed.encounter,
+        combatants: { ...performed.encounter.combatants, [pending.reactorId]: { ...after, state: { ...after.state, reactionAvailable: false } } },
+      };
+      entries.push({
+        kind: "sheetReactionTaken",
+        reactorId: pending.reactorId,
+        capabilityId: pending.capabilityId,
+        trigger: pending.trigger,
+        attack: performed.log,
+      });
+    } else {
+      entries.push({ kind: "reactionDeclined", reactorId: pending.reactorId });
+    }
+  } else if (command.take) {
     const reactor = encounter.combatants[pending.reactorId];
     if (!reactor || cannotAct(reactor) || (!pending.viaMark && !reactor.state.reactionAvailable)) return fail("reactionNotAvailable");
     const attackId = command.attackId ?? pending.attackIds[0];

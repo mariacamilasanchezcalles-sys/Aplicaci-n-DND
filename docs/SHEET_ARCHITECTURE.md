@@ -73,6 +73,13 @@ expresan con el **mismo formato**, como capacidades integradas del motor y no de
 
 Así hay un único ejecutor para todo.
 
+**Reacciones de ficha que el motor ejecuta hoy** (decisión 107): desencadenante `selfHitByAttack`
+o `selfTakesDamage`, y cuerpo `attack` o `choice` de ataques (el objetivo lo elige quien reacciona).
+Se ofrecen al terminar el ataque o el efecto que las provoca, con sus requisitos y costes, si la
+criatura puede actuar y tiene la reacción disponible. Los demás desencadenantes
+(`selfTargetedByAttack`, `creatureLeavesReach`, `creatureEntersArea`, `selfDropsToZeroHitPoints`,
+`creatureTakesAction`) y otros cuerpos siguen como `reactionsNotModeled`.
+
 ## 3. Catálogo de efectos (`EffectSpec`)
 `damage` (dados opcionales, bonificador, tipo, condición `attackRollHadAdvantage`), `heal`,
 `tempHitPoints`, `applyCondition` (con `DurationSpec` y, desde el formato 2, `targetMaxSize`

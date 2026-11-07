@@ -8,6 +8,7 @@ import type {
   GridPosition,
   LifeState,
   SideId,
+  TriggerSpec,
 } from "../models";
 import { sidePerceives } from "./memory";
 import type { PresumedAttack } from "./priors";
@@ -83,6 +84,7 @@ export interface KnownOther {
   readonly healingSeen: number;
   readonly attacksSeen: readonly AttackId[];
   readonly capabilitiesSeen: readonly string[];
+  readonly reactionTriggersSeen: readonly TriggerSpec["kind"][];
   /** Daño que se le ha visto causar (amenaza observada). */
   readonly damageDealtSeen: number;
 }
@@ -148,6 +150,7 @@ export function buildKnowledgeView(
       healingSeen: m.healingSeen,
       attacksSeen: m.attacksSeen,
       capabilitiesSeen: m.capabilitiesSeen,
+      reactionTriggersSeen: m.reactionTriggersSeen,
       damageDealtSeen: m.damageDealtSeen,
     });
   }
