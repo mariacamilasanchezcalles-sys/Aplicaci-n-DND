@@ -3,6 +3,16 @@
 ## Resueltas
 7 PG del goblin provisionales · coordenadas desde 0 · casillas de 5 pies · diagonal alternada 1-2-1-2 (regla de mesa del DM) · el azar solo en los dados · Escapismo Ágil como acción adicional propia · ocupación por tamaño · mapa de 15 x 21 con 5 x 9 visibles · se puede atravesar, y actuar en, una casilla ocupada por criaturas Diminutas, Pequeñas o Medianas (coste normal, sin terreno difícil) pero no terminar el turno en ella. Detalle en `RULES_VERIFICATION.md`.
 
+## Resueltas el 2026-11-07 (preguntas a la jugadora)
+- **16 → Guardado:** local en el dispositivo como base (sin conexión); Firebase solo como copia/sincronización **opcional** si hay conexión y está configurado.
+- **19 → Fichas:** arquitectura aprobada; la **personalidad y la dificultad** se asignan en el encuentro, no en la ficha.
+- **20 → Ejecución:** el cerebro planea el turno completo y se ejecuta **operación por operación**, con reevaluación sobre el estado real y revalidación por el motor antes de cada operación.
+- **21 → Acciones estándar** (Atacar, Correr, Destrabarse…) y **ataque de oportunidad**: con el mismo formato que las capacidades de ficha, como capacidades integradas del motor (un solo ejecutor).
+- **22 → Costes:** activación y recursos se pagan una sola vez al iniciar y no se devuelven. Una operación `capability` no paga la activación de la capacidad usada, pero **sí** gasta sus recursos.
+- **23 → Renuncia:** si un paso queda sin opción legal se pierde y se registra; además el monstruo **puede renunciar voluntariamente** a los pasos restantes.
+- **31 → Reglas caseras:** siguen vigentes la diagonal 1-2-1-2 y atravesar criaturas Diminutas, Pequeñas y Medianas (aliadas o enemigas) a coste normal.
+- **Siguiente etapa:** verificar en SRD 5.2.1 el vocabulario (decisión 26), Recharge y si se puede mover entre ataques de Multiataque (24); después, ejecutor de capacidades solo para ataques y acciones estándar, con pruebas de invariantes.
+
 ## Mapa y movimiento
 1. **Subirse a una criatura.** Atravesar no es terreno difícil "a menos que quiera subir en la criatura". No está modelado: ¿qué significa subir, cuánto cuesta y se puede subir a criaturas Grandes o mayores (hoy bloquean el paso)?
 2. **Terreno difícil del mapa** (cada casilla cuesta el doble): hoy el terreno es siempre abierto.

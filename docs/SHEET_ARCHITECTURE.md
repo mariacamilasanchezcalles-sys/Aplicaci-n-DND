@@ -1,5 +1,7 @@
 # Arquitectura de fichas declarativas y acciones compuestas
 
+> **Actualización 2026-11-07:** la jugadora aprobó los puntos 0 (personalidad en el encuentro), 2 (acciones estándar como capacidades integradas), 5 (costes al iniciar; `capability` gasta recursos pero no activación) y 8 (plan + reevaluación, con renuncia voluntaria a pasos restantes). Pasan de PROPUESTA a **DECISIÓN CONFIRMADA**; ver `PENDING_DECISIONS.md`.
+
 Estado de cada punto, con las etiquetas del proyecto:
 **DECISIÓN CONFIRMADA** (aprobada por la jugadora), **PROPUESTA** (pendiente de aprobación),
 **PENDIENTE DE VALIDAR** (falta verificar en fuente oficial), **REGLA OFICIAL VERIFICADA**,
