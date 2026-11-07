@@ -3,6 +3,7 @@ import type {
   AttackDefinition,
   BonusActionActionType,
   BonusActionDefinition,
+  Capability,
   CreatureSheet,
   DamageSpec,
   MonsterDefinition,
@@ -18,13 +19,7 @@ import type {
  */
 
 export type AdapterGapReason =
-  /** Capacidad de acción con operaciones (p. ej. Multiataque): falta el ejecutor de capacidades. */
-  | "capabilityNotExecutable"
-  /** Acción adicional con costes, requisitos u operaciones distintas de acciones estándar. */
-  | "bonusActionNotRepresentable"
-  /** Reacciones: faltan el sistema de eventos y la reacción en el motor. */
-  | "reactionNotSupported"
-  /** Efectos de un ataque distintos del daño (condición, empujón…) o efectos al fallar. */
+  /** Ataque con efectos distintos del daño o efectos al fallar: se omite de la criatura. */
   | "attackEffectNotSupported"
   | "spellcastingNotSupported"
   | "resourcesNotSupported"
@@ -77,61 +72,61 @@ export function combatantFromSheet(
 ): CombatantFromSheet {
   const gaps: AdapterGap[] = [];
 
-  const attacks: AttackDefinition[] = (sheet.attacks ?? []).map((attack, index) => {
-    const damage: DamageSpec[] = [];
-    attack.onHit.forEach((effect, i) => {
-      if (effect.kind !== "damage") {
-        gaps.push({ path: `attacks[${index}].onHit[${i}]`, reason: "attackEffectNotSupported" });
-        return;
-      }
-      damage.push({
-        // Daño fijo (sin dados): 0 dados, solo el bonificador.
-        dice: effect.dice ?? { count: 0, sides: 1 },
-        bonus: effect.bonus,
-        type: effect.damageType,
-        ...(effect.condition === undefined ? {} : { condition: effect.condition }),
-      });
-    });
-    if (attack.onMiss) gaps.push({ path: `attacks[${index}].onMiss`, reason: "attackEffectNotSupported" });
-    return {
+  // Un ataque con efectos que el modelo no puede representar (condición,
+  // empujón, efectos al fallar…) NO se incluye: ejecutarlo solo con su daño
+  // sería aproximarlo. Las capacidades que lo usen quedan no ejecutables.
+  const attacks: AttackDefinition[] = [];
+  (sheet.attacks ?? []).forEach((attack, index) => {
+    const unsupported =
+      attack.onHit.some((effect) => effect.kind !== "damage") ||
+      attack.onMiss !== undefined ||
+      attack.onHitOrMiss !== undefined;
+    if (unsupported) {
+      gaps.push({ path: `attacks[${index}]`, reason: "attackEffectNotSupported" });
+      return;
+    }
+    const damage: DamageSpec[] = attack.onHit.flatMap((effect) =>
+      effect.kind === "damage"
+        ? [
+            {
+              // Daño fijo (sin dados): 0 dados, solo el bonificador.
+              dice: effect.dice ?? { count: 0, sides: 1 },
+              bonus: effect.bonus,
+              type: effect.damageType,
+              ...(effect.condition === undefined ? {} : { condition: effect.condition }),
+            },
+          ]
+        : [],
+    );
+    attacks.push({
       id: asAttackId(attack.id),
       label: attack.label,
       mode: attack.mode,
       rangeFeet: attack.rangeFeet,
       toHitBonus: attack.toHitBonus,
       damage,
-    };
+    });
   });
 
+  // Acciones adicionales sencillas (solo acciones estándar, sin costes ni
+  // requisitos) van al modelo clásico `bonusActions`, que también entiende
+  // `validateTurnPlan`. El resto de capacidades pasa tal cual a
+  // `capabilities`; qué puede ejecutar el motor lo decide `rules`
+  // (`capabilitySupport`), no este puente.
   const bonusActions: BonusActionDefinition[] = [];
-  (sheet.capabilities ?? []).forEach((capability, index) => {
-    const path = `capabilities[${index}]`;
-    switch (capability.activation) {
-      case "action":
-        gaps.push({ path, reason: "capabilityNotExecutable" });
-        break;
-      case "reaction":
-        gaps.push({ path, reason: "reactionNotSupported" });
-        break;
-      case "bonusAction": {
-        const allowed = standardActionsOf(capability.body);
-        const plain =
-          (capability.costs ?? []).length === 0 &&
-          (capability.requirements ?? []).length === 0 &&
-          capability.concentration !== true;
-        if (allowed === null || !plain) {
-          gaps.push({ path, reason: "bonusActionNotRepresentable" });
-        } else {
-          bonusActions.push({
-            id: asBonusActionId(capability.id),
-            label: capability.label,
-            allowedActions: allowed,
-          });
-        }
-        break;
-      }
+  const capabilities: Capability[] = [];
+  for (const capability of sheet.capabilities ?? []) {
+    const allowed = capability.activation === "bonusAction" ? standardActionsOf(capability.body) : null;
+    const plain =
+      (capability.costs ?? []).length === 0 &&
+      (capability.requirements ?? []).length === 0 &&
+      capability.concentration !== true;
+    if (allowed !== null && plain) {
+      bonusActions.push({ id: asBonusActionId(capability.id), label: capability.label, allowedActions: allowed });
+    } else {
+      capabilities.push(capability);
     }
-  });
+  }
 
   if (sheet.spellcasting) gaps.push({ path: "spellcasting", reason: "spellcastingNotSupported" });
   if ((sheet.resources ?? []).length > 0) gaps.push({ path: "resources", reason: "resourcesNotSupported" });
@@ -160,6 +155,7 @@ export function combatantFromSheet(
       attacks,
       bonusActions,
       traits: (sheet.traits ?? []).map((trait) => ({ id: asTraitId(trait.id), label: trait.label })),
+      ...(capabilities.length > 0 ? { capabilities } : {}),
     },
     gaps,
   };

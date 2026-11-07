@@ -61,7 +61,31 @@ Limitaciones: el texto se extrajo con una herramienta de lectura web, no leyendo
 - Texto general de Extra Attack y Multiattack.
 - Acciones Help, Influence, Magic, Ready, Search, Study, Utilize: el motor las rechaza con `actionNotYetModeled` porque faltan datos (conjuros, disparador de Ready, objetivos).
 
-## Vocabulario de las fichas (PENDIENTE DE VALIDAR)
+## Verificación del 2026-11-07 (fuente leída directamente)
+Fuentes: Rules Glossary de las Basic Rules 2024 (D&D Beyond, HTML completo) y PDF oficial **SRD_CC_v5.2.1.pdf** (`media.dndbeyond.com`), capítulos "Playing the Game" y "Monsters". Esta vez se leyó el texto completo, no un resumen.
+
+| Regla | Texto oficial (resumen fiel) | Fuente | Dónde se aplica |
+|---|---|---|---|
+| **Tipos de daño (13)** | Acid, Bludgeoning, Cold, Fire, Force, Lightning, Necrotic, Piercing, Poison, Psychic, Radiant, Slashing, Thunder. No tienen reglas propias | Glosario, "Damage Types" | `DamageType` |
+| **Condiciones (15)** | Blinded, Charmed, Deafened, Exhaustion, Frightened, Grappled, Incapacitated, Invisible, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned, Unconscious | Glosario, entradas "[Condition]" | `ConditionId` (sin efectos todavía) |
+| **Tipos de criatura (14)** | Aberration, Beast, Celestial, Construct, Dragon, Elemental, Fey, Fiend, Giant, Humanoid, Monstrosity, Ooze, Plant, Undead | Glosario, "Creature Type" | `CreatureTypeId` |
+| **Áreas (6)** | Cone, Cube, Cylinder, Emanation, Line, Sphere | Glosario, "Area of Effect" | `AreaShape` |
+| **Habilidades (18)** | Tabla de habilidades del SRD | SRD 5.2.1, p. 8 | `SkillId` |
+| **Acción de Atacar** | Permite **una** tirada de ataque. "Moving between Attacks": si un rasgo da más de un ataque como parte de la acción de Atacar, se puede usar movimiento entre esos ataques | Glosario, "Attack [Action]" | Ataque estándar con un ataque; `canMove` entre ataques solo con `takenAs: "attack"` |
+| **Multiataque** | "Some creatures can make more than one attack when they take the Attack action… This entry details the attacks… as part of the Attack action" | SRD 5.2.1, Monsters, "Multiattack" | `Capability.takenAs: "attack"` |
+| **Mover entre ataques de Multiataque** | Se deduce de las dos filas anteriores: el Multiataque da varios ataques como parte de la acción de Atacar, así que se aplica "Moving between Attacks". Es una deducción, no una frase literal | Combinación de ambas | Ejecutor (`canMoveNow`) |
+| **Recarga X–Y** | Se puede usar una vez; al inicio de cada turno del monstruo se tira 1d6 y, si sale en el rango, se recupera; también se recupera con un descanso corto o largo | SRD 5.2.1, Monsters, "Limited Usage" | `RecoverySpec.recharge` (sin implementar) |
+| **X/Day** | Se recuperan los usos con un descanso largo | Ídem | Sin implementar |
+| **Orden de modificadores de daño** | Primero bonificadores, penalizadores y multiplicadores; después Resistencia (mitad, redondeando hacia abajo); por último Vulnerabilidad (doble). No se acumulan. La Inmunidad anula el daño | SRD 5.2.1, "Damage and Healing" | Sin implementar |
+| **Maltrecha (Bloodied)** | La mitad de sus PG o menos | Glosario, "Bloodied" | Predicado `selfBloodied` |
+| **Incapacitado** | No puede realizar acciones, acciones adicionales ni reacciones; pierde la Concentración | Glosario | Sin implementar (no hay condiciones) |
+| **Esquivar** | Hasta el inicio de su siguiente turno: las tiradas de ataque contra ella tienen Desventaja si ve al atacante, y tiene Ventaja en las salvaciones de Destreza. Lo pierde si queda Incapacitada o con Velocidad 0 | Glosario, "Dodge" | Solo se registra `dodging`; sin efectos todavía |
+| **Destrabarse** | Su movimiento no provoca ataques de oportunidad durante el resto del turno | Glosario | Solo se registra `disengaged` |
+| **Correr** | Movimiento extra igual a su Velocidad (con los modificadores aplicados) | Glosario, "Dash" | `budgetFeet += speedFeet` |
+| **Muerte de monstruos** | Un monstruo muere en el instante en que llega a 0 PG, aunque el DM puede tratarlo como a un personaje | SRD 5.2.1, "Instant Death" | Sin implementar |
+| **Notación de ataques** | "Hit:", "Miss:" y "Hit or Miss:"; un ataque tiene un solo objetivo salvo que se diga otra cosa. "Half damage only": la mitad del daño, ignorando el resto del efecto | SRD 5.2.1, Monsters | `onHit`, `onMiss`, `onHitOrMiss`; `halfDamage` |
+
+## Vocabulario de las fichas (VERIFICADO el 2026-11-07, ver arriba)
 Las fichas declarativas (`src/models/sheet.ts`) usan listas cerradas que deben cotejarse con SRD 5.2.1: 13 tipos de daño, 15 condiciones, 14 tipos de criatura, 6 formas de área, 18 habilidades y la mecánica de Recharge. Se escribieron a partir de la especificación de la jugadora y del conocimiento general de las reglas 2024, **sin** leer la fuente en esta etapa.
 
 La ficha `data/sheets/goblin-warrior.json` contiene solo datos ya verificados en la tabla de arriba (tamaño, CA, 10 PG, Velocidad, ataques y Nimble Escape). Se omitieron a propósito las puntuaciones de característica, el tipo de criatura y la fórmula de PG porque no se verificaron.

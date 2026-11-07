@@ -1,0 +1,78 @@
+{
+  "sheetFormat": 1,
+  "id": "test-skirmisher",
+  "label": "Hostigador de prueba",
+  "source": { "kind": "testFixture", "reference": "Ficha inventada para probar el ejecutor; no es una criatura oficial" },
+  "size": "medium",
+  "armorClass": 14,
+  "hitPoints": { "average": 20 },
+  "speed": { "walk": 30 },
+  "attacks": [
+    {
+      "id": "claw",
+      "label": "Garra",
+      "mode": "melee",
+      "rangeFeet": { "normal": 5 },
+      "toHitBonus": 5,
+      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 3, "damageType": "slashing" }]
+    },
+    {
+      "id": "javelin",
+      "label": "Jabalina",
+      "mode": "ranged",
+      "rangeFeet": { "normal": 30, "long": 120 },
+      "toHitBonus": 5,
+      "onHit": [{ "kind": "damage", "dice": { "count": 1, "sides": 6 }, "bonus": 3, "damageType": "piercing" }]
+    },
+    {
+      "id": "bite",
+      "label": "Mordisco",
+      "mode": "melee",
+      "rangeFeet": { "normal": 5 },
+      "toHitBonus": 5,
+      "onHit": [{ "kind": "damage", "bonus": 2, "damageType": "piercing" }]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "multiattack",
+      "label": "Multiataque",
+      "activation": "action",
+      "takenAs": "attack",
+      "body": {
+        "op": "sequence",
+        "steps": [
+          {
+            "op": "repeat",
+            "times": 2,
+            "body": { "op": "choice", "options": [{ "op": "attack", "attackRef": "claw" }, { "op": "attack", "attackRef": "javelin" }] }
+          },
+          {
+            "op": "conditional",
+            "when": { "kind": "previousAttackHit" },
+            "then": { "op": "optional", "body": { "op": "attack", "attackRef": "bite" } }
+          }
+        ]
+      }
+    },
+    {
+      "id": "lunge",
+      "label": "Embestida",
+      "activation": "action",
+      "body": { "op": "sequence", "steps": [{ "op": "attack", "attackRef": "claw" }, { "op": "attack", "attackRef": "claw" }] }
+    },
+    {
+      "id": "rally",
+      "label": "Arrebato",
+      "activation": "bonusAction",
+      "requirements": [{ "kind": "selfBloodied" }],
+      "body": { "op": "standardAction", "action": "dash" }
+    },
+    {
+      "id": "howl",
+      "label": "Aullido",
+      "activation": "bonusAction",
+      "body": { "op": "unmodeled", "note": "Asusta a los cercanos" }
+    }
+  ]
+}

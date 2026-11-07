@@ -28,7 +28,7 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 | Módulo | Puede importar | Función |
 |---|---|---|
 | `models` | nada | Tipos de datos (ids, acciones, criaturas, encuentro). Sin reglas. |
-| `rules` | models | Motor de reglas: colocación, ocupación por tamaño, distancia, movimiento, economía de acciones, dados, resolución de ataques, daño. |
+| `rules` | models | Motor de reglas: colocación, ocupación por tamaño, distancia, movimiento, economía de acciones, dados, resolución de ataques, daño y **ejecutor de turno paso a paso** (`turnExecution.ts`). |
 | `perception` | models | Contrato de lo que cada criatura conoce. Sin implementación. |
 | `tactical-brain` | models, perception | Contrato de entrada/salida y punto de integración vacío. **Sin algoritmo.** |
 | `persistence` | models | Interfaz de guardado/carga, JSON, almacén en memoria. |
@@ -67,4 +67,4 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 - Dados: el 1d4 extra del Goblin con ventaja es un componente de daño condicionado (`condition: "attackRollHadAdvantage"`).
 
 ## Lo que NO está hecho (no lo inventes)
-Ejecutor de capacidades compuestas y efectos (solo diseño en `docs/SHEET_ARCHITECTURE.md`), generación de acciones legales (`getLegalActions`), cerebro táctico, percepción, iniciativa y turnos, ataques de oportunidad, condiciones y visibilidad (Hide, Invisible), llegar a 0 PG, acciones Help/Influence/Magic/Ready/Search/Study/Utilize, empaquetado con Capacitor y pantallas (prototipo pausado; guardado en el commit `62634f7`). Lista completa y numerada en `docs/PENDING_DECISIONS.md`.
+Ejecución de efectos, recursos, costes, conjuros, condiciones y reacciones (el ejecutor solo cubre ataques y Atacar, Correr, Destrabarse y Esquivar), generación de acciones legales (`getLegalActions`), cerebro táctico, percepción, iniciativa y turnos, ataques de oportunidad, condiciones y visibilidad (Hide, Invisible), llegar a 0 PG, acciones Help/Influence/Magic/Ready/Search/Study/Utilize, empaquetado con Capacitor y pantallas (prototipo pausado; guardado en el commit `62634f7`). Lista completa y numerada en `docs/PENDING_DECISIONS.md`.

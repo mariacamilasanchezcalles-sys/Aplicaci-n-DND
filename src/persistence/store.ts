@@ -3,8 +3,9 @@ import type { Encounter, EncounterId } from "../models";
 /**
  * v3: criaturas con tamaño y acciones adicionales propias, regla diagonal en
  * el mapa y política de ocupación por espacio.
+ * v4: criaturas con capacidades declarativas opcionales (`capabilities`).
  */
-export const SNAPSHOT_SCHEMA_VERSION = 3 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 4 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

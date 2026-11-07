@@ -1,8 +1,8 @@
-import type { GridPosition, StandardActionType, TurnPlan, Encounter } from "../models";
-import { footprintDistanceSquares } from "./distance";
-import { stepCost } from "./movement";
-import { validateGridSquare, validatePassage, validatePlacement } from "./placement";
+import type { StandardActionType, TurnPlan, Encounter } from "../models";
+import { validatePlacement } from "./placement";
 import type { PlacementReason } from "./placement";
+import { advanceMovement, checkAttackTarget } from "./turnSteps";
+import type { MovementProgress } from "./turnSteps";
 
 export type IllegalReason =
   | "unknownActor"
@@ -82,12 +82,9 @@ export function validateTurnPlan(encounter: Encounter, plan: TurnPlan): Legality
   if (!actor) return illegal("unknownActor", null);
 
   const { definition } = actor;
-  const { feetPerSquare, diagonalRule } = encounter.grid;
   const speedFeet = definition.stats.speedFeet;
 
-  let position: GridPosition = actor.state.position;
-  let diagonalCount = 0;
-  let spentFeet = 0;
+  let progress: MovementProgress = { position: actor.state.position, diagonalCount: 0, spentFeet: 0 };
   let budgetFeet: number | null = speedFeet ?? null;
   let actionsUsed = 0;
   let bonusActionsUsed = 0;
@@ -100,39 +97,12 @@ export function validateTurnPlan(encounter: Encounter, plan: TurnPlan): Legality
   for (const [stepIndex, step] of plan.steps.entries()) {
     switch (step.slot) {
       case "movement": {
-        if (step.path.length === 0) return illegal("emptyPath", stepIndex);
-
-        let from = position;
-        let squares = 0;
-        let count = diagonalCount;
-        for (const square of step.path) {
-          const bounds = validateGridSquare(encounter, square);
-          if (!bounds.valid) return illegal("invalidSquare", stepIndex, bounds.reason);
-
-          const move = stepCost(from, square, diagonalRule, count);
-          if (!move.valid) return illegal("notAdjacent", stepIndex);
-
-          // Se puede pasar (y detenerse a actuar) en casillas ocupadas por
-          // criaturas Diminutas, Pequeñas o Medianas, a coste normal. Las
-          // Grandes o mayores bloquean. La ocupación solo se exige al final
-          // del turno (ver más abajo).
-          const passage = validatePassage(encounter, square, definition.size, {
-            ignoreCreatureId: plan.actorId,
-          });
-          if (!passage.valid) return illegal("invalidSquare", stepIndex, passage.reason);
-
-          squares += move.cost;
-          count = move.diagonalCount;
-          from = square;
-        }
-
-        const newSpent = spentFeet + squares * feetPerSquare;
-        if (budgetFeet !== null && newSpent > budgetFeet) {
-          return illegal("movementExceedsSpeed", stepIndex);
-        }
-        spentFeet = newSpent;
-        diagonalCount = count;
-        position = from;
+        // Regla casera: se puede pasar (y detenerse a actuar) en casillas
+        // ocupadas por criaturas Diminutas, Pequeñas o Medianas; la
+        // ocupación solo se exige al final del turno (ver más abajo).
+        const moved = advanceMovement(encounter, actor, progress, step.path, budgetFeet);
+        if (!moved.ok) return illegal(moved.reasonCode, stepIndex, moved.placementReason);
+        progress = moved.progress;
         lastMovementStepIndex = stepIndex;
         break;
       }
@@ -153,26 +123,8 @@ export function validateTurnPlan(encounter: Encounter, plan: TurnPlan): Legality
           return illegal("attackCountInvalid", stepIndex);
         }
         for (const use of step.attacks) {
-          const attack = definition.attacks.find((a) => a.id === use.attackId);
-          if (!attack) return illegal("unknownAttack", stepIndex);
-
-          const target = encounter.combatants[use.targetId];
-          if (!target) return illegal("unknownTarget", stepIndex);
-          if (use.targetId === plan.actorId) return illegal("invalidTarget", stepIndex);
-
-          const distanceFeet =
-            footprintDistanceSquares(
-              position,
-              definition.size,
-              target.state.position,
-              target.definition.size,
-              diagonalRule,
-            ) * feetPerSquare;
-          const maxFeet =
-            attack.mode === "melee"
-              ? attack.rangeFeet.normal
-              : (attack.rangeFeet.long ?? attack.rangeFeet.normal);
-          if (distanceFeet > maxFeet) return illegal("targetOutOfRange", stepIndex);
+          const check = checkAttackTarget(encounter, actor, progress.position, use.attackId, use.targetId);
+          if (!check.ok) return illegal(check.reasonCode, stepIndex);
         }
         break;
       }
@@ -194,7 +146,7 @@ export function validateTurnPlan(encounter: Encounter, plan: TurnPlan): Legality
   }
 
   // El turno no puede terminar en un espacio ocupado por otra criatura.
-  const finalPlacement = validatePlacement(encounter, position, definition.size, {
+  const finalPlacement = validatePlacement(encounter, progress.position, definition.size, {
     ignoreCreatureId: plan.actorId,
   });
   if (!finalPlacement.valid) {

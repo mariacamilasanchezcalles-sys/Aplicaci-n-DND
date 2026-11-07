@@ -1,6 +1,7 @@
 import type { AttackId, BonusActionId, CreatureId, ResourceId, TraitId } from "./ids";
 import type { GridPosition } from "./position";
 import type { BonusActionActionType } from "./actions";
+import type { Capability } from "./sheet";
 
 /** PENDIENTE: catálogo de personalidades. Por ahora solo existe la de prueba. */
 export type PersonalityId = "pragmatic";
@@ -115,6 +116,11 @@ interface CombatantBase {
   readonly attacks: readonly AttackDefinition[];
   readonly bonusActions: readonly BonusActionDefinition[];
   readonly traits: readonly TraitDefinition[];
+  /**
+   * Capacidades declarativas (Multiataque, etc.) que ejecuta el motor paso a
+   * paso (`rules/turnExecution.ts`). Opcional: las criaturas simples no la necesitan.
+   */
+  readonly capabilities?: readonly Capability[];
 }
 
 export interface MonsterDefinition extends CombatantBase {

@@ -47,9 +47,9 @@
 21. **Acciones estándar y ataque de oportunidad como capacidades integradas** con el mismo formato que las fichas.
 22. **Costes**: se pagan todos de una vez al iniciar la capacidad y no se devuelven; una operación `capability` no paga la activación de la capacidad referida, pero sí sus recursos.
 23. **Pasos sin opción legal** dentro de una capacidad: se pierden y quedan registrados. ¿Se puede renunciar voluntariamente al resto?
-24. **Moverse entre los ataques de un Multiataque** (PENDIENTE DE VALIDAR en 2024).
+24. ~~Moverse entre los ataques de un Multiataque~~ → VERIFICADO: sí (ver `RULES_VERIFICATION.md`).
 25. **Límites provisionales** del formato: `repeat` 1–10, `choice` 2–20, `sequence` 1–20, profundidad 8, CD 1–40, bonificadores ±30.
-26. **Verificar el vocabulario** contra SRD 5.2.1: 13 tipos de daño, 15 condiciones, tipos de criatura, formas de área, Recharge y el orden de resistencias y vulnerabilidades.
+26. ~~Verificar el vocabulario~~ → VERIFICADO el 2026-11-07 contra SRD 5.2.1 y el Glosario 2024.
 27. **Catálogo de conjuros**: las fichas aceptan `spellcasting` y `castSpell`, pero no existe catálogo (aviso `spellCatalogMissing`).
 
 ## De la especificación ampliada (sin diseñar)
@@ -57,3 +57,10 @@
 29. **Semillas reproducibles**: hoy hay un único `RandomSource`. Propuesta: un generador con semilla y dos flujos separados (dados del combate y desempates del cerebro).
 30. **Personalidades** Agresiva y Pacifista (hoy solo existe `pragmatic`) y **niveles de dificultad** por profundidad y amplitud de búsqueda.
 31. **Reglas caseras vigentes frente a la especificación**: diagonal 1-2-1-2 y atravesar criaturas Diminutas, Pequeñas y Medianas siguen siendo DECISIÓN CONFIRMADA. La especificación pide verificar la ocupación según las reglas oficiales; se mantiene la regla casera salvo indicación.
+
+## Ejecutor de turno (propuestas de la etapa 2026-11-07)
+32. **No pagar una capacidad sin ninguna operación legal al empezar** (por ejemplo, Atacar sin nadie al alcance: primero hay que moverse). Es más restrictivo que el manual, que permite tomar la acción y moverse después entre ataques si el rasgo da varios.
+33. **Nada de acciones adicionales entre las operaciones de una capacidad en curso** (por ejemplo, entre los dos ataques del Multiataque). PENDIENTE DE VALIDAR si las reglas 2024 lo permiten.
+34. **Turno separado del encuentro**: `TurnState` no se guarda con el encuentro (no hay iniciativa). Al diseñar la iniciativa, decidir si el turno en curso entra en el guardado (subiría el formato a v5).
+35. **Atacar a una criatura con 0 PG**: hoy se permite. Según el SRD, un monstruo muere al llegar a 0 PG; falta modelar la muerte y el estado de los personajes (decisión 8).
+36. **Ataques de personajes jugadores y criaturas sin CA**: un ataque contra una criatura sin CA no se resuelve (`targetArmorClassUnknown`). Relacionado con la decisión 28 (dados físicos).

@@ -155,6 +155,12 @@ describe("fichas: errores de coherencia", () => {
     ]);
   });
 
+  it("takenAs solo se admite en capacidades de acción", () => {
+    const sheet = brute();
+    sheet["capabilities"][2].takenAs = "attack";
+    expect(errorsOf(sheet)).toEqual([{ code: "invalidValue", path: "capabilities[2].takenAs" }]);
+  });
+
   it("reacción sin desencadenante y desencadenante fuera de una reacción", () => {
     const sheet = brute();
     delete sheet["capabilities"][3].trigger;
@@ -210,16 +216,16 @@ describe("fichas: puente con el modelo actual del motor", () => {
       personality: "pragmatic",
     });
     expect(gaps.map((g) => `${g.path}:${g.reason}`)).toEqual([
-      "attacks[1].onHit[1]:attackEffectNotSupported",
-      "capabilities[0]:capabilityNotExecutable",
-      "capabilities[1]:capabilityNotExecutable",
-      "capabilities[2]:bonusActionNotRepresentable",
-      "capabilities[3]:reactionNotSupported",
+      "attacks[1]:attackEffectNotSupported",
       "resources:resourcesNotSupported",
       "traits[0]:traitEffectNotSupported",
       "damageResistances:damageModifiersNotSupported",
       "conditionImmunities:conditionImmunitiesNotSupported",
     ]);
+    // El Mordisco (agarra al impactar) no entra en la criatura: no se aproxima.
+    expect(definition.attacks.map((a) => a.id)).toEqual(["claw", "rock"]);
+    // Las capacidades pasan tal cual; qué se puede ejecutar lo decide el motor.
+    expect(definition.capabilities?.map((c) => c.id)).toEqual(["multiattack", "breath", "rampage", "snap-back"]);
     // El Multiataque NO se convierte en "varios ataques por acción de Atacar".
     expect(definition.stats.attacksPerAttackAction).toBeUndefined();
     expect(definition.bonusActions).toEqual([]);

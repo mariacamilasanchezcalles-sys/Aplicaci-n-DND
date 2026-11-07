@@ -133,7 +133,11 @@ Roca; después, si el último impactó, puede añadir un Mordisco":
     "then": { "op": "optional", "body": { "op": "attack", "attackRef": "bite" } } } ] }
 ```
 
-## 8. Ejecución y reevaluación (PROPUESTA, sin implementar)
+## 8. Ejecución y reevaluación (DECISIÓN CONFIRMADA; implementada para ataques y acciones estándar en `rules/turnExecution.ts`)
+
+Implementación: el `TurnState` es serializable y está separado del encuentro, porque la iniciativa aún no existe. Las órdenes son `move`, `beginCapability`, `chooseOption`, `forfeitRemaining` y `endTurn`. Las opciones llevan una clave de un solo uso (`serial:índice`): una clave antigua se rechaza (`staleOption`), así que nada se ejecuta dos veces. Una capacidad sin ninguna operación legal al empezar no se paga (`noLegalOptions`). Un ataque cuyos efectos el motor no sabe aplicar no se incluye en la criatura. Las ramas con acciones estándar no modeladas, como Esconderse, no se ofrecen.
+
+El diseño original sigue a continuación:
 Responde en parte a la decisión pendiente 12 (¿pasos sueltos o turnos completos?): **se planea el
 turno completo y se ejecuta paso a paso**.
 
@@ -162,8 +166,7 @@ Invariantes:
   se pierde y queda registrado.
 
 Pendiente:
-- **PENDIENTE DE VALIDAR:** si en 2024 se puede **mover entre los ataques** de un Multiataque
-  (además de la acción de Atacar).
+- **VERIFICADO (2026-11-07):** el Multiataque se hace como parte de la acción de Atacar (SRD 5.2.1), así que se puede mover entre sus ataques ("Moving between Attacks"). Se marca con `takenAs: "attack"`. En las demás capacidades no se mueve entre operaciones.
 - **PROPUESTA pendiente de aprobar:** si se puede renunciar voluntariamente a los pasos
   restantes de una capacidad.
 

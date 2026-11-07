@@ -251,6 +251,7 @@ export const capabilitySchema: Schema<Capability> = obj(
   },
   {
     trigger: triggerSchema,
+    takenAs: oneOf(["attack"]),
     costs: arr(costSchema, { max: 10 }),
     requirements: arr(predicateSchema, { max: 10 }),
     concentration: bool,
@@ -266,7 +267,7 @@ export const attackSchema: Schema<SheetAttack> = obj(
     toHitBonus: bonus,
     onHit: arr(effectSchema, { min: 1 }),
   },
-  { onMiss: arr(effectSchema, { min: 1 }) },
+  { onMiss: arr(effectSchema, { min: 1 }), onHitOrMiss: arr(effectSchema, { min: 1 }) },
 );
 
 const passiveEffectSchema: Schema<PassiveEffectSpec> = tagged("kind", {

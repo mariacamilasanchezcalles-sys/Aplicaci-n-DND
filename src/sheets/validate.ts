@@ -150,6 +150,10 @@ function checkCoherence(sheet: CreatureSheet, issues: SheetIssue[]): void {
     if (capability.activation !== "reaction" && capability.trigger !== undefined) {
       issues.push(issue("triggerNotAllowed", `${path}.trigger`));
     }
+    // Solo una acción puede realizarse "como" la acción de Atacar.
+    if (capability.takenAs !== undefined && capability.activation !== "action") {
+      issues.push(issue("invalidValue", `${path}.takenAs`));
+    }
     (capability.costs ?? []).forEach((cost, i) => {
       if (cost.kind === "resource" && !resourceIds.has(cost.resourceRef)) {
         issues.push(issue("unknownReference", `${path}.costs[${i}].resourceRef`));

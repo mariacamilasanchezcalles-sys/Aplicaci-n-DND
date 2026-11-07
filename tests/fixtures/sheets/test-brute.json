@@ -52,6 +52,7 @@
       "id": "multiattack",
       "label": "Multiataque",
       "activation": "action",
+      "takenAs": "attack",
       "body": {
         "op": "sequence",
         "steps": [

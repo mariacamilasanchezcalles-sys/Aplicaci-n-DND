@@ -228,6 +228,8 @@ export interface SheetAttack {
   readonly toHitBonus: number;
   readonly onHit: readonly EffectSpec[];
   readonly onMiss?: readonly EffectSpec[];
+  /** Efectos que ocurren impacte o falle (notación "Hit or Miss" del SRD 5.2.1). */
+  readonly onHitOrMiss?: readonly EffectSpec[];
 }
 
 // ---------------------------------------------------------------------------
@@ -293,6 +295,13 @@ export interface Capability {
   readonly label: string;
   /** Qué ranura de la economía de acciones consume (se paga una sola vez). */
   readonly activation: ActivationKind;
+  /**
+   * La capacidad se realiza COMO esa acción estándar. Multiataque: "attack"
+   * (REGLA OFICIAL VERIFICADA, SRD 5.2.1 "Multiattack": sus ataques son parte
+   * de la acción de Atacar; por "Moving between Attacks" se puede mover entre
+   * ellos). Solo válido con `activation: "action"`.
+   */
+  readonly takenAs?: "attack";
   /** Obligatorio si y solo si `activation` es "reaction". */
   readonly trigger?: TriggerSpec;
   readonly costs?: readonly CostSpec[];

@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 10 archivos de prueba, 163 pruebas aprobadas.
+Última verificación: `npm run verify` sin errores, 11 archivos de prueba, 182 pruebas aprobadas.
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -20,7 +20,10 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
-## Etapa actual: fichas declarativas y acciones compuestas
+## Ejecutor de turno paso a paso (2026-11-07)
+`src/rules/turnExecution.ts`: `startTurn`, `getTurnOptions` (solo opciones legales) y `applyTurnCommand` (mover, iniciar capacidad, elegir opción, renunciar, terminar turno). Ejecuta la acción de Atacar estándar, Correr, Destrabarse, Esquivar, acciones adicionales simples y capacidades de ficha compuestas de ataques y acciones estándar (Multiataque con `sequence`/`choice`/`repeat`/`optional`/`conditional`). Desventaja automática más allá del alcance normal. Lo no modelado (costes, recursos, efectos, conjuros, reacciones, condiciones, Esconderse) se rechaza con un código. Comprobaciones compartidas con `validateTurnPlan` en `rules/turnSteps.ts`.
+
+## Etapa anterior: fichas declarativas y acciones compuestas
 Especificación vigente: `docs/PROJECT_SPEC.md`. Hecho: tipos, validación y carga. Propuesto (sin implementar, requiere aprobación): ejecutor de capacidades con reevaluación paso a paso, acciones estándar como capacidades integradas, catálogo de efectos y condiciones. Ver `docs/SHEET_ARCHITECTURE.md` y decisiones 19–27.
 
 ## Pausado: prototipo de pantallas
