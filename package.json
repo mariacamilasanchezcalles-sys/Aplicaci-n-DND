@@ -1,0 +1,21 @@
+{
+  "name": "dnd-tactical-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Simulador táctico de combate de D&D (fase de estructura inicial)",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "verify": "npm run typecheck && npm run build && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
