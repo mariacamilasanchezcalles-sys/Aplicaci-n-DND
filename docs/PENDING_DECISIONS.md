@@ -112,7 +112,7 @@
 70. ~~**Factores**~~ → CONFIRMADO: sustituir los 4 factores del brief por la lista de la especificación, medida en unidades naturales.
 71. ~~**Pesos**~~ → CONFIRMADO: calibración con escenarios aprobados por la jugadora; perfiles de personalidad como datos (JSON).
 72. **Inteligencia y memoria:** CONFIRMADO que de momento todas aprenden de lo que perciben; queda pendiente cómo influyen INT y SAB.
-73. ~~**Suposición inicial de CA y PG**~~ → CONFIRMADO: según el **nivel del grupo**, definido en el encuentro; tabla de CA y PG típicos por nivel PENDIENTE (la propondré con fuente para su aprobación), corregida con lo observado.
+73. ~~**Suposición inicial de CA y PG**~~ → CONFIRMADO y APROBADA la tabla (`BRAIN_CALIBRATION.md`): PG ≈ 9,75 + 6,5 × (nivel − 1); CA en el intervalo 11–18 (central 14). Derivada del SRD 5.2.1.
 74. ~~**Comunicación entre aliados**~~ → CONFIRMADO: los monstruos de un bando comparten todo (conocimiento e intenciones).
 75. ~~**Variación con semilla**~~ → CONFIRMADO: desempate siempre igual (determinista); la variación con semilla queda para más adelante, opcional.
 
