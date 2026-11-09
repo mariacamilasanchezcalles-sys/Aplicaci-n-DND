@@ -199,3 +199,14 @@ Pesos vigentes (`src/tactical-brain/personalities.json`):
 | friendlyDamage | 0 | 0 | 0 |
 
 Siguen sin casos que las pongan a prueba: condiciones impuestas y daño a aliados (peso 0).
+
+## 7. Fuego amigo (2026-11-09)
+Al jugar en las pantallas se vio a un goblin atacar a otro goblin: el daño de los **ataques** a
+aliados contaba como daño causado (con los efectos ya se separaba). Corrección:
+- `computeFeatures`: un ataque a un aliado suma a `friendlyDamage`, no a `damageDealt` ni a los
+  rasgos de amenaza o remate.
+- Escenario **E11** (juicio evidente, por delegación de la jugadora): el único objetivo cuerpo a
+  cuerpo es un aliado y Cata está lejos; las tres personalidades prefieren no atacar al aliado.
+- Recalibrado: `friendlyDamage` = −2,925 en las tres personalidades (antes 0; el resto de pesos no
+  cambia). Ronda 3: con búsqueda libre, el pragmático y el agresivo disparan con el arco a Cata
+  (aceptable).

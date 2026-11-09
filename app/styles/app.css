@@ -891,3 +891,55 @@
     border-left: 1px solid var(--gold-dim);
   }
 }
+
+/* Reproducción del turno de los monstruos */
+.token.moving {
+  transition: left 0.16s linear, top 0.16s linear;
+  z-index: 2;
+}
+.token.struck .token-face {
+  animation: struck 0.5s ease;
+}
+.token.dodged .token-face {
+  animation: dodged 0.5s ease;
+}
+@keyframes struck {
+  30% {
+    filter: brightness(2.2) saturate(0.4);
+    transform: scale(0.9);
+  }
+}
+@keyframes dodged {
+  30% {
+    transform: translateX(-12%);
+  }
+  60% {
+    transform: translateX(10%);
+  }
+}
+.float-text {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: calc(var(--cell) * 0.34);
+  color: #ff8a8a;
+  text-shadow: 0 2px 4px #000;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: floatUp 0.65s ease-out forwards;
+}
+.float-text.miss {
+  color: var(--ash);
+}
+.float-text.criticalHit {
+  color: #ffd27a;
+}
+@keyframes floatUp {
+  to {
+    transform: translate(-50%, -70%);
+    opacity: 0;
+  }
+}

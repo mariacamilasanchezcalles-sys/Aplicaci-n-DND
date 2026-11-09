@@ -102,16 +102,21 @@ export function computeFeatures(
   let conditionsInflicted = 0;
   let threatReduction = 0;
   let immediateThreatReduction = 0;
+  let friendlyDamage = 0;
   const damageByTarget = new Map<CreatureId, number>();
   for (const attack of simulation.attacks) {
+    // Atacar a un aliado es fuego amigo, no daño causado (igual que con los efectos).
+    if (final.combatants[attack.targetId]?.side === side) {
+      friendlyDamage += attack.odds.expectedDamage;
+      continue;
+    }
     damageDealt += attack.odds.expectedDamage;
     damageByTarget.set(attack.targetId, (damageByTarget.get(attack.targetId) ?? 0) + attack.odds.expectedDamage);
     if (totalSeen > 0) threatReduction += attack.odds.expectedDamage * ((seen.get(attack.targetId) ?? 0) / totalSeen);
     immediateThreatReduction += attack.odds.expectedDamage * (immediateShare.get(attack.targetId) ?? 0);
-    if (final.combatants[attack.targetId]?.side !== side) conditionsInflicted += attack.odds.conditionChance;
+    conditionsInflicted += attack.odds.conditionChance;
   }
   // Efectos (alientos, derribar…): daño y condiciones esperados por objetivo.
-  let friendlyDamage = 0;
   for (const effect of simulation.effects) {
     for (const t of effect.targets) {
       if (t.ally) {

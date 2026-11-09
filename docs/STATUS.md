@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 32 archivos de prueba, 394 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 32 archivos de prueba, 400 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,10 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Pulido del combate (2026-11-09)
+- Reproducción del turno de los monstruos (movimiento, golpes y daño flotante).
+- Corregido: los monstruos podían atacar a un aliado cuando era el único objetivo al alcance (decisión 125, escenario E11).
 
 ## Pantallas (2026-11-09)
 - `app/`: Vite sin framework. Tema "fantasía oscura naturalista" (`styles/theme.css`, fichas de color de la jugadora), arte SVG propio (`art/art.ts`), tipografías Cinzel y Alegreya Sans incluidas (sin conexión).

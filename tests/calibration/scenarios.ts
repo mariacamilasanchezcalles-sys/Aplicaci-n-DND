@@ -289,6 +289,22 @@ export const SCENARIOS: readonly Scenario[] = [
     },
     answers: { pacifist: "b" },
   },
+  {
+    // Fuego amigo (2026-11-09, juicio evidente por delegación de la jugadora):
+    // el único objetivo al alcance es un aliado; Cata está lejos.
+    id: "E11",
+    actorId: G,
+    encounter: encounter([
+      [goblinDef(G), 5, 5],
+      [goblinDef(G2), 6, 5],
+      [pc("cata", "melee-fighter", 16, 20), 5, 18],
+    ]),
+    options: {
+      a: { steps: [begin("attack"), { kind: "attack", attackId: scimitar, targetId: G2 }, end] },
+      b: { steps: [end] },
+    },
+    answers: { pragmatic: "b", aggressive: "b", pacifist: "b" },
+  },
 ];
 
 /** Rasgos de cada opción de un escenario, vistos por el actor (solo con su conocimiento). */

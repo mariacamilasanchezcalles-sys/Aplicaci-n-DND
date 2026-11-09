@@ -718,6 +718,39 @@
      "note": "Ronda 2: aceptado por Claude por delegaci\u00f3n de la jugadora (\"no es dif\u00edcil asumir la respuesta\"). Huir encaja con 'prioriza huir' (especificaci\u00f3n \u00a74)."
     }
    ]
+  },
+  {
+   "round": 3,
+   "plans": [
+    {
+     "scenario": "E11",
+     "key": "s1",
+     "plan": {
+      "steps": [
+       {
+        "kind": "begin",
+        "source": {
+         "kind": "standard",
+         "action": "attack"
+        }
+       },
+       {
+        "kind": "attack",
+        "attackId": "shortbow",
+        "targetId": "cata"
+       },
+       {
+        "kind": "end"
+       }
+      ]
+     },
+     "verdicts": {
+      "pragmatic": "acceptable",
+      "aggressive": "acceptable"
+     },
+     "note": "Ronda 3 (2026-11-09): aceptado por Claude por delegaci\u00f3n. Dispara con el arco a Cata (a su alcance) en lugar de atacar al aliado."
+    }
+   ]
   }
  ]
 }

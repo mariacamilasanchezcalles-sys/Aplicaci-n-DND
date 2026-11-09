@@ -3,6 +3,11 @@ import { MapViewport } from "./viewport";
 import { buildMapView } from "../../src/ui-bridge";
 import type { CreatureId, Encounter, GridPosition } from "../../src/ui-bridge";
 
+/** Paso de la reproducción del turno de un monstruo. */
+export type PlaybackStep =
+  | { readonly kind: "move"; readonly creatureId: string; readonly path: readonly GridPosition[] }
+  | { readonly kind: "hit"; readonly targetId: string; readonly damage: number; readonly outcome: "miss" | "hit" | "criticalHit" };
+
 /** Casillas resaltadas en el tablero (solo presentación). */
 export interface BoardHighlights {
   /** Casillas a las que puede ir (movimiento o despliegue). */
@@ -69,6 +74,40 @@ export class Board {
     }
   }
 
+  /**
+   * Reproduce lo que hizo un monstruo (solo presentación): recorre su camino
+   * casilla a casilla y marca los golpes con el daño flotando. Los datos ya
+   * están resueltos por el núcleo; aquí solo se muestran.
+   */
+  async playback(steps: readonly PlaybackStep[]): Promise<void> {
+    const cell = this.viewport.cellPx;
+    const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+    const tokenOf = (id: string): HTMLElement | null => this.layer.querySelector(`.token[data-id="${CSS.escape(id)}"]`);
+    for (const step of steps) {
+      if (step.kind === "move") {
+        const token = tokenOf(step.creatureId);
+        if (!token || step.path.length === 0) continue;
+        this.viewport.centerOn(step.path[0]!.column, step.path[0]!.row);
+        token.classList.add("moving");
+        for (const square of step.path) {
+          token.style.left = `${square.column * cell}px`;
+          token.style.top = `${square.row * cell}px`;
+          await wait(170);
+        }
+        token.classList.remove("moving");
+      } else {
+        const token = tokenOf(step.targetId);
+        if (!token) continue;
+        token.classList.add(step.outcome === "miss" ? "dodged" : "struck");
+        const float = h("span", { class: `float-text ${step.outcome}`, text: step.outcome === "miss" ? "Falla" : step.damage > 0 ? `−${step.damage}` : "¡Impacto!" });
+        token.append(float);
+        await wait(650);
+        token.classList.remove("struck", "dodged");
+        float.remove();
+      }
+    }
+  }
+
   centerOn(position: GridPosition): void {
     this.viewport.centerOn(position.column, position.row);
   }
@@ -113,7 +152,7 @@ export class Board {
       ].join(" ");
       const token = h(
         "div",
-        { class: classes, ariaLabel: creature.label },
+        { class: classes, ariaLabel: creature.label, dataset: { id: creature.id } },
         h("span", { class: "token-ring" }),
         h("span", { class: "token-face", text: abbreviations.get(creature.id) ?? "?" }),
       );

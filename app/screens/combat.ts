@@ -1,6 +1,7 @@
 import { h, button, numberField, svg } from "../dom";
 import { iconSvg } from "../art/art";
 import { Board } from "../map/board";
+import type { PlaybackStep } from "../map/board";
 import {
   ABILITY_LABEL,
   ACTION_LABEL,
@@ -83,14 +84,24 @@ export class CombatView {
     this.model.setCombat(next);
   }
 
-  /** Ejecuta trabajo del cerebro dejando que la pantalla muestre "pensando". */
+  /**
+   * Ejecuta trabajo del cerebro dejando que la pantalla muestre "pensando" y,
+   * después, reproduce lo que hicieron los monstruos antes de mostrar el
+   * estado final (salvo con "Reducir animaciones").
+   */
   private think(work: () => CombatSnapshot): void {
+    const before = this.model.combat;
     this.busy = true;
     this.render();
     setTimeout(() => {
       const next = work();
-      this.busy = false;
-      this.set(next);
+      const steps = before && !this.model.settings.reduceMotion ? playbackSteps(before, next) : [];
+      const finish = (): void => {
+        this.busy = false;
+        this.set(next);
+      };
+      if (steps.length === 0 || this.board === null) return finish();
+      void this.board.playback(steps).then(finish, finish);
     }, 30);
   }
 
@@ -178,7 +189,7 @@ export class CombatView {
   private renderPanel(s: CombatSnapshot, view: PlayerTurnView | null): void {
     const parts: (HTMLElement | null)[] = [this.creatureCard(s)];
     if (this.toast) parts.push(h("div", { class: "toast", text: this.toast }));
-    if (this.busy) parts.push(h("div", { class: "thinking" }, svg(iconSvg("rune", 18)), h("span", { text: "El enemigo piensa…" })));
+    if (this.busy) parts.push(h("div", { class: "thinking" }, svg(iconSvg("rune", 18)), h("span", { text: "El enemigo actúa…" })));
     else parts.push(this.actions(s, view));
     this.panel.replaceChildren(...parts.filter((p): p is HTMLElement => p !== null));
   }
@@ -640,6 +651,7 @@ export class CombatView {
   private renderOverlay(s: CombatSnapshot): void {
     let content: HTMLElement | null = null;
     if (this.paused) content = this.pauseDialog();
+    else if (this.busy) content = null; // Mientras el enemigo actúa, el tablero a la vista.
     else if (this.dialog) content = this.dialog;
     else if (!this.busy && s.pending !== null) content = this.requestDialog(s);
     else if (!this.busy && s.pending === null && s.turn !== null && s.turn.pendingSaves.length > 0) content = this.pendingSaveDialog(s, s.turn.pendingSaves[0]!.creatureId);
@@ -670,6 +682,27 @@ export class CombatView {
     );
     requestAnimationFrame(() => (list.scrollTop = list.scrollHeight));
   }
+}
+
+/** Lo que hicieron los monstruos entre dos estados (movimientos y golpes), para reproducirlo. */
+function playbackSteps(before: CombatSnapshot, after: CombatSnapshot): PlaybackStep[] {
+  const steps: PlaybackStep[] = [];
+  for (const { item } of after.log.slice(before.log.length)) {
+    if (item.kind !== "turnLog") continue;
+    const actor = after.encounter.combatants[item.actorId];
+    const entry = item.entry;
+    if (entry.kind === "moved" && actor?.definition.kind === "monster") steps.push({ kind: "move", creatureId: item.actorId, path: entry.path });
+    if (entry.kind === "attackResolved" && actor?.definition.kind === "monster") {
+      steps.push({ kind: "hit", targetId: entry.targetId, damage: entry.damageApplied, outcome: entry.resolution.outcome });
+    }
+    if (entry.kind === "opportunityAttack" || entry.kind === "sheetReactionTaken") {
+      steps.push({ kind: "hit", targetId: entry.attack.targetId, damage: entry.attack.damageApplied, outcome: entry.attack.resolution.outcome });
+    }
+    if (entry.kind === "effectResolved" && actor?.definition.kind === "monster") {
+      for (const t of entry.targets) steps.push({ kind: "hit", targetId: t.targetId, damage: t.damageApplied, outcome: t.damageApplied > 0 ? "hit" : "miss" });
+    }
+  }
+  return steps;
 }
 
 function sourceLabel(s: CombatSnapshot, actorId: CreatureId, source: CapabilitySource): string {

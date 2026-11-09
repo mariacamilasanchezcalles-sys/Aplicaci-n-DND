@@ -183,8 +183,9 @@
     - la tirada de ataque del jugador pide d20, total y daño a la vez (el daño se ignora si falla);
     - el registro omite planes internos del cerebro salvo "cambia de plan";
     - un aventurero puede elegir como objetivo a un aliado (lo permiten las reglas).
-122. **Turno de monstruo visible** (PENDIENTE): hoy se resuelve de golpe y se lee en el registro. Propuesta: animar paso a paso (movimiento y ataques) con una pausa breve.
+122. **Turno de monstruo visible** → IMPLEMENTADO (2026-11-09): tras resolverlo, la app reproduce sus movimientos casilla a casilla y sus golpes (destello y daño flotante); con "Reducir animaciones" se omite. Solo presentación: el núcleo ya lo resolvió.
 123. **Configuración** (PENDIENTE): qué ajustes quiere la jugadora (hoy solo "Reducir animaciones").
 124. **Guardado de partidas** (PROPUESTA): la sesión completa (encuentro, fase, turno y registro) se guarda en el dispositivo (máximo 20 partidas). Firebase sigue sin incluir (decisión 16).
+125. **Fuego amigo en ataques** (corregido 2026-11-09): un ataque a un aliado cuenta como `friendlyDamage`. Escenario E11 y recalibración (`BRAIN_CALIBRATION.md` §7).
 104. ~~**Conflictos de calibración**~~ → DECISIÓN CONFIRMADA (2026-11-07): la jugadora delega en Claude los juicios evidentes y los conflictos entre sus respuestas, aplicando su especificación; cada uno se documenta con su nota en `tests/calibration/judged-plans.json` y en `BRAIN_CALIBRATION.md` §6.
 94. **Monstruo de prueba "Draco de prueba"** (`tests/fixtures/sheets/test-drake.json`): ficha inventada solo para E8–E10; no es una criatura oficial.
