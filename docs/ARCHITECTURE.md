@@ -10,7 +10,7 @@ Dependencias permitidas (verificadas por `tests/architecture.test.ts`):
 | `tactical-brain` | models, perception, rules (solo tipos) | Contrato de decisión y del puerto de simulación. Sin algoritmo todavía. |
 | `combat-controller` | models, rules, perception, tactical-brain | Puerto de simulación sobre el estado creído y controlador del turno de los monstruos (`monsterTurn.ts`): planea, ejecuta operación por operación con revalidación y replanificación, decide reacciones de monstruos y pide al jugador lo que haga falta. |
 | `persistence` | models | Interfaz guardar/cargar + serialización JSON + almacén en memoria. |
-| `ui-bridge` | models, rules, persistence, scenarios, combat-controller | Fachada para la interfaz (también turnos de monstruos y ajustes del cerebro): vistas de mapa y menú de turno, validación de turno, escenario provisional y biblioteca de encuentros sobre `EncounterStore`. |
+| `ui-bridge` | models, rules, persistence, scenarios, combat-controller, sheets | Fachada para la interfaz (también turnos de monstruos y ajustes del cerebro): vistas de mapa y menú de turno, validación de turno, escenario provisional y biblioteca de encuentros sobre `EncounterStore`. |
 | `scenarios` | models | Datos de prueba provisionales (Goblin, Cata, Caín). |
 | `sheets` | models | Fichas declarativas: esquema con combinadores propios, validación (estructura y coherencia), carga desde JSON y puente temporal `combatantFromSheet`. Diseño: `SHEET_ARCHITECTURE.md`. |
 

@@ -19,7 +19,33 @@ export type {
   StandardActionType,
   TurnPlan,
 } from "../models";
-export type { IllegalReason, LegalityResult, PlacementReason, TurnState } from "../rules";
+/** Dados reales (la única fuente de azar de la app). */
+export { mathRandomSource } from "../rules";
+export type {
+  CapabilitySource,
+  DeathSaveResult,
+  ExecutableStandardAction,
+  ExecutionChoice,
+  IllegalReason,
+  LegalityResult,
+  MoraleTrigger,
+  PlacementReason,
+  ReachableSquare,
+  ShockResult,
+  TurnCommand,
+  TurnCommandError,
+  TurnLogEntry,
+  TurnOptions,
+  TurnState,
+} from "../rules";
+export type {
+  CombatantRecord,
+  ConditionId,
+  CreatureTypeId,
+  CustomDifficulty,
+  DamageType,
+  PersonalityId,
+} from "../models";
 export type { ControllerEvent, PlayerInput, PlayerInputRequest } from "../combat-controller";
 export type { BrainSettings, DifficultyId } from "../models";
 export { deserializeEncounter, serializeEncounter, SNAPSHOT_SCHEMA_VERSION } from "../persistence";

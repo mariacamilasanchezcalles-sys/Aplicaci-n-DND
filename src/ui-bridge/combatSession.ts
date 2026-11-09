@@ -139,7 +139,11 @@ export function beginCombat(
   dice: RandomSource,
 ): SessionResult<"wrongPhase" | "missingInitiative" | "tiesUndecided"> {
   if (s.phase !== "initiative" || s.monsterInitiative === null) return { ok: false, reason: "wrongPhase" };
-  const started = startCombat(s.encounter, { ...s.monsterInitiative, ...playerTotals }, tieOrder);
+  const totals = { ...s.monsterInitiative, ...playerTotals };
+  // Los monstruos de un mismo grupo comparten tirada: entre ellos no hay
+  // empate que decidir (se ordenan por id). Solo se piden los empates reales.
+  const auto = sameGroupTies(s.encounter, totals);
+  const started = startCombat(s.encounter, totals, [...tieOrder, ...auto.filter((id) => !tieOrder.includes(id))]);
   if (!started.ok) {
     return started.reason === "missingInitiative"
       ? { ok: false, reason: "missingInitiative", detail: started.creatureIds }
@@ -152,6 +156,17 @@ export function beginCombat(
     log: append({ ...s, encounter: started.encounter }, { kind: "combatStarted", order: started.encounter.initiativeOrder }),
   };
   return { ok: true, session: nextTurn(session, dice) };
+}
+
+/** Empates formados solo por monstruos del mismo grupo de iniciativa (misma ficha). */
+function sameGroupTies(encounter: Encounter, totals: Readonly<Record<string, number>>): CreatureId[] {
+  const byTotal = new Map<number, CreatureId[]>();
+  for (const id of Object.keys(totals).sort() as CreatureId[]) byTotal.set(totals[id]!, [...(byTotal.get(totals[id]!) ?? []), id]);
+  return [...byTotal.values()].flatMap((group) => {
+    if (group.length < 2) return [];
+    const keys = new Set(group.map((id) => (encounter.combatants[id]?.definition.kind === "monster" ? id.replace(/-\d+$/, "") : `pc:${id}`)));
+    return keys.size === 1 ? group : [];
+  });
 }
 
 // ---------------------------------------------------------------------------

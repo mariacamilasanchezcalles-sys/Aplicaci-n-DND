@@ -17,7 +17,8 @@ Especificación vigente: `docs/PROJECT_SPEC.md` (amplía el brief original `docs
 ## Comandos
 ```bash
 npm ci
-npm run verify      # typecheck + build + pruebas (debe terminar sin errores)
+npm run dev         # la app en el navegador
+npm run verify      # typecheck + build (núcleo y web) + pruebas (debe terminar sin errores)
 npm run typecheck
 npm run build
 npm test
@@ -32,9 +33,10 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 | `perception` | models, rules | Memoria compartida por bando (`sideKnowledge`) y `KnowledgeView`: lo percibido, recordado y estimado (cotas de CA por sus propias tiradas, PG máximos por Maltrecho). Nunca da CA ni PG reales de enemigos. |
 | `tactical-brain` | models, perception, rules (**solo tipos**) | Puerto de simulación, planes (`simulatePlan`), rasgos medidos (`computeFeatures`), calibración de pesos, perfiles de personalidad (`personalities.json`), planificador (`planTurn`, búsqueda por fases), niveles de dificultad, cooperación por pizarra de intenciones (`planCoordinatedTurn`) y decisión de reacciones. |
 | `persistence` | models | Interfaz de guardado/carga, JSON, almacén en memoria. |
-| `ui-bridge` | models, rules, persistence, scenarios, combat-controller | Fachada para que una interfaz hable con el núcleo (vistas, validación de turno, biblioteca de encuentros, turnos de monstruos y ajustes del cerebro). |
+| `ui-bridge` | models, rules, persistence, scenarios, combat-controller, sheets | Fachada para que una interfaz hable con el núcleo (vistas, validación de turno, biblioteca de encuentros, turnos de monstruos y ajustes del cerebro). |
 | `scenarios` | models | Datos de prueba provisionales (Goblin, Cata, Caín). |
 | `combat-controller` | models, rules, perception, tactical-brain | Orquesta los turnos de los monstruos: puerto de simulación sobre el estado creído (`createSimulationPort`, dados esperados) y controlador (`startMonsterTurn`, `runMonsterTurn`, `resolveMonsterReactions`). |
+| `app/` (fuera de `src`) | solo `ui-bridge` | Pantallas: tema, arte SVG, estado de la interfaz y guardado local. Sin reglas. |
 | `sheets` | models | Fichas declarativas: esquema, validación, carga y puente temporal al modelo del motor. Los tipos de ficha están en `models/sheet.ts`. |
 
 `tests/architecture.test.ts` hace cumplir esas dependencias. Detalle en `docs/ARCHITECTURE.md`.
@@ -74,4 +76,4 @@ Node >= 22. TypeScript 7 y Vitest 5. Antes de dar algo por terminado, `npm run v
 - Dados: el 1d4 extra del Goblin con ventaja es un componente de daño condicionado (`condition: "attackRollHadAdvantage"`).
 
 ## Lo que NO está hecho (no lo inventes)
-PG temporales, desplazamiento forzado, arrastrar al agarrado, efectos de ataque al fallar, conjuros, espacios de conjuro, reacciones de ficha que no sean un ataque tras un impacto o daño, Ataque sin armas (el motor cubre ataques (con condiciones al impactar y Agarrado), Atacar, Correr, Destrabarse y Esquivar, costes de recursos, Recarga, defensas contra el daño, efectos de daño, curación y condiciones con salvación y áreas, las 15 condiciones, 0 PG, iniciativa, ataques de oportunidad y ataques de jugadores con dados físicos), descansos, Encaramarse a una criatura más grande, aprobación de los valores de dificultad, proteger a aliados vulnerables, turno completo de los personajes desde la fachada (el ejecutor existe en `rules`; la fachada aún solo valida planes), recalibración de los pesos con los planes que encuentra la búsqueda, visibilidad real (luz, cobertura, sentidos; Hide), acciones Help/Influence/Magic/Ready/Search/Study/Utilize, empaquetado con Capacitor y pantallas (prototipo pausado; guardado en el commit `62634f7`). Lista completa y numerada en `docs/PENDING_DECISIONS.md`.
+PG temporales, desplazamiento forzado, arrastrar al agarrado, efectos de ataque al fallar, conjuros, espacios de conjuro, reacciones de ficha que no sean un ataque tras un impacto o daño, Ataque sin armas (el motor cubre ataques (con condiciones al impactar y Agarrado), Atacar, Correr, Destrabarse y Esquivar, costes de recursos, Recarga, defensas contra el daño, efectos de daño, curación y condiciones con salvación y áreas, las 15 condiciones, 0 PG, iniciativa, ataques de oportunidad y ataques de jugadores con dados físicos), descansos, Encaramarse a una criatura más grande, más criaturas en el bestiario (solo el Goblin), Firebase, animación del turno de los monstruos, aprobación de los valores de dificultad, proteger a aliados vulnerables, turno completo de los personajes desde la fachada (el ejecutor existe en `rules`; la fachada aún solo valida planes), recalibración de los pesos con los planes que encuentra la búsqueda, visibilidad real (luz, cobertura, sentidos; Hide), acciones Help/Influence/Magic/Ready/Search/Study/Utilize y empaquetado con Capacitor. Las pantallas existen (`app/`, primera versión; ver `docs/UI_REQUIREMENTS.md`). Lista completa y numerada en `docs/PENDING_DECISIONS.md`.

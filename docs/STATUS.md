@@ -20,6 +20,11 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## Pantallas (2026-11-09)
+- `app/`: Vite sin framework. Tema "fantasía oscura naturalista" (`styles/theme.css`, fichas de color de la jugadora), arte SVG propio (`art/art.ts`), tipografías Cinzel y Alegreya Sans incluidas (sin conexión).
+- Inicio, Bestiario, Personajes, Dificultad (con Personalizada), Combate (despliegue, iniciativa, turnos, peticiones y final) y Partidas guardadas. Guardado local de personajes, borrador y partidas.
+- `npm run dev` para probar; `npm run verify` también compila la web. Probado en navegador a tamaño de teléfono (390 x 844) y tableta con un combate de varios asaltos, sin errores.
+
 ## Pantallas: núcleo de la fachada (2026-11-09)
 - Fichas en formato 3 con `challengeRating` (Goblin: CR 1/4, verificado). Dificultad Personalizada en `brainSettings.customDifficulty` (persistencia versión 15).
 - `ui-bridge/encounterSetup.ts`: bestiario desde las fichas, tarjetas de personaje validadas con códigos, preparación con instancias independientes y despliegue automático.

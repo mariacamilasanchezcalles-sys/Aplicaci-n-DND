@@ -177,5 +177,14 @@
 118. **Grupos de iniciativa** (PROPUESTA): los monstruos de la misma ficha comparten tirada (el DM decide los grupos según las reglas).
 119. **Fin del combate** (PROPUESTA): victoria si ningún monstruo sigue en pie (muertos o rendidos); derrota si ningún personaje está en pie.
 120. **Dificultad Personalizada** (PROPUESTA): la persona elige alternativas (1–6), profundidad (1–3 fases), casillas examinadas (o todas), moverse entre ataques, coordinación y replanificar tras cada operación. Áreas y objetivos siguen al límite de casillas.
+121. **Pantallas** (PROPUESTA): recorrido de cinco pantallas con la dirección visual de la jugadora (`UI_REQUIREMENTS.md`). Detalles decididos por Claude:
+    - nombre visible "Simulador Táctico";
+    - los grupos idénticos de monstruos se desempatan solos (id);
+    - la tirada de ataque del jugador pide d20, total y daño a la vez (el daño se ignora si falla);
+    - el registro omite planes internos del cerebro salvo "cambia de plan";
+    - un aventurero puede elegir como objetivo a un aliado (lo permiten las reglas).
+122. **Turno de monstruo visible** (PENDIENTE): hoy se resuelve de golpe y se lee en el registro. Propuesta: animar paso a paso (movimiento y ataques) con una pausa breve.
+123. **Configuración** (PENDIENTE): qué ajustes quiere la jugadora (hoy solo "Reducir animaciones").
+124. **Guardado de partidas** (PROPUESTA): la sesión completa (encuentro, fase, turno y registro) se guarda en el dispositivo (máximo 20 partidas). Firebase sigue sin incluir (decisión 16).
 104. ~~**Conflictos de calibración**~~ → DECISIÓN CONFIRMADA (2026-11-07): la jugadora delega en Claude los juicios evidentes y los conflictos entre sus respuestas, aplicando su especificación; cada uno se documenta con su nota en `tests/calibration/judged-plans.json` y en `BRAIN_CALIBRATION.md` §6.
 94. **Monstruo de prueba "Draco de prueba"** (`tests/fixtures/sheets/test-drake.json`): ficha inventada solo para E8–E10; no es una criatura oficial.
