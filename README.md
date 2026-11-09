@@ -13,6 +13,7 @@ Aplicación (en fase inicial) para simular combates de Dungeons & Dragons 5e (ed
 npm ci            # instalar dependencias exactas
 npm run dev       # la app en el navegador (http://localhost:5173; en Codespaces, el puerto reenviado)
 npm run verify    # typecheck + build (núcleo y web) + pruebas
+npm run android:apk   # APK de depuración (necesita el SDK de Android; ver docs/ANDROID.md)
 npm run typecheck
 npm run build
 npm test

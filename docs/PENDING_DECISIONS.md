@@ -187,5 +187,7 @@
 123. **Configuración** (PENDIENTE): qué ajustes quiere la jugadora (hoy solo "Reducir animaciones").
 124. **Guardado de partidas** (PROPUESTA): la sesión completa (encuentro, fase, turno y registro) se guarda en el dispositivo (máximo 20 partidas). Firebase sigue sin incluir (decisión 16).
 125. **Fuego amigo en ataques** (corregido 2026-11-09): un ataque a un aliado cuenta como `friendlyDamage`. Escenario E11 y recalibración (`BRAIN_CALIBRATION.md` §7).
+126. **Identidad de la app Android** (PROPUESTA): paquete `com.simuladortactico.app`, nombre "Simulador Táctico", icono y arranque desde el emblema. El paquete no se puede cambiar una vez publicada la app.
+127. **APK firmado de publicación** (PENDIENTE): necesita una clave de firma propia de la jugadora (no va al repositorio).
 104. ~~**Conflictos de calibración**~~ → DECISIÓN CONFIRMADA (2026-11-07): la jugadora delega en Claude los juicios evidentes y los conflictos entre sus respuestas, aplicando su especificación; cada uno se documenta con su nota en `tests/calibration/judged-plans.json` y en `BRAIN_CALIBRATION.md` §6.
 94. **Monstruo de prueba "Draco de prueba"** (`tests/fixtures/sheets/test-drake.json`): ficha inventada solo para E8–E10; no es una criatura oficial.

@@ -20,6 +20,11 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## App Android (2026-11-09)
+- Capacitor 8.6 (`capacitor.config.ts`, `android/`); `npm run android:apk` genera el APK de depuración (probado: compila, 7,2 MB, Android 7+). Guía en `docs/ANDROID.md`.
+- Icono adaptable y pantalla de arranque con el emblema propio.
+- Falta probarlo en un teléfono real y el APK firmado de publicación.
+
 ## Pulido del combate (2026-11-09)
 - Reproducción del turno de los monstruos (movimiento, golpes y daño flotante).
 - Corregido: los monstruos podían atacar a un aliado cuando era el único objetivo al alcance (decisión 125, escenario E11).

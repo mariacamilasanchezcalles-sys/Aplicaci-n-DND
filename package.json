@@ -15,15 +15,20 @@
     "preview": "vite preview",
     "test": "vitest run",
     "verify": "npm run typecheck && npm run build && npm run build:web && npm run test",
-    "calibrate": "CALIBRATE=1 vitest run tests/calibration/solve.test.ts"
+    "calibrate": "CALIBRATE=1 vitest run tests/calibration/solve.test.ts",
+    "android:sync": "npm run build:web && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
     "@fontsource/alegreya-sans": "^5.3.0",
     "@fontsource/cinzel": "^5.3.0"
   }
