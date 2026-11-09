@@ -19,6 +19,8 @@ export type {
   StandardActionType,
   TurnPlan,
 } from "../models";
-export type { IllegalReason, LegalityResult, PlacementReason } from "../rules";
+export type { IllegalReason, LegalityResult, PlacementReason, TurnState } from "../rules";
+export type { ControllerEvent, PlayerInput, PlayerInputRequest } from "../combat-controller";
+export type { BrainSettings, DifficultyId } from "../models";
 export { deserializeEncounter, serializeEncounter, SNAPSHOT_SCHEMA_VERSION } from "../persistence";
 export type { EncounterSnapshot, EncounterStore, EncounterSummary } from "../persistence";

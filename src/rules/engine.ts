@@ -30,6 +30,8 @@ export interface CreateEncounterInput {
   readonly occupancyPolicy: OccupancyPolicy;
   /** Configuración de mesa (reglas caseras activas). */
   readonly tableRules: TableRules;
+  /** Nivel del grupo para el cerebro táctico (opcional; se puede fijar después). */
+  readonly partyLevel?: number;
 }
 
 /**
@@ -79,6 +81,7 @@ export function createRulesEngine(): RulesEngine {
         sideMorale: {},
         sideKnowledge: {},
         sideIntentions: {},
+        brainSettings: { partyLevel: input.partyLevel ?? null, difficultyByCreature: {} },
       };
     },
 

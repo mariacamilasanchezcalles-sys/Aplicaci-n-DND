@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 30 archivos de prueba, 378 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 31 archivos de prueba, 387 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,12 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Cerebro táctico, etapa 6: controlador de combate (2026-11-09)
+- `models`: `Encounter.brainSettings` (nivel del grupo y dificultad por monstruo; `DifficultyId` pasa a `models`). Persistencia versión 14.
+- `combat-controller/monsterTurn.ts`: `brainFor`, `startMonsterTurn`, `stepMonsterTurn`, `runMonsterTurn` y `resolveMonsterReactions`. Planea con coordinación, publica intenciones, ejecuta paso a paso sobre el estado real con revalidación, actualiza la memoria del bando, replanifica según la dificultad o ante eventos relevantes, decide las reacciones de los monstruos y pide al jugador sus salvaciones y reacciones.
+- `ui-bridge`: `setBrainSettings`, `playMonsterTurn`, `continueMonsterTurn` y `resolveMonsterReactions`; la fachada recibe los dados reales inyectables. La arquitectura permite `ui-bridge → combat-controller`.
+- Prueba de humo: 12 turnos con iniciativa (dos goblins en Difícil contra dos personajes) sin atascos, unos 1,2 s.
 
 ## Cerebro táctico, etapa 5: cooperación (2026-11-09)
 - `models`: `Intention` y `Encounter.sideIntentions` (pizarra por bando; el estado creído incluye la del propio bando).

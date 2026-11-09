@@ -9,7 +9,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   perception: ["models", "rules"],
   "tactical-brain": ["models", "perception", "rules"],
   persistence: ["models"],
-  "ui-bridge": ["models", "rules", "persistence", "scenarios"],
+  "ui-bridge": ["models", "rules", "persistence", "scenarios", "combat-controller"],
   scenarios: ["models"],
   sheets: ["models"],
   "combat-controller": ["models", "rules", "perception", "tactical-brain"],

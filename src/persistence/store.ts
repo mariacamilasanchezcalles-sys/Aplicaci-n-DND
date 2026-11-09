@@ -14,8 +14,9 @@ import type { Encounter, EncounterId } from "../models";
  *      (`skills`) y Agarrado con la parte que agarra y su alcance.
  * v12: memoria del bando con los desencadenantes de reacción vistos.
  * v13: pizarra de intenciones por bando (`sideIntentions`).
+ * v14: ajustes del cerebro en el encuentro (`brainSettings`: nivel del grupo y dificultad por monstruo).
  */
-export const SNAPSHOT_SCHEMA_VERSION = 13 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 14 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

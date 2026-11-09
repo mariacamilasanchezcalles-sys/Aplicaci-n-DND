@@ -156,6 +156,7 @@ export function buildBeliefEncounter(publicEncounter: Encounter, view: Knowledge
     sideKnowledge: {},
     // La pizarra del propio bando se comparte entera.
     sideIntentions: publicEncounter.sideIntentions[view.side] ? { [view.side]: publicEncounter.sideIntentions[view.side]! } : {},
+    brainSettings: publicEncounter.brainSettings,
     combatants,
   };
 }

@@ -66,6 +66,24 @@ export interface SideMorale {
 }
 
 /**
+ * Niveles de dificultad del cerebro táctico (DECISIÓN CONFIRMADA: calidad de
+ * la búsqueda, nunca estadísticas ni información).
+ */
+export type DifficultyId = "easy" | "normal" | "hard";
+
+/**
+ * Ajustes del cerebro que se asignan en el encuentro (DECISIÓN CONFIRMADA:
+ * personalidad y dificultad en el encuentro; supuestos según el nivel del
+ * grupo). La personalidad va en la definición de cada monstruo.
+ */
+export interface BrainSettings {
+  /** Nivel del grupo de personajes (supuesto inicial de CA, PG, ataque y salvación). null: sin definir. */
+  readonly partyLevel: number | null;
+  /** Dificultad de cada monstruo (por id); sin entrada: "normal" (PROPUESTA, decisión 112). */
+  readonly difficultyByCreature: Readonly<Record<string, DifficultyId>>;
+}
+
+/**
  * Estado real y completo del combate. Es serializable a JSON (sin Map/Set).
  * Lo que cada monstruo CONOCE se modela aparte en el módulo `perception`.
  */
@@ -90,4 +108,5 @@ export interface Encounter {
   readonly sideKnowledge: Readonly<Record<string, SideKnowledge>>;
   /** Pizarra de intenciones de cada bando (cooperación, etapa 5 del cerebro). */
   readonly sideIntentions: Readonly<Record<string, SideIntentions>>;
+  readonly brainSettings: BrainSettings;
 }

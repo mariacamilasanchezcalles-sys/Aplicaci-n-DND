@@ -1,3 +1,4 @@
+import type { DifficultyId } from "../models";
 import type { SearchParameters } from "./planner";
 
 /**
@@ -6,7 +7,7 @@ import type { SearchParameters } from "./planner";
  * de la tabla cualitativa de la especificación a parámetros medibles.
  * VALORES: PROPUESTA pendiente de aprobación (decisión 96).
  */
-export type DifficultyId = "easy" | "normal" | "hard";
+export type { DifficultyId };
 
 export interface DifficultyProfile {
   /** Opciones evaluadas, profundidad, posicionamiento y calidad de evaluación. */

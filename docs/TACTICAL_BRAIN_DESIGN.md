@@ -201,5 +201,6 @@ opciones sin rehacerlo.
    `tactical-brain/planner.ts`: `planTurn` (búsqueda por fases con poda, parámetros de dificultad, punto de partida a mitad de turno) y `decideOpportunityAttack`. Ver `BRAIN_CALIBRATION.md` §5.
 5. **[HECHA 2026-11-09] Cooperación:** pizarra de intenciones del bando.
    `tactical-brain/cooperation.ts`: intenciones (posición final y daño esperado por objetivo) en `Encounter.sideIntentions`; remate y flanqueos medidos con los planes de los aliados que actúan después; coordinación por dificultad.
-6. **Controlador:** `combat-controller` que juega los turnos de los monstruos de principio a fin, y
-   su conexión con `ui-bridge`.
+6. **[HECHA 2026-11-09] Controlador:** `combat-controller` que juega los turnos de los monstruos de principio a fin, y
+   su conexión con `ui-bridge`. `combat-controller/monsterTurn.ts` y `CombatCoreApi.playMonsterTurn`,
+   `continueMonsterTurn`, `resolveMonsterReactions` y `setBrainSettings`.
