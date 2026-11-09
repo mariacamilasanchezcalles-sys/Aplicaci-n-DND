@@ -14,7 +14,11 @@ import type { StandardActionType } from "./actions";
  */
 
 /** Versión del formato de ficha. Cambia cuando cambie la forma del JSON. */
-export const SHEET_FORMAT_VERSION = 2 as const;
+export const SHEET_FORMAT_VERSION = 3 as const;
+
+/** Valores de Desafío del SRD 5.2.1 (0, 1/8, 1/4, 1/2 y de 1 a 30). */
+export const CHALLENGE_RATINGS = ["0", "1/8", "1/4", "1/2", ...Array.from({ length: 30 }, (_, i) => String(i + 1))] as const;
+export type ChallengeRating = string;
 
 // ---------------------------------------------------------------------------
 // Vocabulario cerrado (PENDIENTE DE VALIDAR contra SRD 5.2.1)
@@ -371,6 +375,8 @@ export interface CreatureSheet {
   readonly source: SheetSource;
   readonly size: CreatureSize;
   readonly creatureType?: CreatureTypeId;
+  /** Valor de Desafío (formato 3), p. ej. "1/4". Solo orientativo en el bestiario. */
+  readonly challengeRating?: ChallengeRating;
   readonly armorClass: number;
   /** Bonificador de iniciativa del perfil (p. ej. "Initiative +2"). */
   readonly initiativeBonus?: number;

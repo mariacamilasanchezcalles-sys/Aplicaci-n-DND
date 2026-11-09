@@ -1,5 +1,5 @@
 {
-  "sheetFormat": 2,
+  "sheetFormat": 3,
   "id": "test-drake",
   "label": "Draco de prueba",
   "source": { "kind": "testFixture", "reference": "Ficha inventada para la calibración del cerebro; no es una criatura oficial" },

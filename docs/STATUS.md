@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 31 archivos de prueba, 387 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 32 archivos de prueba, 394 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,11 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Pantallas: núcleo de la fachada (2026-11-09)
+- Fichas en formato 3 con `challengeRating` (Goblin: CR 1/4, verificado). Dificultad Personalizada en `brainSettings.customDifficulty` (persistencia versión 15).
+- `ui-bridge/encounterSetup.ts`: bestiario desde las fichas, tarjetas de personaje validadas con códigos, preparación con instancias independientes y despliegue automático.
+- `ui-bridge/combatSession.ts`: sesión de combate serializable (despliegue, iniciativa, turnos de personaje y de monstruo, peticiones, salvaciones contra la muerte, fin del combate y registro).
 
 ## Cerebro táctico, etapa 6: controlador de combate (2026-11-09)
 - `models`: `Encounter.brainSettings` (nivel del grupo y dificultad por monstruo; `DifficultyId` pasa a `models`). Persistencia versión 14.

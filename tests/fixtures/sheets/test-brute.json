@@ -1,5 +1,5 @@
 {
-  "sheetFormat": 2,
+  "sheetFormat": 3,
   "id": "test-brute",
   "label": "Bruto de prueba",
   "source": { "kind": "testFixture", "reference": "Ficha inventada para pruebas; no es una criatura oficial" },

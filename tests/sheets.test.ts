@@ -44,7 +44,7 @@ describe("fichas: carga de fichas válidas", () => {
 
   it("acepta una ficha mínima sin estructuras opcionales", () => {
     const minimal = {
-      sheetFormat: 2,
+      sheetFormat: 3,
       id: "minimal",
       label: "Mínima",
       source: { kind: "testFixture" },
@@ -66,8 +66,9 @@ describe("fichas: errores de estructura", () => {
   });
 
   it("versión de formato no soportada", () => {
-    // Formato 1: se migra (solo añadía campos opcionales).
+    // Formatos 1 y 2: se migran (solo añadían campos opcionales).
     expect(errorsOf({ ...brute(), sheetFormat: 1 })).toEqual([]);
+    expect(errorsOf({ ...brute(), sheetFormat: 2 })).toEqual([]);
     expect(errorsOf({ ...brute(), sheetFormat: 99 })).toEqual([
       { code: "unsupportedFormatVersion", path: "sheetFormat" },
     ]);

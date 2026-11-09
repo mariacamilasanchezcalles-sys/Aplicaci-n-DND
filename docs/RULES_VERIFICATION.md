@@ -158,7 +158,7 @@ Texto leído directamente de la página del glosario de las Basic Rules 2024.
 | **Mitad del daño** | Redondeando hacia abajo; es la mitad del daño de una salvación fallida. En los perfiles, "Half damage only" ignora el resto del efecto | `onSuccess: "halfDamage"`; la mitad va antes que la Resistencia (es un multiplicador) |
 | **Formas de área** | Cono: anchura en cada punto = distancia al origen; Esfera: radio, origen incluido; Emanación: desde una criatura en todas direcciones; Línea: longitud y anchura; Cubo: origen en una cara; Cilindro: radio y altura | `rules/areas.ts` |
 | **Bloqueo** | Un punto del área no está incluido si todas las líneas desde el origen están bloqueadas (Cobertura total) | Sin obstáculos en el mapa todavía |
-| **Goblin Warrior** | Feérico Pequeño; FUE 8, DES 15, CON 10, INT 10, SAB 8, CAR 8 (salvaciones iguales); PG 10 (3d6); Sigilo +6; Visión en la oscuridad 60 pies; Percepción pasiva 9 | `data/sheets/goblin-warrior.json` y escenario |
+| **Goblin Warrior** | CR 1/4 (50 PX; BC +2; verificado el 2026-11-09 en D&D Beyond); Feérico Pequeño; FUE 8, DES 15, CON 10, INT 10, SAB 8, CAR 8 (salvaciones iguales); PG 10 (3d6); Sigilo +6; Visión en la oscuridad 60 pies; Percepción pasiva 9 | `data/sheets/goblin-warrior.json` y escenario |
 
 **No definido en las reglas 2024:** qué casillas cubre un área. Se usa la **REGLA CASERA** de la mesa (Guía del DM 2014): origen en una intersección y casilla afectada si queda cubierta al menos a la mitad (`tableRules.areaTemplate: "halfSquareDmg2014"`).
 

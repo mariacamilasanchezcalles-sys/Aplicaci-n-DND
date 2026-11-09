@@ -187,7 +187,7 @@ describe("controlador: combate de varios asaltos", () => {
       [pc("cata"), 7, 7],
       [pc("cain", 12, 14), 12, 15],
     ]);
-    e = { ...e, brainSettings: { partyLevel: 1, difficultyByCreature: { "goblin-1": "hard", "goblin-2": "hard" } } };
+    e = { ...e, brainSettings: { partyLevel: 1, difficultyByCreature: { "goblin-1": "hard", "goblin-2": "hard" }, customDifficulty: null } };
     const started = startCombat(e, { "goblin-1": 20, "goblin-2": 15, cata: 10, cain: 5 });
     if (!started.ok) throw new Error(JSON.stringify(started));
     e = started.encounter;

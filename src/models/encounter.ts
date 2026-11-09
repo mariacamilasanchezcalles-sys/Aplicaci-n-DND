@@ -69,7 +69,26 @@ export interface SideMorale {
  * Niveles de dificultad del cerebro táctico (DECISIÓN CONFIRMADA: calidad de
  * la búsqueda, nunca estadísticas ni información).
  */
-export type DifficultyId = "easy" | "normal" | "hard";
+export type DifficultyId = "easy" | "normal" | "hard" | "custom";
+
+/** Niveles con valores fijos (Personalizada usa `BrainSettings.customDifficulty`). */
+export type PresetDifficultyId = Exclude<DifficultyId, "custom">;
+
+/**
+ * Dificultad Personalizada: los mismos parámetros de búsqueda que los niveles
+ * fijos, elegidos por la persona (nunca estadísticas ni información).
+ */
+export interface CustomDifficulty {
+  /** Alternativas que conserva entre fases (1 a 6). */
+  readonly beamWidth: number;
+  /** Profundidad: fases del turno que planifica (1 a 3). */
+  readonly maxPhases: number;
+  /** Casillas que examina por movimiento (null = todas). */
+  readonly maxMoveCandidates: number | null;
+  readonly movesBetweenAttacks: boolean;
+  readonly coordination: "limited" | "considersAllies" | "plansCooperation";
+  readonly replanAfterEachOperation: boolean;
+}
 
 /**
  * Ajustes del cerebro que se asignan en el encuentro (DECISIÓN CONFIRMADA:
@@ -81,6 +100,8 @@ export interface BrainSettings {
   readonly partyLevel: number | null;
   /** Dificultad de cada monstruo (por id); sin entrada: "normal" (PROPUESTA, decisión 112). */
   readonly difficultyByCreature: Readonly<Record<string, DifficultyId>>;
+  /** Parámetros de la dificultad Personalizada (null si no se ha definido). */
+  readonly customDifficulty: CustomDifficulty | null;
 }
 
 /**

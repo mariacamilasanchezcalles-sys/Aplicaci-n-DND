@@ -24,3 +24,5 @@ export type { ControllerEvent, PlayerInput, PlayerInputRequest } from "../combat
 export type { BrainSettings, DifficultyId } from "../models";
 export { deserializeEncounter, serializeEncounter, SNAPSHOT_SCHEMA_VERSION } from "../persistence";
 export type { EncounterSnapshot, EncounterStore, EncounterSummary } from "../persistence";
+export * from "./encounterSetup";
+export * from "./combatSession";

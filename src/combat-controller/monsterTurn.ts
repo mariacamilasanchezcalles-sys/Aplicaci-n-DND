@@ -12,7 +12,7 @@ import type {
   TurnLogEntry,
   TurnState,
 } from "../rules";
-import { DIFFICULTY_PROFILES, decideReaction, personalityWeights, planCoordinatedTurn, publishIntention } from "../tactical-brain";
+import { decideReaction, difficultyProfileFor, personalityWeights, planCoordinatedTurn, publishIntention } from "../tactical-brain";
 import type { DifficultyProfile, FeatureWeights, PlanStep, SimulationPort } from "../tactical-brain";
 import { createSimulationPort } from "./simulation";
 
@@ -107,7 +107,7 @@ export function brainFor(encounter: Encounter, creatureId: CreatureId): Creature
     view,
     port: createSimulationPort(encounter, view),
     weights: personalityWeights(record.definition.personality),
-    profile: DIFFICULTY_PROFILES[encounter.brainSettings.difficultyByCreature[creatureId] ?? "normal"],
+    profile: difficultyProfileFor(encounter.brainSettings, creatureId),
   };
 }
 
@@ -337,7 +337,7 @@ function afterResult(
 ): MonsterTurnStatus {
   const entries = result.turn.log.slice(session.turn.log.length);
   const encounter = observeLogEntries(result.encounter, session.actorId, entries);
-  const profile = DIFFICULTY_PROFILES[encounter.brainSettings.difficultyByCreature[session.actorId] ?? "normal"];
+  const profile = difficultyProfileFor(encounter.brainSettings, session.actorId);
   const relevant = isRelevant(session, entries);
   const keepPlan = remaining !== null && remaining.length > 0 && !profile.replanAfterEachOperation && !relevant;
   const next: MonsterTurnSession = {

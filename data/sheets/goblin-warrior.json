@@ -1,5 +1,5 @@
 {
-  "sheetFormat": 2,
+  "sheetFormat": 3,
   "id": "goblin-warrior",
   "label": "Goblin",
   "source": {
@@ -8,6 +8,7 @@
   },
   "size": "small",
   "creatureType": "fey",
+  "challengeRating": "1/4",
   "armorClass": 15,
   "initiativeBonus": 2,
   "hitPoints": {

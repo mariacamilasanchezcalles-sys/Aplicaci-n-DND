@@ -15,7 +15,7 @@ import type {
   TargetingSpec,
   TriggerSpec,
 } from "../models";
-import { SHEET_FORMAT_VERSION } from "../models";
+import { CHALLENGE_RATINGS, SHEET_FORMAT_VERSION } from "../models";
 import {
   arr,
   bool,
@@ -322,6 +322,7 @@ export const creatureSheetSchema: Schema<CreatureSheet> = obj(
   },
   {
     creatureType: oneOf(CREATURE_TYPES),
+    challengeRating: oneOf(CHALLENGE_RATINGS),
     initiativeBonus: bonus,
     abilities: record(ability, int(1, 30)),
     savingThrows: record(ability, bonus),

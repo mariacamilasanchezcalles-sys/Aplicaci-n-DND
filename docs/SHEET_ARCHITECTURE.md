@@ -35,7 +35,8 @@ estructuras vacías.
 
 | Campo | Contenido |
 |---|---|
-| `sheetFormat` | Versión del formato (hoy 2; las fichas 1 se migran tal cual). Otra versión se rechaza con `unsupportedFormatVersion`. |
+| `sheetFormat` | Versión del formato (hoy 3; las fichas 1 y 2 se migran tal cual). Otra versión se rechaza con `unsupportedFormatVersion`. |
+| `challengeRating` | Valor de Desafío (formato 3, opcional): solo orientativo en el bestiario. |
 | `id`, `label`, `source` | Identificador (kebab-case), etiqueta para personas, origen: `official` / `homebrew` / `testFixture` + referencia. |
 | `size`, `creatureType` | Tamaño (decide la huella, ver `rules/size.ts`) y tipo de criatura. |
 | `armorClass`, `hitPoints` | CA; PG medios y fórmula opcional. |

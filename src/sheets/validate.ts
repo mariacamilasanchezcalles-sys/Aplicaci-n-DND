@@ -41,9 +41,10 @@ export function validateCreatureSheet(input: unknown): SheetValidationResult {
  * Migradores explícitos entre versiones de formato:
  * - 1 → 2: el formato 2 solo añade campos opcionales (`targetMaxSize` en
  *   `applyCondition`); una ficha 1 es una ficha 2 válida tal cual.
+ * - 2 → 3: el formato 3 solo añade `challengeRating` (opcional).
  */
 function migrateSheet(value: unknown): unknown {
-  if (isPlainObject(value) && value["sheetFormat"] === 1) return { ...value, sheetFormat: 2 };
+  if (isPlainObject(value) && (value["sheetFormat"] === 1 || value["sheetFormat"] === 2)) return { ...value, sheetFormat: SHEET_FORMAT_VERSION };
   return value;
 }
 

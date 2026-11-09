@@ -81,7 +81,7 @@ export function createRulesEngine(): RulesEngine {
         sideMorale: {},
         sideKnowledge: {},
         sideIntentions: {},
-        brainSettings: { partyLevel: input.partyLevel ?? null, difficultyByCreature: {} },
+        brainSettings: { partyLevel: input.partyLevel ?? null, difficultyByCreature: {}, customDifficulty: null },
       };
     },
 

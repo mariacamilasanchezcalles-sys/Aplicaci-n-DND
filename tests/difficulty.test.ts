@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PersonalityId } from "../src/models";
 import { DIFFICULTY_PROFILES, FEATURE_NAMES, personalityWeights, planTurn, simulatePlan } from "../src/tactical-brain";
-import type { DifficultyId, FeatureWeights } from "../src/tactical-brain";
+import type { FeatureWeights, PresetDifficultyId as DifficultyId } from "../src/tactical-brain";
 import { SCENARIOS, comparisonsFor, scenarioContext } from "./calibration/scenarios";
 
 /**
