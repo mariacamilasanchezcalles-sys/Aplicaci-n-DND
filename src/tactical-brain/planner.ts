@@ -2,7 +2,7 @@ import type { AttackId, CreatureId, Encounter } from "../models";
 import type { KnowledgeView } from "../perception";
 import type { ExecutionOption, ReactionOpportunity, TurnState } from "../rules";
 import { computeFeatures, scoreFeatures } from "./features";
-import type { FeatureName, FeatureVector, FeatureWeights } from "./features";
+import type { CooperationContext, FeatureName, FeatureVector, FeatureWeights } from "./features";
 import { asPlanSimulation, continueSimulation, startSimulation } from "./plan";
 import type { PartialSimulation, Plan, PlanStep } from "./plan";
 import type { SimulationPort } from "./simulation";
@@ -86,6 +86,7 @@ export function planTurn(
   weights: FeatureWeights,
   params: SearchParameters,
   start?: PlanningStart,
+  cooperation?: CooperationContext,
 ): PlanDecision | null {
   let evaluated = 0;
   let best: ScoredPlan | null = null;
@@ -100,7 +101,7 @@ export function planTurn(
     const ended = continueSimulation(port, actorId, partial, [END]);
     if (!ended.ok) return null;
     evaluated++;
-    const features = computeFeatures(port, view, actorId, asPlanSimulation(ended.partial));
+    const features = computeFeatures(port, view, actorId, asPlanSimulation(ended.partial), cooperation);
     const scored = { plan: { steps: ended.partial.steps }, score: scoreFeatures(features, effectiveWeights), features };
     // Desempate determinista: gana el primero generado.
     if (best === null || scored.score > best.score) best = scored;

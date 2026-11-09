@@ -154,6 +154,8 @@ export function buildBeliefEncounter(publicEncounter: Encounter, view: Knowledge
     turnIndex: publicEncounter.turnIndex,
     sideMorale: ownMorale ? { [view.side]: ownMorale } : {},
     sideKnowledge: {},
+    // La pizarra del propio bando se comparte entera.
+    sideIntentions: publicEncounter.sideIntentions[view.side] ? { [view.side]: publicEncounter.sideIntentions[view.side]! } : {},
     combatants,
   };
 }

@@ -1,4 +1,4 @@
-import type { AttackId, CreatureId, Encounter } from "../models";
+import type { AttackId, CreatureId, Encounter, GridPosition } from "../models";
 // Solo tipos del motor (diseño aprobado + ajuste técnico: el cerebro nombra
 // los tipos de las órdenes, pero no puede ejecutar ninguna regla).
 import type {
@@ -55,6 +55,11 @@ export interface SimulationPort {
    * daño esperado y probabilidad de cada condición. null si no es válida.
    */
   effectOdds(state: Encounter, turn: TurnState, key: string, input: EffectInput): readonly EffectTargetOdds[] | null;
+  /**
+   * Estado con criaturas recolocadas (posiciones previstas de los aliados),
+   * solo donde la colocación es legal; las demás se quedan donde están.
+   */
+  projectPositions(state: Encounter, positions: Readonly<Record<string, GridPosition>>): Encounter;
 }
 
 export interface EffectTargetOdds {

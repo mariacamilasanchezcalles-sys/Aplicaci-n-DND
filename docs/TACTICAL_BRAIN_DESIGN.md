@@ -199,6 +199,7 @@ opciones sin rehacerlo.
    aprobados.
 4. **[HECHA 2026-11-07, salvo los valores de dificultad] Planificador:** búsqueda por niveles de dificultad, replanificación por eventos y reacciones.
    `tactical-brain/planner.ts`: `planTurn` (búsqueda por fases con poda, parámetros de dificultad, punto de partida a mitad de turno) y `decideOpportunityAttack`. Ver `BRAIN_CALIBRATION.md` §5.
-5. **Cooperación:** pizarra de intenciones del bando.
+5. **[HECHA 2026-11-09] Cooperación:** pizarra de intenciones del bando.
+   `tactical-brain/cooperation.ts`: intenciones (posición final y daño esperado por objetivo) en `Encounter.sideIntentions`; remate y flanqueos medidos con los planes de los aliados que actúan después; coordinación por dificultad.
 6. **Controlador:** `combat-controller` que juega los turnos de los monstruos de principio a fin, y
    su conexión con `ui-bridge`.

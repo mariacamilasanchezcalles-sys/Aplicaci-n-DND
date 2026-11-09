@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última verificación: `npm run verify` sin errores, 29 archivos de prueba, 373 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
+Última verificación: `npm run verify` sin errores, 30 archivos de prueba, 378 pruebas aprobadas (más 1 de calibración que solo corre con `npm run calibrate`).
 
 ## Implementado
 - **Modelos tipados** de criaturas, ataques, acciones, posiciones y encuentro (`src/models`).
@@ -19,6 +19,12 @@
 - Cerebro táctico: contrato y punto de integración vacío (`unimplementedTacticalBrain`).
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
+
+## Cerebro táctico, etapa 5: cooperación (2026-11-09)
+- `models`: `Intention` y `Encounter.sideIntentions` (pizarra por bando; el estado creído incluye la del propio bando).
+- `tactical-brain/cooperation.ts`: `intentionOf`, `publishIntention`, `alliesActingAfter`, `cooperationFromBoard` y `planCoordinatedTurn` (coordinación "limitada", "considera aliados" o "planifica cooperación").
+- `computeFeatures` y `planTurn` aceptan el contexto de cooperación (remate marginal y flanqueos previstos; decisión 109). `SimulationPort.projectPositions` coloca a los aliados donde terminarán, respetando la ocupación.
+- Persistencia versión 13.
 
 ## Niveles de dificultad (2026-11-07)
 - `tactical-brain/difficulty.ts`: Fácil, Normal y Difícil como parámetros de búsqueda (valores PROPUESTOS, decisión 96); la calibración usa Difícil.

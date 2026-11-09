@@ -1,4 +1,4 @@
-import type { CreatureId, Encounter } from "../models";
+import type { CreatureId, Encounter, GridPosition } from "../models";
 import type { KnowledgeView } from "../perception";
 import type { PlanSimulation } from "./plan";
 import type { SimulationPort } from "./simulation";
@@ -65,11 +65,24 @@ export type FeatureName = (typeof FEATURE_NAMES)[number];
 const enemiesOf = (state: Encounter, side: string): CreatureId[] =>
   (Object.keys(state.combatants).sort() as CreatureId[]).filter((id) => state.combatants[id]!.side !== side);
 
+/**
+ * Lo que el actor sabe de los planes de los aliados que actúan después que él
+ * y antes de su próximo turno (pizarra del bando; etapa 5). Cambia cómo se
+ * miden dos rasgos, sin pesos nuevos (PROPUESTA, decisión 109):
+ * - `finishingChance`: solo la parte de rematar que no consiguen ya ellos;
+ * - `flankingPairs`: con los aliados en la posición en que terminarán.
+ */
+export interface CooperationContext {
+  readonly allyDamageByTarget: Readonly<Record<string, number>>;
+  readonly allyPositions: Readonly<Record<string, GridPosition>>;
+}
+
 export function computeFeatures(
   port: SimulationPort,
   view: KnowledgeView,
   actorId: CreatureId,
   simulation: Extract<PlanSimulation, { ok: true }>,
+  cooperation?: CooperationContext,
 ): FeatureVector {
   const { initial, final } = simulation;
   const me = final.combatants[actorId];
@@ -115,7 +128,9 @@ export function computeFeatures(
   let finishingChance = 0;
   for (const [targetId, damage] of damageByTarget) {
     const hp = initial.combatants[targetId]?.state.currentHitPoints;
-    if (hp !== null && hp !== undefined && hp > 0) finishingChance += Math.min(1, damage / hp);
+    if (hp === null || hp === undefined || hp <= 0) continue;
+    const allies = cooperation?.allyDamageByTarget[targetId] ?? 0;
+    finishingChance += Math.min(1, (damage + allies) / hp) - Math.min(1, allies / hp);
   }
 
   const threats = [...simulation.provoked, ...port.incomingThreats(final, actorId)];
@@ -130,7 +145,8 @@ export function computeFeatures(
   const adjacentEnemiesWhileBloodied = bloodied ? adjacentEnemies : 0;
   const members = (Object.keys(final.combatants).sort() as CreatureId[]).filter((id) => final.combatants[id]!.side === side);
   let flankingPairs = 0;
-  for (const member of members) for (const enemy of enemies) if (port.flanks(final, member, enemy)) flankingPairs++;
+  const projected = cooperation ? port.projectPositions(final, withoutKey(cooperation.allyPositions, actorId)) : final;
+  for (const member of members) for (const enemy of enemies) if (port.flanks(projected, member, enemy)) flankingPairs++;
 
   const resourcesSpent = (initial.combatants[actorId]?.state.resources ?? []).reduce((sum, pool) => {
     const after = me.state.resources.find((r) => r.id === pool.id)?.current ?? pool.current;
@@ -177,6 +193,9 @@ function dropChance(threats: readonly { readonly expectedDamage: number; readonl
   for (const [damage, p] of distribution) if (damage >= hp) dropped += p;
   return Math.min(1, dropped);
 }
+
+const withoutKey = <T>(record: Readonly<Record<string, T>>, key: string): Record<string, T> =>
+  Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
 
 export type FeatureWeights = Readonly<Record<FeatureName, number>>;
 

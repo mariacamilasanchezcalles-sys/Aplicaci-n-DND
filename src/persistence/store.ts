@@ -13,8 +13,9 @@ import type { Encounter, EncounterId } from "../models";
  * v11: ataques con condiciones al impactar (`onHitConditions`), habilidades
  *      (`skills`) y Agarrado con la parte que agarra y su alcance.
  * v12: memoria del bando con los desencadenantes de reacción vistos.
+ * v13: pizarra de intenciones por bando (`sideIntentions`).
  */
-export const SNAPSHOT_SCHEMA_VERSION = 12 as const;
+export const SNAPSHOT_SCHEMA_VERSION = 13 as const;
 
 export interface EncounterSnapshot {
   readonly schemaVersion: typeof SNAPSHOT_SCHEMA_VERSION;

@@ -20,6 +20,7 @@ import {
   getTurnOptions,
   isFlanking,
   reachableSquares,
+  validatePlacement,
 } from "../rules";
 import type { RandomSource } from "../rules";
 import type { EffectTargetOdds, EstimatedAttackOdds, IncomingThreat, SimulationPort } from "../tactical-brain";
@@ -180,6 +181,16 @@ export function createSimulationPort(publicEncounter: Encounter, view: Knowledge
         if (best) threats.push({ enemyId: enemy.definition.id, expectedDamage: best.expectedDamage, hitChance: best.hitChance });
       }
       return threats;
+    },
+    projectPositions(state, positions) {
+      let projected = state;
+      for (const id of Object.keys(positions).sort()) {
+        const record = projected.combatants[id];
+        const position = positions[id]!;
+        if (!record || !validatePlacement(projected, position, record.definition.size, { ignoreCreatureId: record.definition.id }).valid) continue;
+        projected = { ...projected, combatants: { ...projected.combatants, [id]: { ...record, state: { ...record.state, position } } } };
+      }
+      return projected;
     },
     getOptions: (state, turn) => getTurnOptions(state, turn),
     reachable: (state, turn) => reachableSquares(state, turn),

@@ -52,3 +52,24 @@ export interface SideKnowledge {
   /** Memoria por criatura observada (por id). */
   readonly creatures: Readonly<Record<string, CreatureMemory>>;
 }
+
+/**
+ * INTENCIÓN publicada en la pizarra del bando (TACTICAL_BRAIN_DESIGN.md §7;
+ * DECISIÓN CONFIRMADA: los aliados comparten conocimiento e intenciones).
+ * Solo datos medidos del plan elegido o tentativo.
+ */
+export interface Intention {
+  readonly creatureId: CreatureId;
+  /** Asalto para el que se planeó (una intención de otro asalto no cuenta). */
+  readonly round: number;
+  /** Dónde terminará su turno. */
+  readonly finalPosition: GridPosition;
+  /** Daño esperado que causará a cada criatura (por id). */
+  readonly expectedDamageByTarget: Readonly<Record<string, number>>;
+  /** Tentativa: la planeó un aliado por ella (coordinación "planifica cooperación"). */
+  readonly tentative: boolean;
+}
+
+export interface SideIntentions {
+  readonly intentions: Readonly<Record<string, Intention>>;
+}
