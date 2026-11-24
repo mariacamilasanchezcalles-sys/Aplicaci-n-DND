@@ -42,7 +42,7 @@ export function splashScreen(model: AppModel): HTMLElement {
       { class: "splash-center" },
       svg(emblemSvg(200), "emblem"),
       h("h1", { class: "splash-title", text: "Simulador Táctico" }),
-      h("p", { class: "splash-sub muted", text: "Combate de D&D 5e · reglas 2024" }),
+      h("p", { class: "splash-sub muted", text: "Combate de D&D 5e con las reglas de 2024" }),
       button("Entrar al combate", () => model.go("bestiary"), { class: "btn-primary btn-wide btn-large" }),
       h(
         "div",

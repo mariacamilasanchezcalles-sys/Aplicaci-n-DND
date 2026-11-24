@@ -28,6 +28,8 @@ export class Board {
   readonly element: HTMLElement;
   private readonly content: HTMLElement;
   private readonly layer: HTMLElement;
+  private readonly ground: HTMLCanvasElement;
+  private groundCell = 0;
   private readonly viewport: MapViewport;
   private encounter: Encounter;
   private highlights: BoardHighlights = { reachable: [], targets: [], currentActorId: null, selectedId: null, focus: null };
@@ -37,7 +39,8 @@ export class Board {
     this.encounter = encounter;
     const { columns, rows } = encounter.grid.dimensions;
     this.layer = h("div", { class: "board-layer" });
-    this.content = h("div", { class: "board-content" }, this.layer);
+    this.ground = h("canvas", { class: "board-ground", ariaLabel: "" });
+    this.content = h("div", { class: "board-content" }, this.ground, this.layer);
     this.element = h("div", { class: "board", ariaLabel: "Tablero de combate" }, this.content);
     this.viewport = new MapViewport({
       container: this.element,
@@ -126,6 +129,10 @@ export class Board {
     this.content.style.width = `${columns * cell}px`;
     this.content.style.height = `${rows * cell}px`;
     this.content.style.setProperty("--cell", `${cell}px`);
+    if (cell !== this.groundCell) {
+      this.groundCell = cell;
+      paintGround(this.ground, columns, rows, cell);
+    }
     const view = buildMapView(this.encounter);
     const abbreviations = uniqueAbbreviations(view.creatures.map((c) => [c.id, c.label] as const));
     const nodes: HTMLElement[] = [];
@@ -162,6 +169,116 @@ export class Board {
     }
     this.layer.replaceChildren(...nodes);
   }
+}
+
+/** Mezcla determinista (sin azar: el azar es solo de los dados). */
+function hash(x: number, y: number, salt: number): number {
+  let h = (x * 374761393 + y * 668265263 + salt * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/**
+ * Suelo del claro: losas de piedra irregulares con musgo en las juntas y
+ * grietas, y la cuadrícula trazada en tinta dorada desvaída. Solo
+ * presentación; se repinta cuando cambia el tamaño de casilla.
+ */
+function paintGround(canvas: HTMLCanvasElement, columns: number, rows: number, cell: number): void {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.round(columns * cell * dpr);
+  canvas.height = Math.round(rows * cell * dpr);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(dpr, dpr);
+  // Tierra y musgo bajo las losas.
+  ctx.fillStyle = "#171912";
+  ctx.fillRect(0, 0, columns * cell, rows * cell);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < columns; c++) {
+      const x = c * cell;
+      const y = r * cell;
+      // Losa: tono de piedra que varía de una a otra.
+      const tone = hash(c, r, 1);
+      const light = 15 + tone * 7;
+      const warm = hash(c, r, 2) * 8;
+      const inset = cell * (0.05 + hash(c, r, 3) * 0.04);
+      ctx.fillStyle = `hsl(${30 + warm}, ${8 + tone * 6}%, ${light}%)`;
+      ctx.beginPath();
+      const j = (s: number): number => (hash(c, r, s) - 0.5) * cell * 0.06;
+      ctx.moveTo(x + inset + j(4), y + inset + j(5));
+      ctx.lineTo(x + cell - inset + j(6), y + inset + j(7));
+      ctx.lineTo(x + cell - inset + j(8), y + cell - inset + j(9));
+      ctx.lineTo(x + inset + j(10), y + cell - inset + j(11));
+      ctx.closePath();
+      ctx.fill();
+      // Brillo superior suave: relieve de la losa.
+      const grad = ctx.createLinearGradient(x, y, x + cell, y + cell);
+      grad.addColorStop(0, "rgba(236, 227, 208, 0.05)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.18)");
+      ctx.fillStyle = grad;
+      ctx.fill();
+      // Musgo que trepa desde las juntas.
+      const patches = Math.floor(hash(c, r, 12) * 3);
+      for (let p = 0; p < patches; p++) {
+        const edge = Math.floor(hash(c, r, 20 + p) * 4);
+        const t = hash(c, r, 30 + p);
+        const px = edge === 0 ? x + t * cell : edge === 1 ? x + cell : edge === 2 ? x + t * cell : x;
+        const py = edge === 0 ? y : edge === 1 ? y + t * cell : edge === 2 ? y + cell : y + t * cell;
+        const radius = cell * (0.06 + hash(c, r, 40 + p) * 0.12);
+        const moss = ctx.createRadialGradient(px, py, 0, px, py, radius);
+        moss.addColorStop(0, "rgba(46, 54, 30, 0.55)");
+        moss.addColorStop(0.6, "rgba(40, 46, 26, 0.3)");
+        moss.addColorStop(1, "rgba(40, 46, 26, 0)");
+        ctx.fillStyle = moss;
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Alguna grieta.
+      if (hash(c, r, 50) > 0.72) {
+        ctx.strokeStyle = "rgba(8, 8, 7, 0.55)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        let cx = x + cell * (0.25 + hash(c, r, 51) * 0.5);
+        let cy = y + inset + 1;
+        ctx.moveTo(cx, cy);
+        for (let k = 0; k < 4; k++) {
+          cx += (hash(c, r, 52 + k) - 0.5) * cell * 0.25;
+          cy += cell * 0.18;
+          ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      }
+      // Hoja caída de vez en cuando.
+      if (hash(c, r, 60) > 0.9) {
+        ctx.save();
+        ctx.translate(x + cell * hash(c, r, 61), y + cell * hash(c, r, 62));
+        ctx.rotate(hash(c, r, 63) * Math.PI * 2);
+        ctx.fillStyle = hash(c, r, 64) > 0.5 ? "rgba(112, 28, 37, 0.55)" : "rgba(122, 104, 60, 0.5)";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, cell * 0.12, cell * 0.05, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+  // Cuadrícula en tinta dorada desvaída.
+  ctx.strokeStyle = "rgba(181, 154, 112, 0.2)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let c = 0; c <= columns; c++) {
+    ctx.moveTo(c * cell + 0.5, 0);
+    ctx.lineTo(c * cell + 0.5, rows * cell);
+  }
+  for (let r = 0; r <= rows; r++) {
+    ctx.moveTo(0, r * cell + 0.5);
+    ctx.lineTo(columns * cell, r * cell + 0.5);
+  }
+  ctx.stroke();
+  // Borde del claro.
+  ctx.strokeStyle = "rgba(181, 154, 112, 0.45)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, columns * cell - 2, rows * cell - 2);
 }
 
 function place(element: HTMLElement, position: GridPosition, span: number, cell: number): void {

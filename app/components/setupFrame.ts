@@ -1,5 +1,5 @@
 import { h, button, svg } from "../dom";
-import { iconSvg, runeBandSvg } from "../art/art";
+import { iconSvg } from "../art/art";
 import { DIFFICULTY_LABEL } from "../i18n/es";
 import type { AppModel, ScreenId } from "../state";
 import { SETUP_STEPS } from "../state";
@@ -11,8 +11,8 @@ const STEP_LABEL: Readonly<Record<(typeof SETUP_STEPS)[number], string>> = {
   combat: "Combate",
 };
 
-/** Resumen del encuentro actual: "3 Goblins · 2 Aventureros · Dificultad pendiente". */
-export function encounterSummary(model: AppModel): string {
+/** Partes del resumen del encuentro actual: enemigos, aventureros y dificultad. */
+export function encounterSummaryParts(model: AppModel): string[] {
   const monsters = model.draft.monsters
     .filter((g) => g.count > 0)
     .map((g) => {
@@ -21,8 +21,13 @@ export function encounterSummary(model: AppModel): string {
       return `${g.count} ${g.count === 1 ? label : `${label}s`}`;
     });
   const party = model.draft.partyKeys.length;
-  const difficulty = model.draft.difficulty === null ? "Dificultad pendiente" : `Dificultad ${DIFFICULTY_LABEL[model.draft.difficulty]}`;
-  return [monsters.length > 0 ? monsters.join(", ") : "Sin enemigos", `${party} ${party === 1 ? "Aventurero" : "Aventureros"}`, difficulty].join(" · ");
+  const difficulty = model.draft.difficulty === null ? "Dificultad pendiente" : `Dificultad ${DIFFICULTY_LABEL[model.draft.difficulty].toLowerCase()}`;
+  return [monsters.length > 0 ? monsters.join(", ") : "Sin enemigos", `${party} ${party === 1 ? "aventurero" : "aventureros"}`, difficulty];
+}
+
+/** Resumen en una frase (nombre del encuentro guardado). */
+export function encounterSummary(model: AppModel): string {
+  return encounterSummaryParts(model).join(", ");
 }
 
 /**
@@ -66,15 +71,14 @@ export function setupFrame(
         "div",
         { class: "setup-top" },
         button("", () => model.go(back), { class: "btn-ghost btn-icon", icon: svg(iconSvg("back")), ariaLabel: "Volver" }),
-        h("div", { class: "setup-titles" }, h("div", { class: "eyebrow", text: "Preparación del encuentro" }), h("h1", { text: title })),
+        h("div", { class: "setup-titles" }, h("h1", { text: title })),
         h("div", { class: "step-count muted num", text: `Paso ${index + 1} de 4` }),
       ),
       steps,
       h(
         "div",
-        { class: "encounter-summary" },
-        h("span", { class: "eyebrow", text: "Encuentro actual" }),
-        h("span", { class: "summary-text", text: encounterSummary(model) }),
+        { class: "encounter-summary", ariaLabel: "Encuentro actual" },
+        ...encounterSummaryParts(model).map((part) => h("span", { class: "chip", text: part })),
         h("span", { class: "saved-tag muted", text: "Selección guardada" }),
       ),
     ),
@@ -82,7 +86,6 @@ export function setupFrame(
     h(
       "footer",
       { class: "setup-footer" },
-      svg(runeBandSvg(220), "rune-band"),
       primary.hint ? h("div", { class: "hint danger", text: primary.hint }) : null,
       button(primary.label, primary.onClick, { class: "btn-primary btn-wide", disabled: primary.disabled }),
     ),

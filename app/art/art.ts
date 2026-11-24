@@ -139,12 +139,12 @@ export function forestBackgroundSvg(): string {
   return `<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#0b0b0b"/>
-        <stop offset="55%" stop-color="#16150f"/>
+        <stop offset="0%" stop-color="#0f110e"/>
+        <stop offset="45%" stop-color="#22261d"/>
         <stop offset="100%" stop-color="${C.moss}"/>
       </linearGradient>
       <radialGradient id="moon" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="${C.bloodBright}" stop-opacity="0.55"/>
+        <stop offset="0%" stop-color="${C.bloodBright}" stop-opacity="0.7"/>
         <stop offset="100%" stop-color="${C.blood}" stop-opacity="0"/>
       </radialGradient>
       <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1">
@@ -156,15 +156,15 @@ export function forestBackgroundSvg(): string {
     <rect width="400" height="800" fill="url(#sky)"/>
     <circle cx="300" cy="170" r="120" fill="url(#moon)"/>
     <circle cx="300" cy="170" r="26" fill="${C.blood}" opacity="0.35"/>
-    ${trees(14, 560, 300, "#141412", 0.9)}
+    ${trees(14, 560, 300, "#11130f", 0.95)}
     <!-- Ruinas: arco y columnas rotas -->
-    <g fill="#1b1a17" stroke="${C.goldDim}" stroke-width="0.6" stroke-opacity="0.35">
+    <g fill="#1a1c17" stroke="${C.goldDim}" stroke-width="0.8" stroke-opacity="0.55">
       <path d="M110 600 L110 470 Q160 410 210 470 L210 600 L192 600 L192 478 Q160 440 128 478 L128 600 Z"/>
       <rect x="236" y="520" width="16" height="80"/>
       <path d="M232 520 L256 520 L250 508 L240 512 Z"/>
       <rect x="62" y="548" width="14" height="52"/>
     </g>
-    ${trees(10, 640, 360, "#0e0e0d", 1)}
+    ${trees(10, 640, 360, "#090a08", 1)}
     <rect y="470" width="400" height="140" fill="url(#mist)"/>
     <rect y="620" width="400" height="180" fill="#0d0d0c"/>
     ${roots()}

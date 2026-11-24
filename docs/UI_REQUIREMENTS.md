@@ -10,7 +10,14 @@
 | Verde musgo | `#292B25` | Detalles ambientales (nunca dominante) |
 | Oro antiguo | `#B59A70` | Marcos finos de bronce, como un grimorio |
 
-- Tipografía decorativa para títulos (**Cinzel**) y sencilla para estadísticas (**Alegreya Sans**, cifras alineadas y tabulares). Licencia OFL, incluidas en la app (sin conexión).
+- Tipografía de imprenta antigua para títulos (**IM Fell English**, en minúsculas normales; sustituye a Cinzel en el rediseño del 2026-11-24) y sencilla para estadísticas (**Alegreya Sans**, cifras alineadas y tabulares). Licencia OFL, incluidas en la app (sin conexión).
+
+### Rediseño del 2026-11-24: "un grimorio abierto sobre un claro del bosque"
+La jugadora no estaba conforme con la primera versión. Crítica: aspecto de plantilla (el mismo marco con rombos en cada tarjeta, títulos en mayúsculas espaciadas, etiquetas en mayúsculas), un tablero de cuadrícula plana y un bosque tapado por capas oscuras. Cambios:
+- **Tablero (el elemento protagonista):** suelo de losas de piedra con musgo, grietas y hojas caídas (canvas, determinista), con la cuadrícula en tinta dorada desvaída y una viñeta de bosque. Las fichas de los monstruos son sellos de lacre carmesí; las de los aventureros, monedas de latón.
+- El resto, sobrio: paneles de cuero con un filo dorado, sin rombos (el ornamento queda solo en los diálogos), sin mayúsculas forzadas, y el resumen del encuentro en chips.
+- Inicio con el bosque y la luna rojiza visibles, y el título grande abajo.
+- Botón principal de lacre carmesí; pasos de la preparación como nudos en una cuerda.
 - Iconos de espadas, escudos, dados, calaveras, árboles y runas.
 - **Regla:** la atmósfera va en fondos, marcos e ilustraciones; números y controles, muy legibles.
 - Un mismo mundo en todas las pantallas: el inicio es la entrada; el bestiario, un libro antiguo; los personajes, los aventureros que se preparan; la dificultad, un ritual; el combate, el mundo convertido en tablero.

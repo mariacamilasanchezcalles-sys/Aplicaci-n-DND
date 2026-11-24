@@ -10,6 +10,16 @@ const filters = { text: "", type: "all" as CreatureTypeId | "all", size: "all" a
 
 const PERSONALITIES: readonly PersonalityId[] = ["pragmatic", "aggressive", "pacifist"];
 
+/** Tamaño como adjetivo tras el tipo ("Feérico pequeño"). */
+const SIZE_ADJECTIVE: Readonly<Record<CreatureSize, string>> = {
+  tiny: "diminuto",
+  small: "pequeño",
+  medium: "mediano",
+  large: "grande",
+  huge: "enorme",
+  gargantuan: "gargantuesco",
+};
+
 /** Pantalla 2 — Bestiario: un libro antiguo de criaturas. */
 export function bestiaryScreen(model: AppModel): HTMLElement {
   const entries = model.bestiary.entries;
@@ -45,7 +55,7 @@ export function bestiaryScreen(model: AppModel): HTMLElement {
                 "div",
                 { class: "creature-info" },
                 h("h3", { text: e.label }),
-                h("div", { class: "muted small", text: [SIZE_LABEL[e.size], e.creatureType ? TYPE_LABEL[e.creatureType] : null].filter(Boolean).join(" · ") }),
+                h("div", { class: "muted small", text: `${e.creatureType ? TYPE_LABEL[e.creatureType] : "Criatura"} ${SIZE_ADJECTIVE[e.size]}` }),
                 h(
                   "div",
                   { class: "stat-row" },
@@ -54,7 +64,7 @@ export function bestiaryScreen(model: AppModel): HTMLElement {
                   stat("Vel.", `${e.speedFeet}`, "boot"),
                   stat("VD", e.challengeRating ?? "—", "skull"),
                 ),
-                h("div", { class: "muted small", text: e.attacks.map((a) => a.label).join(" · ") }),
+                h("div", { class: "muted small", text: `Ataques: ${e.attacks.map((a) => a.label.toLowerCase()).join(", ")}` }),
                 e.sourceKind === "official" ? null : h("div", { class: "chip small", text: "Ficha de prueba" }),
               ),
               h(

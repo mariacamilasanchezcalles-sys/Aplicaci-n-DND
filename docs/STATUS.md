@@ -20,6 +20,9 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## Rediseño visual (2026-11-24)
+- "Grimorio sobre un claro del bosque": tablero de losas con musgo, fichas de lacre y latón, títulos en IM Fell English y menos ornamento repetido (ver `UI_REQUIREMENTS.md`). Publicado para probar en el iPhone: https://claude.ai/artifact/AVd1n9qGLJAbxzxq1daSdJ (privado).
+
 ## App Android (2026-11-09)
 - Capacitor 8.6 (`capacitor.config.ts`, `android/`); `npm run android:apk` genera el APK de depuración (probado: compila, 7,2 MB, Android 7+). Guía en `docs/ANDROID.md`.
 - Icono adaptable y pantalla de arranque con el emblema propio.
