@@ -6,6 +6,7 @@ import type {
   ConditionId,
   CreatureId,
   CreatureSize,
+  DamageType,
   Encounter,
   GridPosition,
   LifeState,
@@ -344,6 +345,11 @@ export interface EffectInput {
   readonly placement?: AreaPlacement;
   /** Salvaciones de personajes jugadores tiradas con dados físicos. */
   readonly playerSaves?: Readonly<Record<string, PlayerSaveInput>>;
+  /**
+   * Daño que tiró el jugador con sus dados (conjuros de personajes), por
+   * tipo de daño: el total de la tirada, antes de salvaciones y defensas.
+   */
+  readonly playerDamage?: Readonly<Partial<Record<DamageType, number>>>;
 }
 
 export type TurnCommandError =
@@ -425,7 +431,7 @@ interface ResolvedCapability {
 const MAX_TREE_DEPTH = 16;
 
 function attackBody(definition: CombatantDefinition): Operation | null {
-  const options: Operation[] = definition.attacks.map((attack) => ({ op: "attack", attackRef: attack.id }));
+  const options: Operation[] = definition.attacks.filter((attack) => attack.spell !== true).map((attack) => ({ op: "attack", attackRef: attack.id }));
   const single = options.length === 1 ? options[0] : undefined;
   const pick: Operation | null =
     options.length === 0 ? null : single ?? { op: "choice", options };
@@ -1407,6 +1413,13 @@ function applyChoice(
           ? fail(targets.reasonCode)
           : { ok: false, reasonCode: targets.reasonCode, areaReason: targets.areaReason };
       }
+      // Efecto de un personaje: el daño lo tira el jugador (dados físicos).
+      const damageTypes = choice.operation.effects.flatMap((e) => (e.kind === "damage" ? [e.damageType] : []));
+      const playerDamage = actor.definition.kind === "playerCharacter" && damageTypes.length > 0 ? effectInput.playerDamage : undefined;
+      if (actor.definition.kind === "playerCharacter" && damageTypes.length > 0) {
+        const ok = playerDamage !== undefined && damageTypes.every((t) => Number.isInteger(playerDamage[t]) && playerDamage[t]! >= 0);
+        if (!ok) return fail("playerDamageRequired");
+      }
       const resolution = resolveEffect(
         encounter,
         choice.operation,
@@ -1414,6 +1427,7 @@ function applyChoice(
         dice,
         effectInput.playerSaves,
         actor.definition.id,
+        playerDamage,
       );
       // Si faltan datos o tiradas de jugadores, no se consume nada.
       if (!resolution.ok) return { ok: false, reasonCode: resolution.reason, creatureIds: resolution.creatureIds };
@@ -1610,7 +1624,8 @@ function meleeAttacksReaching(encounter: Encounter, reactor: CombatantRecord, mo
       mover.definition.size,
       encounter.tableRules.diagonal,
     ) * encounter.grid.feetPerSquare;
-  return reactor.definition.attacks.filter((a) => a.mode === "melee" && distance <= a.rangeFeet.normal).map((a) => a.id);
+  // Solo con un arma o un Golpe sin armas: los ataques de conjuro no cuentan.
+  return reactor.definition.attacks.filter((a) => a.mode === "melee" && a.spell !== true && distance <= a.rangeFeet.normal).map((a) => a.id);
 }
 
 /**

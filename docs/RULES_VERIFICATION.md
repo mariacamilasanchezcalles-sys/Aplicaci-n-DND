@@ -158,6 +158,20 @@ Texto leído directamente de la página del glosario de las Basic Rules 2024.
 
 Los nombres de las armas en español son etiquetas: PENDIENTE DE VALIDAR contra la traducción oficial.
 
+## Conjuros de daño, clases y multiclase (verificado el 2026-11-24, SRD 5.2.1 en PDF)
+| Regla | Texto (resumen fiel) | Fuente | Implementación |
+|---|---|---|---|
+| **32 conjuros de daño** | Nivel, clases, alcance, forma y tamaño del área, salvación (característica, mitad o nada) y dados de daño de cada uno | SRD 5.2.1, "Spell Descriptions" (leído por columnas) | `rules/spells.ts` (`SPELLS_2024`) |
+| **Acción Magia** | Lanzar un conjuro con tiempo de lanzamiento de una acción es la acción Magia (no la de Atacar) | SRD 5.2.1, "Rules Glossary", "Magic [Action]" | Cada conjuro es una capacidad de acción; los ataques de conjuro (`spell: true`) no salen en Atacar |
+| **Ataque de oportunidad** | Un ataque cuerpo a cuerpo con un arma o un Golpe sin armas | Glosario, "Opportunity Attacks" | Los ataques de conjuro no se ofrecen como ataque de oportunidad |
+| **Mejora de los trucos** | El daño sube un dado a los niveles 5, 11 y 17; Descarga sobrenatural crea 2, 3 y 4 rayos | Descripción de cada truco, "Cantrip Upgrade" | `spellDamageAtLevel`, `beamsForCharacterLevel` |
+| **Multiclase y trucos** | La mejora de un truco se basa en el nivel total de personaje, no en el de una clase | SRD 5.2.1, "Multiclassing", "Cantrips" | Nivel de personaje = suma de los niveles de clase (máximo 20) |
+| **Las 12 clases** | Bárbaro, Bardo, Brujo, Clérigo, Druida, Explorador, Guerrero, Hechicero, Mago, Monje, Paladín y Pícaro | SRD 5.2.1, "Classes" | `CHARACTER_CLASSES` |
+
+- REGLA OFICIAL VERIFICADA, pero sin aplicar (se anotan en la ficha como "Aún sin aplicar"): efectos secundarios de algunos conjuros (empujar 10 pies, terreno difícil, Envenenado "hasta el final de tu siguiente turno", daño retardado, etc.).
+- Fuera del catálogo por ahora: Proyectil mágico (impacta sin tirada), Cadena de relámpagos, Tormenta de fuego, Lluvia de meteoritos, Rociada prismática, Reprensión infernal (reacción) y Cuchillo de hielo (ataque y área a la vez). Ver decisión 130.
+- Los nombres en español de los conjuros son etiquetas: PENDIENTE DE VALIDAR contra la traducción oficial.
+
 ## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
 | Regla | Texto oficial (resumen fiel) | Dónde se aplica |
 |---|---|---|

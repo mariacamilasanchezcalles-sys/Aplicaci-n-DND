@@ -7,6 +7,7 @@ import {
   ACTION_LABEL,
   COMMAND_ERROR,
   CONDITION_LABEL,
+  DAMAGE_LABEL,
   DIFFICULTY_LABEL,
   OUTCOME_LABEL,
   PERSONALITY_LABEL,
@@ -21,6 +22,7 @@ import {
   canAdvance,
   mathRandomSource,
   deathSave,
+  effectChoices,
   nextTurn,
   playerCommand,
   playerTurnView,
@@ -29,9 +31,11 @@ import {
   rollInitiative,
 } from "../../src/ui-bridge";
 import type {
+  AreaPlacement,
   CapabilitySource,
   CombatSnapshot,
   CreatureId,
+  DamageType,
   ExecutionChoice,
   GridPosition,
   PlayerInput,
@@ -42,7 +46,14 @@ import type {
 /** Dados reales del combate: la única fuente de azar de la app. */
 const dice = mathRandomSource;
 
-type Mode = { kind: "none" } | { kind: "move" } | { kind: "attackTarget"; attackId: string };
+type Mode =
+  | { kind: "none" }
+  | { kind: "move" }
+  | { kind: "attackTarget"; attackId: string }
+  /** Conjuro o efecto con objetivos: se tocan en el tablero. */
+  | { kind: "effectTargets"; key: string; chosen: CreatureId[] }
+  /** Conjuro de área: se elige entre los grupos de criaturas que puede cubrir. */
+  | { kind: "effectArea"; key: string; group: number };
 
 /**
  * Pantalla 5 — El campo de batalla. Tablero, iniciativa, criatura elegida,
@@ -127,10 +138,18 @@ export class CombatView {
     this.renderInitiative(s, actorId);
     this.board.update(s.encounter, {
       reachable: this.reachableSquares(s, view),
-      targets: this.mode.kind === "attackTarget" && view ? this.targetsFor(view, this.mode.attackId) : [],
+      targets:
+        this.mode.kind === "attackTarget" && view
+          ? this.targetsFor(view, this.mode.attackId)
+          : this.mode.kind === "effectTargets"
+            ? this.effectCandidates(this.mode.key)
+            : [],
+      area: this.mode.kind === "effectArea" ? this.areaGroup(this.mode.key, this.mode.group)?.squares ?? [] : [],
       currentActorId: actorId,
       selectedId: this.selectedId,
-      focus: s.turn !== null
+      focus: this.mode.kind === "effectArea" && this.areaGroup(this.mode.key, this.mode.group)?.affected[0]
+        ? { id: this.areaGroup(this.mode.key, this.mode.group)!.affected[0]!, key: `area:${this.mode.key}:${this.mode.group}` }
+        : s.turn !== null
         ? { id: s.turn.actorId, key: `${s.encounter.round}:${s.encounter.turnIndex}:${s.turn.ended}` }
         : this.selectedId !== null
           ? { id: this.selectedId, key: `deploy:${this.selectedId}` }
@@ -276,11 +295,14 @@ export class CombatView {
       }
       for (const o of opts.executionOptions) {
         if (o.choice.kind === "standardAction") buttons.push(button(ACTION_LABEL[o.choice.action as keyof typeof ACTION_LABEL] ?? o.choice.action, () => this.command({ kind: "chooseOption", key: o.key })));
+        if (o.choice.kind === "effect") buttons.push(button(this.effectLabel(s, view.actorId), () => this.startEffect(o.key), { class: this.mode.kind === "effectTargets" || this.mode.kind === "effectArea" ? "selected" : "", icon: svg(iconSvg("rune", 18)) }));
         if (o.choice.kind === "finish") buttons.push(button("Terminar acción", () => this.command({ kind: "chooseOption", key: o.key }), { class: "btn-ghost" }));
       }
       if (opts.canMove) buttons.push(this.moveButton());
       if (opts.canForfeit) buttons.push(button("Renunciar al resto", () => this.command({ kind: "forfeitRemaining" }), { class: "btn-ghost" }));
       if (this.mode.kind === "attackTarget") buttons.unshift(h("p", { class: "small hint-line", text: "Toca el objetivo en el tablero." }));
+      if (this.mode.kind === "effectTargets") buttons.unshift(...this.effectTargetsControls(this.mode));
+      if (this.mode.kind === "effectArea") buttons.unshift(...this.effectAreaControls(this.mode));
     } else {
       if (opts.canMove) buttons.push(this.moveButton());
       for (const source of opts.capabilities) buttons.push(button(sourceLabel(s, view.actorId, source), () => this.command({ kind: "beginCapability", source })));
@@ -305,6 +327,135 @@ export class CombatView {
     if (targets.length === 1) return this.openAttackRoll(attackId, targets[0]!);
     this.mode = { kind: "attackTarget", attackId };
     this.render();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Conjuros y efectos de los personajes
+
+  /** Nombre de la capacidad en curso (el conjuro), para el botón. */
+  private effectLabel(s: CombatSnapshot, actorId: CreatureId): string {
+    const source = s.turn?.execution?.source;
+    return source ? `Lanzar: ${sourceLabel(s, actorId, source)}` : "Resolver efecto";
+  }
+
+  private effectCandidates(key: string): CreatureId[] {
+    const c = effectChoices(this.s, key);
+    return c?.kind === "creatures" ? [...c.candidates] : [];
+  }
+
+  private effectMax(key: string): number {
+    const c = effectChoices(this.s, key);
+    return c?.kind === "creatures" ? c.max : 1;
+  }
+
+  private areaGroup(key: string, index: number): { readonly affected: readonly CreatureId[]; readonly placement: AreaPlacement; readonly squares: readonly GridPosition[] } | null {
+    const c = effectChoices(this.s, key);
+    return c?.kind === "area" ? c.groups[index] ?? null : null;
+  }
+
+  private startEffect(key: string): void {
+    const c = effectChoices(this.s, key);
+    if (c === null) return;
+    if (c.kind === "self") return this.openEffectRoll(key, {}, []);
+    if (c.kind === "creatures") {
+      if (c.candidates.length === 0) return this.set(this.s, "No hay objetivos al alcance.");
+      this.mode = { kind: "effectTargets", key, chosen: [] };
+      return this.render();
+    }
+    if (c.groups.length === 0) return this.set(this.s, "El área no alcanza a ninguna criatura.");
+    this.mode = { kind: "effectArea", key, group: 0 };
+    this.render();
+  }
+
+  private effectTargetsControls(mode: Extract<Mode, { kind: "effectTargets" }>): HTMLElement[] {
+    const max = this.effectMax(mode.key);
+    const names = mode.chosen.map((id) => nameOf(this.s.encounter, id)).join(", ");
+    return [
+      h("p", { class: "small hint-line", text: max === 1 ? "Toca el objetivo en el tablero." : `Toca hasta ${max} objetivos${names ? `: ${names}` : ""}.` }),
+      ...(max > 1 ? [button("Confirmar objetivos", () => this.openEffectRoll(mode.key, { targetIds: mode.chosen }, mode.chosen), { class: "btn-primary", disabled: mode.chosen.length === 0 })] : []),
+      button("Cancelar", () => ((this.mode = { kind: "none" }), this.render()), { class: "btn-ghost" }),
+    ];
+  }
+
+  /** Grupos de criaturas que puede cubrir el área (el motor da las colocaciones legales). */
+  private effectAreaControls(mode: Extract<Mode, { kind: "effectArea" }>): HTMLElement[] {
+    const c = effectChoices(this.s, mode.key);
+    if (c?.kind !== "area") return [];
+    const chosen = c.groups[mode.group];
+    return [
+      h("p", { class: "small hint-line", text: "Elige a quién cubre el área (en rojo, en el tablero)." }),
+      h(
+        "div",
+        { class: "effect-groups" },
+        ...c.groups.map((g, i) =>
+          button(g.affected.map((id) => nameOf(this.s.encounter, id)).join(", "), () => ((this.mode = { ...mode, group: i }), this.render()), {
+            class: `btn-small ${i === mode.group ? "selected" : ""}`,
+          }),
+        ),
+      ),
+      button("Lanzar aquí", () => (chosen ? this.openEffectRoll(mode.key, { placement: chosen.placement }, chosen.affected) : undefined), { class: "btn-primary" }),
+      button("Cancelar", () => ((this.mode = { kind: "none" }), this.render()), { class: "btn-ghost" }),
+    ];
+  }
+
+  /**
+   * Anotar el daño que tiró el jugador (por tipo) y las salvaciones de los
+   * aventureros afectados. Las salvaciones de los monstruos las tira la app.
+   */
+  private openEffectRoll(key: string, target: { readonly targetIds?: readonly CreatureId[]; readonly placement?: AreaPlacement }, affected: readonly CreatureId[]): void {
+    const s = this.s;
+    const c = effectChoices(s, key);
+    if (c === null) return;
+    const damage: Partial<Record<DamageType, number>> = {};
+    const outcomes: Record<string, "success" | "failure"> = {};
+    const heroes = c.save ? affected.filter((id) => s.encounter.combatants[id]?.definition.kind === "playerCharacter") : [];
+    const error = h("p", { class: "danger small" });
+    const saveRows = heroes.map((id) => {
+      const ok = button("Superada", () => ((outcomes[id] = "success"), ok.classList.add("selected"), ko.classList.remove("selected")), { class: "btn-small" });
+      const ko = button("Fallada", () => ((outcomes[id] = "failure"), ko.classList.add("selected"), ok.classList.remove("selected")), { class: "btn-small" });
+      return h("div", { class: "save-row" }, h("span", { class: "title small", text: nameOf(s.encounter, id) }), ok, ko);
+    });
+    const saveText = c.save
+      ? `Salvación de ${ABILITY_LABEL[c.save.ability]}${c.save.dc !== null ? ` · CD ${c.save.dc}` : ""}: ${c.save.onSuccess === "halfDamage" ? "mitad de daño si la supera" : "sin daño si la supera"}. Los monstruos la tiran solos.`
+      : null;
+    this.openDialog(
+      h(
+        "div",
+        { class: "dialog frame", role: "dialog" },
+        h("h3", { text: affected.length > 0 ? `Contra ${affected.map((id) => nameOf(s.encounter, id)).join(", ")}` : "Resolver efecto" }),
+        saveText ? h("p", { class: "muted small", text: saveText }) : null,
+        c.damageTypes.length > 0
+          ? h("div", { class: "form-grid" }, ...c.damageTypes.map((type) => numberField(`Daño tirado (${DAMAGE_LABEL[type].toLowerCase()})`, Number.NaN, (n) => (damage[type] = n), { min: 0, max: 500 })))
+          : null,
+        ...(saveRows.length > 0 ? [h("p", { class: "small", text: "Salvaciones de los aventureros (dados físicos):" }), ...saveRows] : []),
+        error,
+        h(
+          "div",
+          { class: "row end" },
+          button("Cancelar", () => ((this.mode = { kind: "none" }), this.closeDialog()), { class: "btn-ghost" }),
+          button("Resolver", () => {
+            if (c.damageTypes.some((t) => !Number.isInteger(damage[t]) || damage[t]! < 0)) {
+              error.textContent = "Anota el daño que salió en los dados.";
+              return;
+            }
+            if (heroes.some((id) => outcomes[id] === undefined)) {
+              error.textContent = "Marca la salvación de cada aventurero.";
+              return;
+            }
+            this.dialog = null;
+            this.command({
+              kind: "chooseOption",
+              key,
+              effectInput: {
+                ...target,
+                playerDamage: damage,
+                ...(heroes.length > 0 ? { playerSaves: Object.fromEntries(heroes.map((id) => [id, { outcome: outcomes[id]! }])) } : {}),
+              },
+            });
+          }, { class: "btn-primary" }),
+        ),
+      ),
+    );
   }
 
   private targetsFor(view: PlayerTurnView, attackId: string): CreatureId[] {
@@ -346,6 +497,14 @@ export class CombatView {
     }
     if (this.mode.kind === "attackTarget" && view && creatureId !== null && this.targetsFor(view, this.mode.attackId).includes(creatureId)) {
       return this.openAttackRoll(this.mode.attackId, creatureId);
+    }
+    if (this.mode.kind === "effectTargets" && creatureId !== null && this.effectCandidates(this.mode.key).includes(creatureId)) {
+      const mode = this.mode;
+      const max = this.effectMax(mode.key);
+      const chosen = mode.chosen.includes(creatureId) ? mode.chosen.filter((id) => id !== creatureId) : [...mode.chosen, creatureId].slice(-max);
+      if (max === 1) return this.openEffectRoll(mode.key, { targetIds: chosen }, chosen);
+      this.mode = { ...mode, chosen };
+      return this.render();
     }
     if (creatureId !== null) {
       this.selectedId = creatureId;

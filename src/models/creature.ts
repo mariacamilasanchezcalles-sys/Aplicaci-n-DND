@@ -76,6 +76,12 @@ export interface AttackDefinition {
    * ataque y quien agarra es el atacante.
    */
   readonly onHitConditions?: readonly AttackConditionEffect[];
+  /**
+   * Ataque de conjuro: se hace al lanzar el conjuro (acción Magia), no con la
+   * acción de Atacar, y no sirve para ataques de oportunidad (REGLA OFICIAL
+   * VERIFICADA: "one melee attack with a weapon or an Unarmed Strike").
+   */
+  readonly spell?: boolean;
 }
 
 /** Condición que un ataque aplica al impactar. */

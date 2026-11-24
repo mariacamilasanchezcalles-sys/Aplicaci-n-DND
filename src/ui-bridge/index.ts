@@ -22,6 +22,7 @@ export type {
 /** Dados reales (la única fuente de azar de la app). */
 export { mathRandomSource } from "../rules";
 export type {
+  AreaPlacement,
   CapabilitySource,
   DeathSaveResult,
   ExecutableStandardAction,

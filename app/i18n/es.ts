@@ -1,5 +1,7 @@
 import type {
+  CharacterClassId,
   CombatOutcome,
+  SpellCatalogEntry,
   ConditionId,
   CreatureSize,
   CreatureTypeId,
@@ -129,7 +131,59 @@ export const PARTY_ISSUE: Readonly<Record<PartyMemberIssue, string>> = {
   speedInvalid: "Velocidad en múltiplos de 5 pies",
   attackLabelRequired: "Cada ataque necesita nombre",
   attackRangeInvalid: "Alcance en múltiplos de 5 pies (la distancia larga, mayor que la normal)",
+  classLevelInvalid: "Cada clase necesita un nivel entre 1 y 20",
+  classRepeated: "Hay una clase repetida",
+  totalLevelOver20: "La suma de niveles no puede pasar de 20",
+  unknownSpell: "Hay un conjuro que ya no está en el catálogo",
+  spellSaveDcRequired: "Indica la CD de salvación de sus conjuros",
 };
+
+export const CLASS_LABEL: Readonly<Record<CharacterClassId, string>> = {
+  barbarian: "Bárbaro",
+  bard: "Bardo",
+  cleric: "Clérigo",
+  druid: "Druida",
+  fighter: "Guerrero",
+  monk: "Monje",
+  paladin: "Paladín",
+  ranger: "Explorador",
+  rogue: "Pícaro",
+  sorcerer: "Hechicero",
+  warlock: "Brujo",
+  wizard: "Mago",
+};
+
+const SHAPE_LABEL: Readonly<Record<string, string>> = {
+  sphere: "esfera",
+  cylinder: "cilindro",
+  cube: "cubo",
+  cone: "cono",
+  line: "línea",
+  emanation: "emanación",
+};
+
+/** Resumen de un conjuro: "Ataque a distancia, 120 pies, 1d10 fuego". */
+/** Resumen de un conjuro; `tier` = 1 a 4 según el nivel de personaje (dados de los trucos y rayos). */
+export function spellSummary(spell: SpellCatalogEntry, tier = 1): string {
+  const e = spell.effect;
+  const beams = tier;
+  const scaled = spell.level === 0 && !(e.kind === "attack" && e.attacks === "beams");
+  const damage = e.damage.map((d) => (scaled ? { ...d, dice: { ...d.dice, count: d.dice.count * tier } } : d)).map((d) => `${d.dice.count}d${d.dice.sides}${d.bonus ? ` + ${d.bonus}` : ""} ${DAMAGE_LABEL[d.type].toLowerCase()}`).join(" y ");
+  if (e.kind === "attack") {
+    const where = e.mode === "melee" ? "Ataque cuerpo a cuerpo (toque)" : `Ataque a distancia, ${e.rangeFeet} pies`;
+    const times = e.attacks === "beams" ? beams : e.attacks;
+    return `${where}, ${damage}${times > 1 ? `, ${times} ${e.attacks === "beams" ? "rayos" : "ataques"}` : ""}`;
+  }
+  const save = `Salvación de ${ABILITY_LABEL[e.ability]}`;
+  const t = e.targeting;
+  const target =
+    t.kind === "creature"
+      ? t.rangeFeet <= 5
+        ? "una criatura al tacto"
+        : `una criatura a ${t.rangeFeet} pies`
+      : `${SHAPE_LABEL[t.shape]} de ${t.sizeFeet} pies${t.rangeFeet === 0 ? " desde ti" : ` a ${t.rangeFeet} pies`}`;
+  return `${save}, ${target}, ${damage}${e.onSuccess === "half" ? " (mitad si salva)" : ""}`;
+}
 
 export const SETUP_ISSUE: Readonly<Record<SetupIssue, string>> = {
   noMonsters: "Elige al menos un enemigo",

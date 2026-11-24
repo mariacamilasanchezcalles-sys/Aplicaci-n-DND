@@ -126,6 +126,8 @@ export function resolveEffect(
   dice: RandomSource,
   playerSaves: Readonly<Record<string, PlayerSaveInput>> = {},
   sourceId: CreatureId | null = null,
+  /** Daño ya tirado por el jugador (por tipo): sustituye a los dados del efecto. */
+  playerDamage?: Readonly<Partial<Record<DamageType, number>>>,
 ): EffectResolution {
   const save = operation.save;
   const dc = save && typeof save.dc === "number" ? save.dc : null;
@@ -190,6 +192,11 @@ export function resolveEffect(
   if (hasAmounts && affected.some(receives)) {
     for (const effect of operation.effects) {
       if (effect.kind !== "damage" && effect.kind !== "heal") continue;
+      const entered = effect.kind === "damage" ? playerDamage?.[effect.damageType] : undefined;
+      if (entered !== undefined) {
+        rolls.push({ kind: "damage", damageType: effect.kind === "damage" ? effect.damageType : null, dice: [], bonus: 0, total: Math.max(0, Math.floor(entered)) });
+        continue;
+      }
       const roll = effect.dice ? rollDice(effect.dice, dice) : { rolls: [], total: 0 };
       rolls.push({
         kind: effect.kind,

@@ -191,5 +191,13 @@
 127. **APK firmado de publicación** (PENDIENTE): necesita una clave de firma propia de la jugadora (no va al repositorio).
 128. **Golpe sin armas automático** (PROPUESTA): todo personaje lo tiene, así que puede hacer ataques de oportunidad aunque no registre armas.
 129. **Ataques de los personajes** → DECISIÓN CONFIRMADA (2026-11-24, opciones A + B + F): catálogo de armas 2024 en un panel con selección múltiple, Golpe sin armas automático y formulario personalizado reducido (nombre, tipo y alcance; distancia larga y tipo de daño en "Más"). Quedan como opciones futuras: equipo inicial por clase y trucos de ataque (verificarlos antes).
+130. **Conjuros de los personajes** → DECISIÓN CONFIRMADA (2026-11-24, alcance "ataques + salvación y área"): catálogo de 32 conjuros de daño del SRD 5.2.1; el jugador tira el ataque y el daño con sus dados y la app tira las salvaciones de los monstruos. PROPUESTA de Claude dentro de esa decisión:
+    - no se llevan **espacios de conjuro** ni subida de nivel: el conjuro se lanza con su espacio base y la mesa controla los espacios;
+    - el panel muestra primero los conjuros de las clases del personaje ("Ver todos" quita el filtro);
+    - los efectos secundarios no modelados se anotan como "Aún sin aplicar";
+    - quedan fuera los conjuros que el motor aún no sabe resolver (Proyectil mágico, Cadena de relámpagos, Tormenta de fuego, Lluvia de meteoritos, Rociada prismática, Reprensión infernal y Cuchillo de hielo).
+131. **Elegir dónde cae un área** (PROPUESTA): en lugar de tocar una intersección, la app ofrece los grupos distintos de criaturas que el área puede cubrir (el motor da las colocaciones legales con la regla casera de plantillas) y los marca en rojo en el tablero. Primero los grupos más grandes.
+132. **Duración "hasta el final de tu siguiente turno"** (PENDIENTE): el motor hace caducar esas duraciones al final del turno actual; hace falta distinguirlo antes de modelar Rayo nauseabundo (Envenenado) y efectos parecidos.
+133. **Clase y multiclase** → DECISIÓN CONFIRMADA (2026-11-24): clase de una lista con nivel, botón "Multiclase" y nivel de personaje = suma (máximo 20). Se usa para filtrar conjuros y para los rayos y dados de los trucos. El campo libre pasa a llamarse "Descripción (opcional)".
 104. ~~**Conflictos de calibración**~~ → DECISIÓN CONFIRMADA (2026-11-07): la jugadora delega en Claude los juicios evidentes y los conflictos entre sus respuestas, aplicando su especificación; cada uno se documenta con su nota en `tests/calibration/judged-plans.json` y en `BRAIN_CALIBRATION.md` §6.
 94. **Monstruo de prueba "Draco de prueba"** (`tests/fixtures/sheets/test-drake.json`): ficha inventada solo para E8–E10; no es una criatura oficial.

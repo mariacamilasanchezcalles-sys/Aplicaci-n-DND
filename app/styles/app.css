@@ -692,6 +692,49 @@
   border-radius: 3px;
 }
 
+.class-section,
+.spell-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.class-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.class-section > .btn,
+.spell-section > .btn {
+  justify-self: start;
+}
+
+.sheet-filter {
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-unmodeled {
+  color: var(--danger, #d38a7a);
+}
+
+.hl-area {
+  position: absolute;
+  background: rgb(190 60 40 / 0.28);
+  box-shadow: inset 0 0 0 1.5px rgb(230 120 80 / 0.7);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.effect-groups {
+  display: grid;
+  gap: 6px;
+  grid-column: 1 / -1;
+}
+
 /* Fichas: sellos de lacre (monstruos) y monedas de latón (aventureros) */
 .token {
   position: absolute;

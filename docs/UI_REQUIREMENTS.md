@@ -32,7 +32,9 @@ Sin barra inferior. La preparación tiene un indicador superior ("Paso 2 de 4": 
    - Cada criatura es una **instancia independiente** (PG, posición, condiciones y recursos propios).
    - Hoy solo está el Goblin Warrior (decisión de la jugadora: ampliar más adelante, verificando cada ficha).
 3. **Personajes:** tarjetas guardadas y reutilizables entre partidas, con solo lo que usa el motor:
-   - nombre, clase o descripción opcional, tamaño, PG actuales y máximos, CA y Velocidad;
+   - nombre, descripción opcional, tamaño, PG actuales y máximos, CA y Velocidad;
+   - clase de una lista con su nivel y botón "Multiclase" (el nivel de personaje es la suma);
+   - conjuros de daño desde un panel (los de sus clases primero, agrupados en trucos y niveles) y la CD de salvación de conjuros si alguno la usa;
    - ataques: desde un panel con las armas oficiales 2024 (buscador y selección múltiple; alcance, distancias y tipo de daño automáticos) o personalizados (nombre, tipo y alcance; lo demás en "Más"); el Golpe sin armas va incluido siempre;
    - el nivel del grupo.
 
@@ -48,6 +50,7 @@ Sin barra inferior. La preparación tiene un indicador superior ("Paso 2 de 4": 
 
    Fases: despliegue (recolocar), iniciativa (los jugadores anotan sus totales y desempatan), turnos y final (victoria o derrota).
    - Los monstruos juegan solos con el cerebro.
+   - Conjuros: "Lanzar: …" pide tocar el objetivo o elegir a quién cubre el área (marcada en rojo) y después el daño tirado y las salvaciones de los aventureros afectados.
    - Las tiradas de los jugadores se anotan: ataques (d20, total y daño), salvaciones, reacciones, Daño masivo y salvaciones contra la muerte.
    - En pantalla ancha, el panel pasa al lateral.
 

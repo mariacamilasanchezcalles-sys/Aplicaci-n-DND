@@ -19,3 +19,4 @@ export * from "./houseRules";
 export * from "./candidates";
 export * from "./odds";
 export * from "./weapons";
+export * from "./spells";

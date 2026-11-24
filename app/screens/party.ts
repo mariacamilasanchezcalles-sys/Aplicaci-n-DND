@@ -1,17 +1,72 @@
 import { h, button, numberField, select, svg, textField } from "../dom";
 import { iconSvg } from "../art/art";
-import { DAMAGE_LABEL, PARTY_ISSUE, SIZE_LABEL } from "../i18n/es";
+import { CLASS_LABEL, DAMAGE_LABEL, PARTY_ISSUE, SIZE_LABEL, spellSummary } from "../i18n/es";
 import { setupFrame } from "../components/setupFrame";
 import type { AppModel } from "../state";
-import { attacksFromWeapons, partyMemberIssues } from "../../src/ui-bridge";
+import { CHARACTER_CLASSES, SPELL_CATALOG, attacksFromWeapons, characterLevelOf, partyMemberIssues } from "../../src/ui-bridge";
+import { spellSheet } from "../components/spellSheet";
 import { weaponSheet } from "../components/weaponSheet";
-import type { CreatureSize, DamageType, PartyAttackInput, PartyMemberInput } from "../../src/ui-bridge";
+import type { CreatureSize, DamageType, PartyAttackInput, PartyClassInput, PartyMemberInput } from "../../src/ui-bridge";
 
 const SIZES: readonly CreatureSize[] = ["small", "medium", "large"];
 const DAMAGE_TYPES = Object.keys(DAMAGE_LABEL) as DamageType[];
 
-/** Personaje cuyo panel "Añadir ataques" está abierto (estado de la interfaz). */
-let sheetFor: string | null = null;
+/** Panel abierto ("Añadir ataques" o "Añadir conjuros") y de qué personaje (estado de la interfaz). */
+let sheetFor: { readonly key: string; readonly kind: "weapons" | "spells" } | null = null;
+
+/** Clase y nivel, con botón de multiclase. */
+function classSection(member: PartyMemberInput, update: (change: Partial<PartyMemberInput>) => void): HTMLElement {
+  const classes = member.classes ?? [];
+  const used = new Set(classes.map((c) => c.classId));
+  const setRow = (i: number, change: Partial<PartyClassInput>): void => update({ classes: classes.map((c, j) => (j === i ? { ...c, ...change } : c)) });
+  const firstFree = CHARACTER_CLASSES.find((c) => !used.has(c)) ?? "fighter";
+  const total = classes.reduce((n, c) => n + (Number.isFinite(c.level) ? c.level : 0), 0);
+  return h(
+    "div",
+    { class: "class-section" },
+    h("div", { class: "attacks-head" }, h("h4", { class: "attacks-title", text: "Clase" }), total > 0 ? h("span", { class: "muted small", text: `Nivel de personaje ${total}` }) : null),
+    ...classes.map((c, i) =>
+      h(
+        "div",
+        { class: "class-row" },
+        h("label", { class: "field" }, i === 0 ? "Clase" : "Multiclase", select(CHARACTER_CLASSES.filter((id) => id === c.classId || !used.has(id)).map((id) => ({ value: id, label: CLASS_LABEL[id] })), c.classId, (v) => setRow(i, { classId: v }), "Clase")),
+        numberField("Nivel", c.level, (n) => setRow(i, { level: n }), { min: 1, max: 20 }),
+        button("", () => update({ classes: classes.filter((_, j) => j !== i) }), { class: "btn-ghost btn-icon", icon: svg(iconSvg("close", 18)), ariaLabel: `Quitar ${CLASS_LABEL[c.classId]}` }),
+      ),
+    ),
+    button(classes.length === 0 ? "Elegir clase" : "Multiclase", () => update({ classes: [...classes, { classId: firstFree, level: 1 }] }), { class: "btn-small btn-ghost", icon: svg(iconSvg("plus", 18)) }),
+  );
+}
+
+/** Conjuros de daño elegidos y la CD de salvación si hace falta. */
+function spellSection(member: PartyMemberInput, update: (change: Partial<PartyMemberInput>) => void, openSheet: () => void): HTMLElement {
+  const ids = member.spellIds ?? [];
+  const spells = ids.flatMap((id) => SPELL_CATALOG.filter((s) => s.id === id));
+  const needsDc = spells.some((s) => s.effect.kind === "save");
+  const beams = beamsFor(member);
+  return h(
+    "div",
+    { class: "spell-section" },
+    h("div", { class: "attacks-head" }, h("h4", { class: "attacks-title", text: "Conjuros de daño" }), h("span", { class: "muted small", text: "Del SRD 5.2.1. El jugador tira el ataque o el daño; los monstruos tiran sus salvaciones." })),
+    ...spells.map((s) =>
+      h(
+        "div",
+        { class: "attack-line" },
+        svg(iconSvg("rune", 18)),
+        h("div", { class: "attack-text" }, h("span", { class: "attack-name", text: `${s.label}${s.level === 0 ? " (truco)" : ` (nivel ${s.level})`}` }), h("span", { class: "muted small", text: spellSummary(s, beams) })),
+        button("", () => update({ spellIds: ids.filter((x) => x !== s.id) }), { class: "btn-ghost btn-icon", icon: svg(iconSvg("close", 18)), ariaLabel: `Quitar ${s.label}` }),
+      ),
+    ),
+    needsDc ? numberField("CD de salvación de conjuros", member.spellSaveDc ?? Number.NaN, (n) => update({ spellSaveDc: Number.isNaN(n) ? null : n }), { min: 1, max: 30 }) : null,
+    button("Añadir conjuros", openSheet, { class: "btn-small", icon: svg(iconSvg("rune", 18)) }),
+  );
+}
+
+/** Rayos de Descarga sobrenatural según el nivel de personaje (para mostrar). */
+function beamsFor(member: PartyMemberInput): number {
+  const level = characterLevelOf(member);
+  return level >= 17 ? 4 : level >= 11 ? 3 : level >= 5 ? 2 : 1;
+}
 
 /** "Cuerpo a cuerpo, alcance 10 pies, cortante" / "A distancia 150/600 pies, perforante". */
 function attackSummary(a: PartyAttackInput): string {
@@ -52,13 +107,14 @@ export function partyScreen(model: AppModel): HTMLElement {
         "div",
         { class: "form-grid" },
         textField("Nombre", member.label, (v) => update(member, { label: v })),
-        textField("Clase o descripción (opcional)", member.description, (v) => update(member, { description: v })),
+        textField("Descripción (opcional)", member.description, (v) => update(member, { description: v })),
         h("label", { class: "field" }, "Tamaño", select(SIZES.map((s) => ({ value: s, label: SIZE_LABEL[s] })), member.size, (v) => update(member, { size: v }), "Tamaño")),
         numberField("PG máximos", member.maxHitPoints, (n) => update(member, { maxHitPoints: n, currentHitPoints: member.currentHitPoints === member.maxHitPoints || member.currentHitPoints > n ? n : member.currentHitPoints }), { min: 1, max: 999 }),
         numberField("PG actuales", member.currentHitPoints, (n) => update(member, { currentHitPoints: n }), { min: 0, max: 999 }),
         numberField("CA", member.armorClass, (n) => update(member, { armorClass: n }), { min: 1, max: 40 }),
         numberField("Velocidad (pies)", member.speedFeet, (n) => update(member, { speedFeet: n }), { min: 0, max: 240, step: 5 }),
       ),
+      classSection(member, (change) => update(member, change)),
       h(
         "div",
         { class: "attacks-head" },
@@ -93,11 +149,15 @@ export function partyScreen(model: AppModel): HTMLElement {
           remove,
         );
       }),
+      spellSection(member, (change) => update(member, change), () => {
+        sheetFor = { key: member.key, kind: "spells" };
+        model.notify();
+      }),
       h(
         "div",
         { class: "row" },
         button("Añadir ataques", () => {
-          sheetFor = member.key;
+          sheetFor = { key: member.key, kind: "weapons" };
           model.notify();
         }, { class: "btn-small", icon: svg(iconSvg("sword", 18)) }),
         button("Borrar personaje", () => {
@@ -131,12 +191,24 @@ export function partyScreen(model: AppModel): HTMLElement {
     }, { class: "btn-wide", icon: svg(iconSvg("plus")) }),
   );
   const hint = party.length === 0 ? "Añade al menos un aventurero" : problems ? "Completa los datos de los aventureros elegidos" : !levelOk ? "Nivel del grupo entre 1 y 20" : undefined;
-  const sheetMember = roster.find((p) => p.key === sheetFor);
+  const sheetMember = roster.find((p) => p.key === sheetFor?.key);
   const close = (): void => {
     sheetFor = null;
     model.notify();
   };
-  const sheet = sheetMember
+  const sheet = sheetMember && sheetFor?.kind === "spells"
+    ? spellSheet({
+        characterName: sheetMember.label || "este aventurero",
+        classes: (sheetMember.classes ?? []).map((c) => c.classId),
+        alreadyChosen: sheetMember.spellIds ?? [],
+        beams: beamsFor(sheetMember),
+        onClose: close,
+        onAdd: (ids) => {
+          sheetFor = null;
+          update(sheetMember, { spellIds: [...(sheetMember.spellIds ?? []), ...ids] });
+        },
+      })
+    : sheetMember
     ? weaponSheet({
         characterName: sheetMember.label || "este aventurero",
         onClose: close,

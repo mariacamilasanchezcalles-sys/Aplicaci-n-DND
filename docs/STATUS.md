@@ -20,6 +20,13 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## Conjuros, clase y multiclase de los personajes (2026-11-24)
+- `rules/spells.ts`: 32 conjuros de daño del SRD 5.2.1 (verificados), las 12 clases, rayos de Descarga sobrenatural y mejora de los trucos por nivel de personaje. Los ataques de conjuro (`AttackDefinition.spell`) no salen en Atacar ni en ataques de oportunidad.
+- Motor: un personaje que lanza un efecto de daño anota el daño de sus dados (`EffectInput.playerDamage`; sin él, `playerDamageRequired`).
+- `ui-bridge`: `PartyMemberInput.classes`, `spellIds` y `spellSaveDc`; validación (`classLevelInvalid`, `classRepeated`, `totalLevelOver20`, `unknownSpell`, `spellSaveDcRequired`); `SPELL_CATALOG`; `effectChoices` (objetivos, grupos de área, tipos de daño y salvación).
+- Pantallas: clase con nivel y botón "Multiclase"; panel "Añadir conjuros" (filtrado por clase, por nivel); CD de salvación de conjuros si hace falta. En combate, "Lanzar: …": se toca el objetivo o se elige el grupo que cubre el área (en rojo en el tablero) y se anota el daño y las salvaciones de los aventureros afectados.
+- Provisional: sin espacios de conjuro ni subida de nivel; efectos secundarios sin aplicar (decisiones 130–133).
+
 ## Ataques de los personajes sin tedio (2026-11-24)
 - `rules/weapons.ts`: tabla oficial de armas 2024 (verificada) y Golpe sin armas. `ui-bridge`: `WEAPON_CATALOG` y `attacksFromWeapons` (las arrojadizas dan dos ataques).
 - Pantalla de Personajes: "Añadir ataques" abre un panel con buscador y selección múltiple; ataques del catálogo en filas compactas; personalizado con formulario corto.

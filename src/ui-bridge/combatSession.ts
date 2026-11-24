@@ -1,7 +1,11 @@
-import type { CreatureId, Encounter, GridPosition } from "../models";
+import type { AbilityId, CreatureId, DamageType, Encounter, GridPosition } from "../models";
 import {
   advanceTurn,
   applyTurnCommand,
+  areaPlacementCandidates,
+  areaSquares,
+  effectOperationOf,
+  effectTargetCandidates,
   getTurnOptions,
   reachableSquares,
   recordDeathSave,
@@ -10,6 +14,7 @@ import {
   validatePlacement,
 } from "../rules";
 import type {
+  AreaPlacement,
   DeathSaveResult,
   MonsterInitiativeRoll,
   PlacementReason,
@@ -246,6 +251,62 @@ export function playerTurnView(s: CombatSnapshot): PlayerTurnView | null {
     reachable: turn.pendingReactions.length > 0 ? [] : reachableSquares(s.encounter, turn),
     dying: actor.state.lifeState === "dying",
   };
+}
+
+/**
+ * Opciones para completar un efecto del personaje (un conjuro de salvación):
+ * - "creatures": a quién puede elegir (y cuántos como máximo);
+ * - "area": los grupos de criaturas distintos que puede alcanzar el área,
+ *   cada uno con una colocación válida y sus casillas (para mostrarla).
+ * Simplificación de interfaz (PROPUESTA, decisión 131): se elige a quién
+ * afectar, no la geometría exacta; la colocación la da el motor.
+ */
+/** Lo que la interfaz necesita para anotar un efecto: tipos de daño a tirar y salvación. */
+export interface EffectDetails {
+  /** Tipos de daño del efecto (el jugador anota el total de cada uno). */
+  readonly damageTypes: readonly DamageType[];
+  /** Salvación del efecto, o null si no tiene. */
+  readonly save: { readonly ability: AbilityId; readonly dc: number | null; readonly onSuccess: "negates" | "halfDamage" } | null;
+}
+
+export type EffectChoices = EffectDetails & (
+  | { readonly kind: "creatures"; readonly candidates: readonly CreatureId[]; readonly max: number }
+  | {
+      readonly kind: "area";
+      readonly groups: readonly { readonly affected: readonly CreatureId[]; readonly placement: AreaPlacement; readonly squares: readonly GridPosition[] }[];
+    }
+  | { readonly kind: "self" });
+
+export function effectChoices(s: CombatSnapshot, key: string): EffectChoices | null {
+  if (s.turn === null) return null;
+  const operation = effectOperationOf(s.encounter, s.turn, key);
+  const actor = s.encounter.combatants[s.turn.actorId];
+  if (!operation || !actor) return null;
+  const t = operation.targeting;
+  const damageTypes = [...new Set(operation.effects.flatMap((e) => (e.kind === "damage" ? [e.damageType] : [])))];
+  const dc = operation.save?.dc;
+  const details: EffectDetails = {
+    damageTypes,
+    save: operation.save
+      ? { ability: operation.save.ability, dc: typeof dc === "number" ? dc : null, onSuccess: operation.save.onSuccess }
+      : null,
+  };
+  if (t.kind === "self") return { ...details, kind: "self" };
+  if (t.kind === "creatures") return { ...details, kind: "creatures", candidates: effectTargetCandidates(s.encounter, s.turn, key), max: t.count };
+  const seen = new Set<string>();
+  const groups: { affected: CreatureId[]; placement: AreaPlacement; squares: GridPosition[] }[] = [];
+  for (const candidate of areaPlacementCandidates(s.encounter, s.turn, key)) {
+    if (candidate.affected.length === 0) continue;
+    const affected = [...candidate.affected].sort();
+    const signature = affected.join("|");
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    const area = areaSquares(s.encounter, actor, t, candidate.placement);
+    groups.push({ affected, placement: candidate.placement, squares: area.ok ? [...area.squares] : [] });
+  }
+  // Primero los grupos con más criaturas.
+  groups.sort((a, b) => b.affected.length - a.affected.length || (a.affected.join() < b.affected.join() ? -1 : 1));
+  return { ...details, kind: "area", groups };
 }
 
 /**

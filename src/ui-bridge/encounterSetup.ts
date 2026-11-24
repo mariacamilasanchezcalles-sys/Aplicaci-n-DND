@@ -1,6 +1,8 @@
 import { asAttackId, asCreatureId, asEncounterId } from "../models";
 import type {
   AttackDefinition,
+  Capability,
+  Operation,
   CombatantDefinition,
   CreatureSheet,
   CreatureSize,
@@ -13,8 +15,8 @@ import type {
   PersonalityId,
   PlayerCharacterDefinition,
 } from "../models";
-import { UNARMED_STRIKE, WEAPONS_2024, createRulesEngine, validatePlacement, weaponAttacks } from "../rules";
-import type { WeaponEntry } from "../rules";
+import { SPELLS_2024, UNARMED_STRIKE, WEAPONS_2024, beamsForCharacterLevel, createRulesEngine, spellDamageAtLevel, validatePlacement, weaponAttacks } from "../rules";
+import type { CharacterClassId, SpellEntry, WeaponEntry } from "../rules";
 import { TABLE_RULES_OF_THE_PLAYERS_TABLE } from "../scenarios/provisionalScenario";
 import { combatantFromSheet, loadCreatureSheet } from "../sheets";
 
@@ -128,6 +130,17 @@ export interface PartyMemberInput {
   readonly armorClass: number;
   readonly speedFeet: number;
   readonly attacks: readonly PartyAttackInput[];
+  /** Clases y niveles (multiclase: varias filas). Opcional en tarjetas antiguas. */
+  readonly classes?: readonly PartyClassInput[];
+  /** Conjuros de daño elegidos (ids del catálogo del SRD). */
+  readonly spellIds?: readonly string[];
+  /** CD de salvación de sus conjuros (necesaria si elige conjuros de salvación). */
+  readonly spellSaveDc?: number | null;
+}
+
+export interface PartyClassInput {
+  readonly classId: CharacterClassId;
+  readonly level: number;
 }
 
 export type PartyMemberIssue =
@@ -137,7 +150,12 @@ export type PartyMemberIssue =
   | "armorClassInvalid"
   | "speedInvalid"
   | "attackLabelRequired"
-  | "attackRangeInvalid";
+  | "attackRangeInvalid"
+  | "classLevelInvalid"
+  | "classRepeated"
+  | "totalLevelOver20"
+  | "unknownSpell"
+  | "spellSaveDcRequired";
 
 const isWhole = (n: number, min: number, max: number): boolean => Number.isInteger(n) && n >= min && n <= max;
 
@@ -154,6 +172,13 @@ export function partyMemberIssues(input: PartyMemberInput): PartyMemberIssue[] {
     const longOk = attack.longFeet === null || (attack.mode === "ranged" && attack.longFeet >= attack.normalFeet);
     if (!isWhole(attack.normalFeet, 5, 1000) || attack.normalFeet % 5 !== 0 || !longOk) issues.push("attackRangeInvalid");
   }
+  const classes = input.classes ?? [];
+  if (classes.some((c) => !isWhole(c.level, 1, 20))) issues.push("classLevelInvalid");
+  if (new Set(classes.map((c) => c.classId)).size !== classes.length) issues.push("classRepeated");
+  if (classes.reduce((n, c) => n + (Number.isFinite(c.level) ? c.level : 0), 0) > 20) issues.push("totalLevelOver20");
+  const spells = (input.spellIds ?? []).map((id) => SPELLS_2024.find((s) => s.id === id));
+  if (spells.some((s) => s === undefined)) issues.push("unknownSpell");
+  if (spells.some((s) => s?.effect.kind === "save") && !isWhole(input.spellSaveDc ?? Number.NaN, 1, 30)) issues.push("spellSaveDcRequired");
   return [...new Set(issues)];
 }
 
@@ -224,6 +249,17 @@ export function playerCharacterDefinition(input: PartyMemberInput, creatureId: s
     toHitBonus: 0,
     damage: [{ dice: { count: 0, sides: 1 }, bonus: 0, type: a.damageType }],
   }));
+  // Conjuros de daño: cada uno es una capacidad de la acción Magia.
+  const capabilities: Capability[] = [];
+  const characterLevel = characterLevelOf(input);
+  for (const spellId of input.spellIds ?? []) {
+    const spell = SPELLS_2024.find((s) => s.id === spellId);
+    if (!spell) continue;
+    const built = spellCapability(spell, input.spellSaveDc ?? null, characterLevel);
+    if (!built) continue;
+    if (built.attack) attacks.push(built.attack);
+    capabilities.push(built.capability);
+  }
   // Golpe sin armas: lo tiene toda criatura (REGLA OFICIAL VERIFICADA), así
   // que todo personaje puede hacer ataques de oportunidad (decisión 128).
   attacks.push({
@@ -245,6 +281,63 @@ export function playerCharacterDefinition(input: PartyMemberInput, creatureId: s
     attacks,
     bonusActions: [],
     traits: [],
+    ...(capabilities.length > 0 ? { capabilities } : {}),
+  };
+}
+
+/** Nivel del personaje: la suma de sus clases (1 si no tiene ninguna anotada). */
+export function characterLevelOf(input: PartyMemberInput): number {
+  return Math.max(1, (input.classes ?? []).reduce((n, c) => n + (Number.isFinite(c.level) ? c.level : 0), 0));
+}
+
+/**
+ * Capacidad del motor para un conjuro (acción Magia). Ataque de conjuro: un
+ * ataque marcado como conjuro (fuera de Atacar y de los ataques de
+ * oportunidad), repetido por rayos. Salvación: efecto con la CD del
+ * personaje; el daño lo anota el jugador al lanzarlo. null si falta la CD.
+ */
+function spellCapability(
+  spell: SpellEntry,
+  spellSaveDc: number | null,
+  characterLevel: number,
+): { readonly attack: AttackDefinition | null; readonly capability: Capability } | null {
+  const id = `spell-${spell.id}`;
+  const effect = spell.effect;
+  if (effect.kind === "attack") {
+    const attack: AttackDefinition = {
+      id: asAttackId(id),
+      label: spell.label,
+      mode: effect.mode,
+      rangeFeet: { normal: effect.rangeFeet },
+      toHitBonus: 0,
+      damage: effect.damage.map((d) => ({ dice: { count: 0, sides: 1 }, bonus: 0, type: d.type })),
+      spell: true,
+    };
+    const times = effect.attacks === "beams" ? beamsForCharacterLevel(characterLevel) : effect.attacks;
+    const one: Operation = { op: "attack", attackRef: id };
+    return {
+      attack,
+      capability: { id, label: spell.label, activation: "action", body: times === 1 ? one : { op: "repeat", times, body: one } },
+    };
+  }
+  if (spellSaveDc === null || !Number.isInteger(spellSaveDc)) return null;
+  const t = effect.targeting;
+  return {
+    attack: null,
+    capability: {
+      id,
+      label: spell.label,
+      activation: "action",
+      body: {
+        op: "effect",
+        targeting:
+          t.kind === "creature"
+            ? { kind: "creatures", count: 1, rangeFeet: t.rangeFeet }
+            : { kind: "area", shape: t.shape, sizeFeet: t.sizeFeet, rangeFeet: t.rangeFeet, ...(t.widthFeet ? { widthFeet: t.widthFeet } : {}) },
+        save: { ability: effect.ability, dc: spellSaveDc, onSuccess: effect.onSuccess === "half" ? "halfDamage" : "negates" },
+        effects: spellDamageAtLevel(spell, characterLevel).map((d) => ({ kind: "damage" as const, dice: d.dice, bonus: d.bonus, damageType: d.type })),
+      },
+    },
   };
 }
 
@@ -385,3 +478,23 @@ function deploy(
   }
   return updated;
 }
+
+// ---------------------------------------------------------------------------
+// Conjuros y clases para la tarjeta del personaje
+// ---------------------------------------------------------------------------
+
+export { CHARACTER_CLASSES } from "../rules";
+export type { CharacterClassId } from "../rules";
+
+/** Conjuro del catálogo tal como lo muestra la interfaz. */
+export interface SpellCatalogEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly label: string;
+  readonly level: number;
+  readonly classes: readonly CharacterClassId[];
+  readonly effect: SpellEntry["effect"];
+  readonly unmodeled: readonly string[];
+}
+
+export const SPELL_CATALOG: readonly SpellCatalogEntry[] = SPELLS_2024.map((s) => ({ ...s }));

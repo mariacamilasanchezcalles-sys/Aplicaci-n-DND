@@ -14,6 +14,8 @@ export interface BoardHighlights {
   readonly reachable: readonly GridPosition[];
   /** Criaturas que se pueden elegir como objetivo. */
   readonly targets: readonly CreatureId[];
+  /** Casillas cubiertas por el área elegida (conjuros de área). */
+  readonly area?: readonly GridPosition[];
   readonly currentActorId: CreatureId | null;
   readonly selectedId: CreatureId | null;
   /** Criatura a la que seguir con la vista y clave que, al cambiar, vuelve a centrarla. */
@@ -136,6 +138,11 @@ export class Board {
     const view = buildMapView(this.encounter);
     const abbreviations = uniqueAbbreviations(view.creatures.map((c) => [c.id, c.label] as const));
     const nodes: HTMLElement[] = [];
+    for (const square of this.highlights.area ?? []) {
+      const mark = h("div", { class: "hl-area" });
+      place(mark, square, 1, cell);
+      nodes.push(mark);
+    }
     for (const square of this.highlights.reachable) {
       const mark = h("div", { class: "hl-move" });
       place(mark, square, 1, cell);
