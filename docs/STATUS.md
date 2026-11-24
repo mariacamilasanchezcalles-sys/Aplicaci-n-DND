@@ -20,6 +20,10 @@
 - Percepción: solo tipos.
 - Datos del escenario: 7 PG del Goblin, tamaño Mediano y estadísticas vacías de Cata y Caín.
 
+## Ataques de los personajes sin tedio (2026-11-24)
+- `rules/weapons.ts`: tabla oficial de armas 2024 (verificada) y Golpe sin armas. `ui-bridge`: `WEAPON_CATALOG` y `attacksFromWeapons` (las arrojadizas dan dos ataques).
+- Pantalla de Personajes: "Añadir ataques" abre un panel con buscador y selección múltiple; ataques del catálogo en filas compactas; personalizado con formulario corto.
+
 ## Rediseño visual (2026-11-24)
 - "Grimorio sobre un claro del bosque": tablero de losas con musgo, fichas de lacre y latón, títulos en IM Fell English y menos ornamento repetido (ver `UI_REQUIREMENTS.md`). Publicado para probar en el iPhone: https://claude.ai/artifact/AVd1n9qGLJAbxzxq1daSdJ (privado).
 

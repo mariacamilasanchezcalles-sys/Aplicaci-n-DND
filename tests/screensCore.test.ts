@@ -185,3 +185,32 @@ function answerNo(s: CombatSnapshot): PlayerInput {
   if (request.kind === "playerPendingSave") return { kind: "playerPendingSave", creatureId: request.creatureId, playerSave: { outcome: "success" } };
   return { kind: "playerSaves", saves: Object.fromEntries(request.creatureIds.map((id) => [id, { outcome: "success" as const }])) };
 }
+
+describe("catálogo de armas 2024 y Golpe sin armas", () => {
+  it("tiene las 38 armas de la tabla y convierte cada una en sus ataques", async () => {
+    const { WEAPON_CATALOG, attacksFromWeapons } = await import("../src/ui-bridge");
+    expect(WEAPON_CATALOG).toHaveLength(38);
+    // Daga: cuerpo a cuerpo y lanzada (Arrojadiza 20/60).
+    expect(attacksFromWeapons(["dagger"])).toEqual([
+      { label: "Daga", mode: "melee", normalFeet: 5, longFeet: null, damageType: "piercing", weaponId: "dagger" },
+      { label: "Daga (lanzada)", mode: "ranged", normalFeet: 20, longFeet: 60, damageType: "piercing", weaponId: "dagger" },
+    ]);
+    // Guja: propiedad Alcance → 10 pies.
+    expect(attacksFromWeapons(["glaive"])[0]).toMatchObject({ mode: "melee", normalFeet: 10 });
+    // Arco largo 150/600; el dardo (a distancia, arrojadizo) solo se lanza.
+    expect(attacksFromWeapons(["longbow", "dart"])).toEqual([
+      { label: "Arco largo", mode: "ranged", normalFeet: 150, longFeet: 600, damageType: "piercing", weaponId: "longbow" },
+      { label: "Dardo", mode: "ranged", normalFeet: 20, longFeet: 60, damageType: "piercing", weaponId: "dart" },
+    ]);
+    expect(attacksFromWeapons(["no-existe"])).toEqual([]);
+  });
+
+  it("todo personaje tiene Golpe sin armas (5 pies, contundente) aunque no registre ataques", async () => {
+    const { playerCharacterDefinition } = await import("../src/ui-bridge");
+    const def = playerCharacterDefinition({ ...cata, attacks: [] }, "pc-1-cata");
+    expect(def.attacks).toEqual([
+      expect.objectContaining({ id: "unarmed-strike", label: "Golpe sin armas", mode: "melee", rangeFeet: { normal: 5 } }),
+    ]);
+    expect(def.attacks[0]!.damage[0]!.type).toBe("bludgeoning");
+  });
+});

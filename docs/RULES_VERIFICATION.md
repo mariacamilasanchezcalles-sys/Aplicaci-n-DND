@@ -147,6 +147,17 @@ Texto leído directamente de la página del glosario de las Basic Rules 2024.
 | **Reacción** | Acción especial en respuesta a un desencadenante definido en su descripción; puede hacerse en el turno de otro; tras usarla no puede usar otra hasta el inicio de su siguiente turno | "Reaction" | `reactionAvailable`; reacciones de ficha con desencadenante "le impactan" o "recibe daño" y cuerpo de ataque |
 | **Momento** | (La regla no fija el instante exacto para cada desencadenante) | — | PROPUESTA (decisión 107): se resuelven al terminar el ataque o el efecto que las provoca |
 
+## Armas y Golpe sin armas (verificado el 2026-11-24, Basic Rules 2024 en D&D Beyond)
+| Regla | Texto (resumen fiel) | Fuente | Implementación |
+|---|---|---|---|
+| **Tabla de armas** | 38 armas (sencillas y marciales, cuerpo a cuerpo y a distancia) con daño, tipo de daño y propiedades | "Equipment", tabla "Weapons" | `rules/weapons.ts` (`WEAPONS_2024`) |
+| **Alcance (Reach)** | Suma 5 pies a tu alcance al atacar con ella y para los ataques de oportunidad | "Equipment", "Properties" | Ataque cuerpo a cuerpo de 10 pies |
+| **Arrojadiza (Thrown)** | Se puede lanzar para un ataque a distancia; si es cuerpo a cuerpo, usa el mismo modificador | "Equipment", "Properties" | Un arma cuerpo a cuerpo arrojadiza da dos ataques (golpear y lanzar) |
+| **Distancia (Range)** | Normal/larga; más allá de la normal, Desventaja; nunca más allá de la larga | "Equipment", "Properties" | Distancias del ataque |
+| **Golpe sin armas** | Ataque cuerpo a cuerpo a 5 pies; daño Contundente 1 + modificador de Fuerza | Glosario, "Unarmed Strike" | Todo personaje lo tiene (`UNARMED_ATTACK_ID`) |
+
+Los nombres de las armas en español son etiquetas: PENDIENTE DE VALIDAR contra la traducción oficial.
+
 ## Salvaciones, efectos y áreas (verificado el 2026-11-07, SRD 5.2.1 y Glosario 2024)
 | Regla | Texto oficial (resumen fiel) | Dónde se aplica |
 |---|---|---|

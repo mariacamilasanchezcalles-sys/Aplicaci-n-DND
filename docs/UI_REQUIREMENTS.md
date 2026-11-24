@@ -33,7 +33,7 @@ Sin barra inferior. La preparación tiene un indicador superior ("Paso 2 de 4": 
    - Hoy solo está el Goblin Warrior (decisión de la jugadora: ampliar más adelante, verificando cada ficha).
 3. **Personajes:** tarjetas guardadas y reutilizables entre partidas, con solo lo que usa el motor:
    - nombre, clase o descripción opcional, tamaño, PG actuales y máximos, CA y Velocidad;
-   - ataques (nombre, cuerpo a cuerpo o distancia, alcance y tipo de daño);
+   - ataques: desde un panel con las armas oficiales 2024 (buscador y selección múltiple; alcance, distancias y tipo de daño automáticos) o personalizados (nombre, tipo y alcance; lo demás en "Más"); el Golpe sin armas va incluido siempre;
    - el nivel del grupo.
 
    Cata y Caín vienen con su nombre: sus datos los completa la jugadora (no se inventan).

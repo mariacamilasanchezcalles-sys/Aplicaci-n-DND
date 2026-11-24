@@ -1072,3 +1072,175 @@
     border-left: 1px solid var(--gold-dim);
   }
 }
+
+/* Ataques en la tarjeta del personaje */
+.attacks-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 1.15rem;
+  color: var(--gold-bright);
+}
+.attack-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0 0.35rem 0.6rem;
+  border-left: 2px solid var(--gold-dim);
+  background: rgb(0 0 0 / 0.2);
+  color: var(--gold);
+}
+.attack-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.attack-name {
+  color: var(--vellum);
+  font-weight: 500;
+}
+.attack-more {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.attack-more summary {
+  grid-column: 1 / -1;
+  cursor: pointer;
+  color: var(--gold);
+  font-size: 0.9rem;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+/* Panel que sube desde abajo: "Añadir ataques" */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: min(560px, 100%);
+  max-height: 88%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem max(16px, env(safe-area-inset-left, 0px)) calc(0.8rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel-solid);
+  border: 1px solid var(--gold-dim);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.6);
+  animation: sheet-up 0.22s ease-out;
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sheet-note {
+  margin: 0;
+}
+.sheet .search {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding-left: 0.6rem;
+  background: var(--ink);
+  color: var(--gold-dim);
+}
+.sheet .search input {
+  border: 0;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+}
+.ws-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-right: 2px;
+}
+.ws-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.ws-group-title {
+  margin: 0 0 0.15rem;
+  font-family: var(--font-title);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1rem;
+  color: var(--gold);
+}
+.ws-item {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  grid-template-areas: "check name" "check desc";
+  align-items: center;
+  column-gap: 0.6rem;
+  min-height: 52px;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--vellum);
+  cursor: pointer;
+}
+.ws-item:hover {
+  border-color: var(--hairline);
+}
+.ws-item.on {
+  background: rgb(112 28 37 / 0.35);
+  border-color: var(--gold-dim);
+}
+.ws-check {
+  grid-area: check;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dim);
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: #f6e8d8;
+}
+.ws-item.on .ws-check {
+  background: radial-gradient(120% 120% at 30% 25%, var(--blood-bright), var(--blood-dark));
+  border-color: var(--gold);
+}
+.ws-name {
+  grid-area: name;
+  font-weight: 500;
+}
+.ws-desc {
+  grid-area: desc;
+  font-size: 0.85rem;
+}
+.sheet-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--hairline);
+}

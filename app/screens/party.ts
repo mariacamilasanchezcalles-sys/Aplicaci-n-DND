@@ -3,11 +3,21 @@ import { iconSvg } from "../art/art";
 import { DAMAGE_LABEL, PARTY_ISSUE, SIZE_LABEL } from "../i18n/es";
 import { setupFrame } from "../components/setupFrame";
 import type { AppModel } from "../state";
-import { partyMemberIssues } from "../../src/ui-bridge";
+import { attacksFromWeapons, partyMemberIssues } from "../../src/ui-bridge";
+import { weaponSheet } from "../components/weaponSheet";
 import type { CreatureSize, DamageType, PartyAttackInput, PartyMemberInput } from "../../src/ui-bridge";
 
 const SIZES: readonly CreatureSize[] = ["small", "medium", "large"];
 const DAMAGE_TYPES = Object.keys(DAMAGE_LABEL) as DamageType[];
+
+/** Personaje cuyo panel "Añadir ataques" está abierto (estado de la interfaz). */
+let sheetFor: string | null = null;
+
+/** "Cuerpo a cuerpo, alcance 10 pies, cortante" / "A distancia 150/600 pies, perforante". */
+function attackSummary(a: PartyAttackInput): string {
+  const where = a.mode === "melee" ? `Cuerpo a cuerpo, alcance ${a.normalFeet} pies` : `A distancia ${a.normalFeet}${a.longFeet ? `/${a.longFeet}` : ""} pies`;
+  return `${where}, ${DAMAGE_LABEL[a.damageType].toLowerCase()}`;
+}
 
 /** Clave estable para un personaje nuevo (sin azar: hora y contador). */
 let counter = 0;
@@ -49,23 +59,47 @@ export function partyScreen(model: AppModel): HTMLElement {
         numberField("CA", member.armorClass, (n) => update(member, { armorClass: n }), { min: 1, max: 40 }),
         numberField("Velocidad (pies)", member.speedFeet, (n) => update(member, { speedFeet: n }), { min: 0, max: 240, step: 5 }),
       ),
-      h("div", { class: "attacks-head" }, h("span", { class: "eyebrow", text: "Ataques" }), h("span", { class: "muted small", text: "Las tiradas y el daño se hacen con dados físicos." })),
-      ...member.attacks.map((attack, i) =>
-        h(
+      h(
+        "div",
+        { class: "attacks-head" },
+        h("h4", { class: "attacks-title", text: "Ataques" }),
+        h("span", { class: "muted small", text: "Golpe sin armas (5 pies) va incluido siempre. Las tiradas y el daño se hacen con dados físicos." }),
+      ),
+      ...member.attacks.map((attack, i) => {
+        const remove = button("", () => update(member, { attacks: member.attacks.filter((_, j) => j !== i) }), { class: "btn-ghost btn-icon", icon: svg(iconSvg("close", 18)), ariaLabel: `Quitar ${attack.label || "ataque"}` });
+        if (attack.weaponId !== undefined) {
+          return h(
+            "div",
+            { class: "attack-line" },
+            svg(iconSvg(attack.mode === "melee" ? "sword" : "target", 18)),
+            h("div", { class: "attack-text" }, h("span", { class: "attack-name", text: attack.label }), h("span", { class: "muted small", text: attackSummary(attack) })),
+            remove,
+          );
+        }
+        // Ataque personalizado: lo justo (nombre, tipo y alcance); el resto en "Más".
+        return h(
           "div",
           { class: "attack-row" },
           textField("Ataque", attack.label, (v) => setAttack(i, { label: v })),
-          h("label", { class: "field" }, "Tipo", select([{ value: "melee", label: "Cuerpo a cuerpo" }, { value: "ranged", label: "A distancia" }] as const, attack.mode, (v) => setAttack(i, { mode: v, longFeet: v === "melee" ? null : attack.longFeet }), "Tipo de ataque")),
-          numberField(attack.mode === "melee" ? "Alcance" : "Distancia", attack.normalFeet, (n) => setAttack(i, { normalFeet: n }), { min: 5, step: 5 }),
-          attack.mode === "ranged" ? numberField("Larga (opcional)", attack.longFeet ?? Number.NaN, (n) => setAttack(i, { longFeet: Number.isNaN(n) ? null : n }), { min: 5, step: 5 }) : null,
-          h("label", { class: "field" }, "Daño", select(DAMAGE_TYPES.map((d) => ({ value: d, label: DAMAGE_LABEL[d] })), attack.damageType, (v) => setAttack(i, { damageType: v }), "Tipo de daño")),
-          button("", () => update(member, { attacks: member.attacks.filter((_, j) => j !== i) }), { class: "btn-ghost btn-icon", icon: svg(iconSvg("close", 18)), ariaLabel: "Quitar ataque" }),
-        ),
-      ),
+          h("label", { class: "field" }, "Tipo", select([{ value: "melee", label: "Cuerpo a cuerpo" }, { value: "ranged", label: "A distancia" }] as const, attack.mode, (v) => setAttack(i, { mode: v, longFeet: v === "melee" ? null : attack.longFeet, normalFeet: v === "melee" ? 5 : Math.max(attack.normalFeet, 30) }), "Tipo de ataque")),
+          numberField(attack.mode === "melee" ? "Alcance (pies)" : "Distancia (pies)", attack.normalFeet, (n) => setAttack(i, { normalFeet: n }), { min: 5, step: 5 }),
+          h(
+            "details",
+            { class: "attack-more" },
+            h("summary", { text: "Más" }),
+            attack.mode === "ranged" ? numberField("Distancia larga (opcional)", attack.longFeet ?? Number.NaN, (n) => setAttack(i, { longFeet: Number.isNaN(n) ? null : n }), { min: 5, step: 5 }) : null,
+            h("label", { class: "field" }, "Tipo de daño", select(DAMAGE_TYPES.map((d) => ({ value: d, label: DAMAGE_LABEL[d] })), attack.damageType, (v) => setAttack(i, { damageType: v }), "Tipo de daño")),
+          ),
+          remove,
+        );
+      }),
       h(
         "div",
         { class: "row" },
-        button("Añadir ataque", () => update(member, { attacks: [...member.attacks, { label: "", mode: "melee", normalFeet: 5, longFeet: null, damageType: "slashing" }] }), { class: "btn-small btn-ghost", icon: svg(iconSvg("sword", 18)) }),
+        button("Añadir ataques", () => {
+          sheetFor = member.key;
+          model.notify();
+        }, { class: "btn-small", icon: svg(iconSvg("sword", 18)) }),
         button("Borrar personaje", () => {
           model.setRoster(roster.filter((p) => p.key !== member.key));
           model.setDraft({ partyKeys: model.draft.partyKeys.filter((k) => k !== member.key) });
@@ -97,10 +131,31 @@ export function partyScreen(model: AppModel): HTMLElement {
     }, { class: "btn-wide", icon: svg(iconSvg("plus")) }),
   );
   const hint = party.length === 0 ? "Añade al menos un aventurero" : problems ? "Completa los datos de los aventureros elegidos" : !levelOk ? "Nivel del grupo entre 1 y 20" : undefined;
-  return setupFrame(model, "party", "Los aventureros", content, {
+  const sheetMember = roster.find((p) => p.key === sheetFor);
+  const close = (): void => {
+    sheetFor = null;
+    model.notify();
+  };
+  const sheet = sheetMember
+    ? weaponSheet({
+        characterName: sheetMember.label || "este aventurero",
+        onClose: close,
+        onAdd: (ids) => {
+          sheetFor = null;
+          update(sheetMember, { attacks: [...sheetMember.attacks, ...attacksFromWeapons(ids)] });
+        },
+        onCustom: () => {
+          sheetFor = null;
+          update(sheetMember, { attacks: [...sheetMember.attacks, { label: "", mode: "melee", normalFeet: 5, longFeet: null, damageType: "bludgeoning" }] });
+        },
+      })
+    : null;
+  const frame = setupFrame(model, "party", "Los aventureros", content, {
     label: "Continuar",
     onClick: () => model.go("difficulty"),
     disabled: hint !== undefined,
     ...(hint ? { hint } : {}),
   });
+  if (sheet) frame.append(sheet);
+  return frame;
 }

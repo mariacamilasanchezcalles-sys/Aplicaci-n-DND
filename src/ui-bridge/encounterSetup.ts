@@ -13,7 +13,8 @@ import type {
   PersonalityId,
   PlayerCharacterDefinition,
 } from "../models";
-import { createRulesEngine, validatePlacement } from "../rules";
+import { UNARMED_STRIKE, WEAPONS_2024, createRulesEngine, validatePlacement, weaponAttacks } from "../rules";
+import type { WeaponEntry } from "../rules";
 import { TABLE_RULES_OF_THE_PLAYERS_TABLE } from "../scenarios/provisionalScenario";
 import { combatantFromSheet, loadCreatureSheet } from "../sheets";
 
@@ -109,6 +110,8 @@ export interface PartyAttackInput {
   readonly longFeet: number | null;
   /** Tipo de daño (para resistencias e inmunidades al anotar el daño). */
   readonly damageType: DamageType;
+  /** Arma del catálogo de la que sale (si no, es un ataque personalizado). */
+  readonly weaponId?: string;
 }
 
 /**
@@ -154,6 +157,58 @@ export function partyMemberIssues(input: PartyMemberInput): PartyMemberIssue[] {
   return [...new Set(issues)];
 }
 
+// ---------------------------------------------------------------------------
+// Catálogo de armas 2024 para la tarjeta del personaje
+// ---------------------------------------------------------------------------
+
+/** Arma del catálogo tal como la muestra la interfaz. */
+export interface WeaponCatalogEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly category: WeaponEntry["category"];
+  readonly kind: WeaponEntry["kind"];
+  /** Dados de daño para mostrar ("1d8", "2d6", "1"). */
+  readonly damageText: string;
+  readonly damageType: DamageType;
+  readonly reach: boolean;
+  readonly thrown: boolean;
+  readonly range: { readonly normal: number; readonly long: number } | null;
+}
+
+export const WEAPON_CATALOG: readonly WeaponCatalogEntry[] = WEAPONS_2024.map((w) => ({
+  id: w.id,
+  label: w.label,
+  category: w.category,
+  kind: w.kind,
+  damageText: w.damage.count > 0 ? `${w.damage.count}d${w.damage.sides}${w.damageBonus ? ` + ${w.damageBonus}` : ""}` : String(w.damageBonus ?? 0),
+  damageType: w.damageType,
+  reach: w.reach === true,
+  thrown: w.thrown === true,
+  range: w.range ?? null,
+}));
+
+/**
+ * Ataques de la tarjeta a partir de armas del catálogo (en el orden dado).
+ * Un arma cuerpo a cuerpo arrojadiza da dos ataques: golpear y lanzar.
+ */
+export function attacksFromWeapons(weaponIds: readonly string[]): PartyAttackInput[] {
+  return weaponIds.flatMap((id) => {
+    const weapon = WEAPONS_2024.find((w) => w.id === id);
+    if (!weapon) return [];
+    return weaponAttacks(weapon).map((a) => ({
+      label: a.thrown && weapon.kind === "melee" ? `${weapon.label} (lanzada)` : weapon.label,
+      mode: a.mode,
+      normalFeet: a.normalFeet,
+      longFeet: a.longFeet,
+      damageType: weapon.damageType,
+      weaponId: weapon.id,
+    }));
+  });
+}
+
+/** Id del Golpe sin armas que tiene todo personaje (se añade solo). */
+export const UNARMED_ATTACK_ID = "unarmed-strike";
+
 /**
  * Definición del motor para un personaje. Los ataques solo necesitan su
  * alcance (ataques de oportunidad) y su tipo de daño: la tirada y el daño los
@@ -169,6 +224,16 @@ export function playerCharacterDefinition(input: PartyMemberInput, creatureId: s
     toHitBonus: 0,
     damage: [{ dice: { count: 0, sides: 1 }, bonus: 0, type: a.damageType }],
   }));
+  // Golpe sin armas: lo tiene toda criatura (REGLA OFICIAL VERIFICADA), así
+  // que todo personaje puede hacer ataques de oportunidad (decisión 128).
+  attacks.push({
+    id: asAttackId(UNARMED_ATTACK_ID),
+    label: UNARMED_STRIKE.label,
+    mode: "melee",
+    rangeFeet: { normal: UNARMED_STRIKE.reachFeet },
+    toHitBonus: 0,
+    damage: [{ dice: { count: 0, sides: 1 }, bonus: 0, type: UNARMED_STRIKE.damageType }],
+  });
   return {
     kind: "playerCharacter",
     registration: "simplified",
